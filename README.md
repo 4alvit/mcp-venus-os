@@ -14,8 +14,10 @@ MCP (Model Context Protocol) server for Victron Venus OS management. Provides to
 
 ### Installation
 
+Not yet on PyPI. Install from GitHub:
+
 ```bash
-pip install mcp-venus-os
+pip install git+https://github.com/4alvit/mcp-venus-os
 ```
 
 Or for development:
