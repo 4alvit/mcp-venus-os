@@ -1,0 +1,2 @@
+[console_scripts]
+mcp-venus-os = mcp_venus_os.__main__:main

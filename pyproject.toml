@@ -1,0 +1,77 @@
+[project]
+name = "mcp-venus-os"
+version = "0.1.0"
+description = "MCP server for Venus OS management - D-Bus, MQTT, and safety-constrained control"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "4alvit", email = "4alvit@users.noreply.github.com"}
+]
+keywords = ["mcp", "venus-os", "victron", "dbus", "mqtt", "energy", "inverter"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "fastmcp>=2.0.0",
+    "dbus-fast>=0.50.0",
+    "paho-mqtt>=2.0.0",
+    "pydantic>=2.8.0",
+    "pydantic-settings>=2.4.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+mcp-venus-os = "mcp_venus_os.__main__:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-mock>=3.12.0",
+    "ruff>=0.6.0",
+    "mypy>=1.10.0",
+    "pre-commit>=3.7.0",
+]
+
+[build-system]
+requires = ["setuptools>=70.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [".venv", "dist", "build"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "ANN", "SIM", "C4", "T20", "PT", "PTH", "ERA", "ARG", "TRY", "TD", "FLY"]
+ignore = ["ANN201", "ANN202", "ANN204", "ARG001", "ARG002", "B008", "C901", "ERA001", "S101", "SIM103", "T201", "T203", "PTH118", "PTH120", "PTH123"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
