@@ -1,0 +1,80 @@
+# MCP Venus OS - Example Claude Desktop Configuration
+
+This file shows how to configure the MCP Venus OS server in Claude Desktop.
+
+## Location
+
+The config file is typically at:
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
+
+## Configuration
+
+```json
+{
+  "mcpServers": {
+    "venus-os": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/vmedvedev/victron/mcp-venus-os",
+        "run",
+        "mcp-venus-os"
+      ],
+      "env": {
+        "DBUS_BUS_TYPE": "system",
+        "DBUS_SERVICE_NAME": "com.victronenergy",
+        "MQTT_HOST": "localhost",
+        "MQTT_PORT": "1883",
+        "MQTT_BASE_TOPIC": "N/venus-os",
+        "SAFETY_REQUIRE_CONFIRMATION": "true",
+        "SAFETY_MAX_CHARGE_CURRENT": "100",
+        "SAFETY_MAX_DISCHARGE_CURRENT": "100",
+        "SAFETY_MIN_SOC_LIMIT": "10",
+        "SAFETY_MAX_SOC_LIMIT": "100",
+        "SAFETY_ALLOWED_MODES": "on,off,charger_only,inverter_only,eco"
+      }
+    }
+  }
+}
+```
+
+## Alternative: Using pip install
+
+If you install the package globally:
+
+```json
+{
+  "mcpServers": {
+    "venus-os": {
+      "command": "mcp-venus-os",
+      "env": {
+        "DBUS_BUS_TYPE": "system",
+        "MQTT_HOST": "localhost",
+        "MQTT_PORT": "1883"
+      }
+    }
+  }
+}
+```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DBUS_BUS_TYPE` | `system` | D-Bus type: `system` or `session` |
+| `DBUS_SERVICE_NAME` | `com.victronenergy` | Base Victron service name |
+| `MQTT_HOST` | `localhost` | MQTT broker hostname |
+| `MQTT_PORT` | `1883` | MQTT broker port |
+| `MQTT_USERNAME` | - | MQTT username (optional) |
+| `MQTT_PASSWORD` | - | MQTT password (optional) |
+| `MQTT_CLIENT_ID` | `mcp-venus-os` | MQTT client ID |
+| `MQTT_BASE_TOPIC` | `N/venus-os` | Base topic for Venus OS data |
+| `MQTT_TLS` | `false` | Use TLS for MQTT |
+| `SAFETY_REQUIRE_CONFIRMATION` | `true` | Require confirmation for writes |
+| `SAFETY_MAX_CHARGE_CURRENT` | `100` | Max charge current (A) |
+| `SAFETY_MAX_DISCHARGE_CURRENT` | `100` | Max discharge current (A) |
+| `SAFETY_MIN_SOC_LIMIT` | `10` | Min SoC limit (%) |
+| `SAFETY_MAX_SOC_LIMIT` | `100` | Max SoC limit (%) |
+| `SAFETY_ALLOWED_MODES` | `on,off,charger_only,inverter_only,eco` | Allowed inverter modes |

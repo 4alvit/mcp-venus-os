@@ -1,0 +1,11 @@
+[
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "hook_event_name": "Notification",
+    "message": "Claude is waiting for your input",
+    "notification_type": "idle_prompt"
+  }
+]

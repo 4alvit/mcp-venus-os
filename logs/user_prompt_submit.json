@@ -1,0 +1,20 @@
+[
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "UserPromptSubmit",
+    "prompt": "\u0437\u0430\u043a\u043e\u043d\u0447\u0438"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "208473e1-54bd-4952-b03f-bcb8b7cc2337",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "UserPromptSubmit",
+    "prompt": " test against real Venus OS hardware. push MR"
+  }
+]

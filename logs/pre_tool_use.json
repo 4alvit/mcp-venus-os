@@ -1,0 +1,1004 @@
+[
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check src/mcp_venus_os/",
+      "description": "Check lint for all source files"
+    },
+    "tool_use_id": "call-ee65a557-60c9-4ee5-ba76-40deaa01ac57"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check --fix src/mcp_venus_os/",
+      "description": "Auto-fix lint issues"
+    },
+    "tool_use_id": "call-8e6a0ec6-6414-4f90-8127-e2a6b90cb51b"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Read",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/config.py"
+    },
+    "tool_use_id": "call-afb73122-d99f-4596-bc98-098ae2cc790b"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/config.py",
+      "content": "\"\"\"Configuration management for MCP Venus OS.\"\"\"\n\nfrom functools import lru_cache\n\nfrom pydantic import Field\nfrom pydantic_settings import BaseSettings, SettingsConfigDict\n\n\nclass DBusConfig(BaseSettings):\n    \"\"\"D-Bus connection configuration.\"\"\"\n\n    model_config = SettingsConfigDict(env_prefix=\"DBUS_\")\n\n    bus_type: str = Field(default=\"system\", description=\"D-Bus type: system or session\")\n    service_name: str = Field(\n        default=\"com.victronenergy\", description=\"Base Victron service name\"\n    )\n\n\nclass MQTTConfig(BaseSettings):\n    \"\"\"MQTT connection configuration.\"\"\"\n\n    model_config = SettingsConfigDict(env_prefix=\"MQTT_\")\n\n    host: str = Field(default=\"localhost\", description=\"MQTT broker host\")\n    port: int = Field(default=1883, description=\"MQTT broker port\")\n    username: str | None = Field(default=None, description=\"MQTT username\")\n    password: str | None = Field(default=None, description=\"MQTT password\")\n    client_id: str = Field(default=\"mcp-venus-os\", description=\"MQTT client ID\")\n    base_topic: str = Field(default=\"N/venus-os\", description=\"Base topic for Venus OS data\")\n    tls: bool = Field(default=False, description=\"Use TLS for MQTT connection\")\n\n\nclass SafetyConfig(BaseSettings):\n    \"\"\"Safety constraints configuration.\"\"\"\n\n    model_config = SettingsConfigDict(env_prefix=\"SAFETY_\")\n\n    require_confirmation: bool = Field(\n        default=True, description=\"Require confirmation for write operations\"\n    )\n    max_charge_current: float = Field(\n        default=100.0, description=\"Maximum allowed charge current (A)\"\n    )\n    max_discharge_current: float = Field(\n        default=100.0, description=\"Maximum allowed discharge current (A)\"\n    )\n    min_soc_limit: int = Field(default=10, description=\"Minimum allowed SoC limit (%)\")\n    max_soc_limit: int = Field(default=100, description=\"Maximum allowed SoC limit (%)\")\n    allowed_modes: list[str] = Field(\n        default=[\"on\", \"off\", \"charger_only\", \"inverter_only\", \"eco\"],\n        description=\"Allowed inverter modes\"\n    )\n\n\nclass ServerConfig(BaseSettings):\n    \"\"\"Main server configuration.\"\"\"\n\n    model_config = SettingsConfigDict(\n        env_file=\".env\",\n        env_file_encoding=\"utf-8\",\n        extra=\"ignore\",\n    )\n\n    dbus: DBusConfig = Field(default_factory=DBusConfig)\n    mqtt: MQTTConfig = Field(default_factory=MQTTConfig)\n    safety: SafetyConfig = Field(default_factory=SafetyConfig)\n    log_level: str = Field(default=\"INFO\", description=\"Logging level\")\n\n\n@lru_cache\ndef get_config() -> ServerConfig:\n    \"\"\"Get cached configuration instance.\"\"\"\n    return ServerConfig()"
+    },
+    "tool_use_id": "call-5f5249df-c080-4a2c-b7f4-7af845a08ec2"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "echo \"\" >> /Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/config.py && uv run ruff check src/mcp_venus_os/config.py",
+      "description": "Add newline and check lint"
+    },
+    "tool_use_id": "call-06d17605-6f62-4edd-9e27-3a0faf2e35ce"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Read",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/dbus_client.py"
+    },
+    "tool_use_id": "call-80714818-fadb-4d18-8a0f-fceafeb84bfa"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/dbus_client.py",
+      "content": "\"\"\"D-Bus client for reading Venus OS data.\"\"\"\n\nimport logging\nfrom dataclasses import dataclass\nfrom typing import Any, Optional\n\nfrom dbus_fast import BusType, Message\nfrom dbus_fast.aio import MessageBus\n\nfrom .config import get_config\n\nlogger = logging.getLogger(__name__)\n\n\n@dataclass\nclass BatteryData:\n    \"\"\"Battery data from Venus OS.\"\"\"\n    soc: float\n    voltage: float\n    current: float\n    power: float\n    temperature: float\n    status: str\n    time_to_go: int | None = None\n\n\n@dataclass\nclass PVData:\n    \"\"\"PV/Solar data from Venus OS.\"\"\"\n    power: float\n    voltage: float\n    current: float\n    yield_today: float\n    yield_total: float\n\n\n@dataclass\nclass GridData:\n    \"\"\"Grid/AC data from Venus OS.\"\"\"\n    power: float\n    voltage: float\n    current: float\n    frequency: float\n    status: str\n\n\n@dataclass\nclass InverterData:\n    \"\"\"Inverter data from Venus OS.\"\"\"\n    mode: str\n    state: str\n    ac_power_out: float\n    ac_power_in: float\n    dc_power: float\n    temperature: float\n\n\nclass DBusClient:\n    \"\"\"D-Bus client for Victron Venus OS.\"\"\"\n\n    def __init__(self) -> None:\n        self.config = get_config().dbus\n        self.bus: MessageBus | None = None\n        self._connected = False\n\n    async def connect(self) -> None:\n        \"\"\"Connect to D-Bus.\"\"\"\n        if self._connected:\n            return\n\n        bus_type = BusType.SYSTEM if self.config.bus_type == \"system\" else BusType.SESSION\n        self.bus = await MessageBus(bus_type=bus_type).connect()\n        self._connected = True\n        logger.info(\"Connected to D-Bus (%s)\", self.config.bus_type)\n\n    async def disconnect(self) -> None:\n        \"\"\"Disconnect from D-Bus.\"\"\"\n        if self.bus and self._connected:\n            self.bus.disconnect()\n            self._connected = False\n            logger.info(\"Disconnected from D-Bus\")\n\n    def _service_path(self, device_instance: int, device_type: str) -> tuple[str, str]:\n        \"\"\"Get service name and object path for a device.\"\"\"\n        service = f\"{self.config.service_name}.{device_type}.{device_instance}\"\n        path = f\"/{device_type.capitalize()}\"\n        return service, path\n\n    async def _get_property(\n        self, service: str, path: str, interface: str, property_name: str\n    ) -> Any:\n        \"\"\"Get a D-Bus property value.\"\"\"\n        if not self.bus:\n            raise RuntimeError(\"Not connected to D-Bus\")\n\n        msg = Message(\n            destination=service,\n            path=path,\n            interface=\"org.freedesktop.DBus.Properties\",\n            member=\"Get\",\n            signature=\"ss\",\n            body=[interface, property_name],\n        )\n        reply = await self.bus.call(msg)\n        if reply.message_type == Message.MessageType.ERROR:\n            raise RuntimeError(f\"D-Bus error: {reply.body}\")\n        return reply.body[0][1]\n\n    async def get_battery_data(self, instance: int = 0) -> BatteryData:\n        \"\"\"Get battery data from Venus OS.\"\"\"\n        await self.connect()\n        service, path = self._service_path(instance, \"battery\")\n\n        try:\n            soc = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"Soc\"\n            )\n            voltage = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"Voltage\"\n            )\n            current = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"Current\"\n            )\n            power = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"Power\"\n            )\n            temperature = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"Temperature\"\n            )\n            status = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"Status\"\n            )\n            time_to_go = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"TimeToGo\"\n            )\n\n            return BatteryData(\n                soc=float(soc),\n                voltage=float(voltage),\n                current=float(current),\n                power=float(power),\n                temperature=float(temperature),\n                status=str(status),\n                time_to_go=int(time_to_go) if time_to_go else None,\n            )\n        except Exception:\n            logger.exception(\"Failed to get battery data\")\n            raise\n\n    async def get_pv_data(self, instance: int = 0) -> PVData:\n        \"\"\"Get PV/Solar data from Venus OS.\"\"\"\n        await self.connect()\n        service, path = self._service_path(instance, \"solarcharger\")\n\n        try:\n            power = await self._get_property(\n                service, path, \"com.victronenergy.Solarcharger\", \"PvPower\"\n            )\n            voltage = await self._get_property(\n                service, path, \"com.victronenergy.Solarcharger\", \"PvVoltage\"\n            )\n            current = await self._get_property(\n                service, path, \"com.victronenergy.Solarcharger\", \"PvCurrent\"\n            )\n            yield_today = await self._get_property(\n                service, path, \"com.victronenergy.Solarcharger\", \"YieldToday\"\n            )\n            yield_total = await self._get_property(\n                service, path, \"com.victronenergy.Solarcharger\", \"YieldTotal\"\n            )\n\n            return PVData(\n                power=float(power),\n                voltage=float(voltage),\n                current=float(current),\n                yield_today=float(yield_today),\n                yield_total=float(yield_total),\n            )\n        except Exception:\n            logger.exception(\"Failed to get PV data\")\n            raise\n\n    async def get_grid_data(self, instance: int = 0) -> GridData:\n        \"\"\"Get grid/AC data from Venus OS.\"\"\"\n        await self.connect()\n        service, path = self._service_path(instance, \"vebus\")\n\n        try:\n            power = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcPowerOut\"\n            )\n            voltage = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcVoltageOut\"\n            )\n            current = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcCurrentOut\"\n            )\n            frequency = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcFrequencyOut\"\n            )\n            status = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcActiveInState\"\n            )\n\n            return GridData(\n                power=float(power),\n                voltage=float(voltage),\n                current=float(current),\n                frequency=float(frequency),\n                status=str(status),\n            )\n        except Exception:\n            logger.exception(\"Failed to get grid data\")\n            raise\n\n    async def get_inverter_data(self, instance: int = 0) -> InverterData:\n        \"\"\"Get inverter data from Venus OS.\"\"\"\n        await self.connect()\n        service, path = self._service_path(instance, \"vebus\")\n\n        try:\n            mode = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"Mode\"\n            )\n            state = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"State\"\n            )\n            ac_power_out = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcPowerOut\"\n            )\n            ac_power_in = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcPowerIn\"\n            )\n            dc_power = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"DcPower\"\n            )\n            temperature = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"Temperature\"\n            )\n\n            return InverterData(\n                mode=str(mode),\n                state=str(state),\n                ac_power_out=float(ac_power_out),\n                ac_power_in=float(ac_power_in),\n                dc_power=float(dc_power),\n                temperature=float(temperature),\n            )\n        except Exception:\n            logger.exception(\"Failed to get inverter data\")\n            raise\n\n    async def list_devices(self) -> list[dict[str, Any]]:\n        \"\"\"List all Victron devices on D-Bus.\"\"\"\n        await self.connect()\n        if not self.bus:\n            raise RuntimeError(\"Not connected to D-Bus\")\n\n        msg = Message(\n            destination=\"org.freedesktop.DBus\",\n            path=\"/org/freedesktop/DBus\",\n            interface=\"org.freedesktop.DBus\",\n            member=\"ListNames\",\n        )\n        reply = await self.bus.call(msg)\n        if reply.message_type == Message.MessageType.ERROR:\n            raise RuntimeError(f\"D-Bus error: {reply.body}\")\n\n        names = reply.body[0]\n        victron_names = [\n            n for n in names if n.startswith(self.config.service_name + \".\")\n        ]\n\n        devices = []\n        for name in victron_names:\n            parts = name.split(\".\")\n            if len(parts) >= 3:\n                devices.append({\n                    \"service\": name,\n                    \"device_type\": parts[-2],\n                    \"instance\": int(parts[-1]),\n                })\n        return devices"
+    },
+    "tool_use_id": "call-b847cf35-500c-4408-ae73-591fa840117d"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "echo \"\" >> /Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/dbus_client.py && uv run ruff check src/mcp_venus_os/dbus_client.py",
+      "description": "Add newline and check lint"
+    },
+    "tool_use_id": "call-db46ee34-8255-42fd-b5fc-152ac233838f"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check --fix src/mcp_venus_os/dbus_client.py",
+      "description": "Auto-fix remaining lint issues"
+    },
+    "tool_use_id": "call-5184f5a2-e9ed-491f-a8ae-643e30e059f9"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Read",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/dbus_client.py"
+    },
+    "tool_use_id": "call-49fbf550-d77a-47aa-9cbb-77b2ea0e1201"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/dbus_client.py",
+      "content": "\"\"\"D-Bus client for reading Venus OS data.\"\"\"\n\nimport logging\nfrom dataclasses import dataclass\nfrom typing import Any\n\nfrom dbus_fast import BusType, Message\nfrom dbus_fast.aio import MessageBus\n\nfrom .config import get_config\n\nlogger = logging.getLogger(__name__)\n\n\nclass DBusError(Exception):\n    \"\"\"Base exception for D-Bus errors.\"\"\"\n\n    pass\n\n\nclass NotConnectedError(DBusError):\n    \"\"\"Raised when D-Bus is not connected.\"\"\"\n\n    pass\n\n\nclass DBusCallError(DBusError):\n    \"\"\"Raised when a D-Bus call fails.\"\"\"\n\n    pass\n\n\n@dataclass\nclass BatteryData:\n    \"\"\"Battery data from Venus OS.\"\"\"\n    soc: float\n    voltage: float\n    current: float\n    power: float\n    temperature: float\n    status: str\n    time_to_go: int | None = None\n\n\n@dataclass\nclass PVData:\n    \"\"\"PV/Solar data from Venus OS.\"\"\"\n    power: float\n    voltage: float\n    current: float\n    yield_today: float\n    yield_total: float\n\n\n@dataclass\nclass GridData:\n    \"\"\"Grid/AC data from Venus OS.\"\"\"\n    power: float\n    voltage: float\n    current: float\n    frequency: float\n    status: str\n\n\n@dataclass\nclass InverterData:\n    \"\"\"Inverter data from Venus OS.\"\"\"\n    mode: str\n    state: str\n    ac_power_out: float\n    ac_power_in: float\n    dc_power: float\n    temperature: float\n\n\nclass DBusClient:\n    \"\"\"D-Bus client for Victron Venus OS.\"\"\"\n\n    def __init__(self) -> None:\n        self.config = get_config().dbus\n        self.bus: MessageBus | None = None\n        self._connected = False\n\n    async def connect(self) -> None:\n        \"\"\"Connect to D-Bus.\"\"\"\n        if self._connected:\n            return\n\n        bus_type = BusType.SYSTEM if self.config.bus_type == \"system\" else BusType.SESSION\n        self.bus = await MessageBus(bus_type=bus_type).connect()\n        self._connected = True\n        logger.info(\"Connected to D-Bus (%s)\", self.config.bus_type)\n\n    async def disconnect(self) -> None:\n        \"\"\"Disconnect from D-Bus.\"\"\"\n        if self.bus and self._connected:\n            self.bus.disconnect()\n            self._connected = False\n            logger.info(\"Disconnected from D-Bus\")\n\n    def _service_path(self, device_instance: int, device_type: str) -> tuple[str, str]:\n        \"\"\"Get service name and object path for a device.\"\"\"\n        service = f\"{self.config.service_name}.{device_type}.{device_instance}\"\n        path = f\"/{device_type.capitalize()}\"\n        return service, path\n\n    async def _get_property(\n        self, service: str, path: str, interface: str, property_name: str\n    ) -> Any:\n        \"\"\"Get a D-Bus property value.\"\"\"\n        if not self.bus:\n            raise NotConnectedError()\n\n        msg = Message(\n            destination=service,\n            path=path,\n            interface=\"org.freedesktop.DBus.Properties\",\n            member=\"Get\",\n            signature=\"ss\",\n            body=[interface, property_name],\n        )\n        reply = await self.bus.call(msg)\n        if reply.message_type == Message.MessageType.ERROR:\n            raise DBusCallError(reply.body)\n        return reply.body[0][1]\n\n    async def get_battery_data(self, instance: int = 0) -> BatteryData:\n        \"\"\"Get battery data from Venus OS.\"\"\"\n        await self.connect()\n        service, path = self._service_path(instance, \"battery\")\n\n        try:\n            soc = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"Soc\"\n            )\n            voltage = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"Voltage\"\n            )\n            current = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"Current\"\n            )\n            power = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"Power\"\n            )\n            temperature = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"Temperature\"\n            )\n            status = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"Status\"\n            )\n            time_to_go = await self._get_property(\n                service, path, \"com.victronenergy.Battery\", \"TimeToGo\"\n            )\n\n            return BatteryData(\n                soc=float(soc),\n                voltage=float(voltage),\n                current=float(current),\n                power=float(power),\n                temperature=float(temperature),\n                status=str(status),\n                time_to_go=int(time_to_go) if time_to_go else None,\n            )\n        except Exception:\n            logger.exception(\"Failed to get battery data\")\n            raise\n\n    async def get_pv_data(self, instance: int = 0) -> PVData:\n        \"\"\"Get PV/Solar data from Venus OS.\"\"\"\n        await self.connect()\n        service, path = self._service_path(instance, \"solarcharger\")\n\n        try:\n            power = await self._get_property(\n                service, path, \"com.victronenergy.Solarcharger\", \"PvPower\"\n            )\n            voltage = await self._get_property(\n                service, path, \"com.victronenergy.Solarcharger\", \"PvVoltage\"\n            )\n            current = await self._get_property(\n                service, path, \"com.victronenergy.Solarcharger\", \"PvCurrent\"\n            )\n            yield_today = await self._get_property(\n                service, path, \"com.victronenergy.Solarcharger\", \"YieldToday\"\n            )\n            yield_total = await self._get_property(\n                service, path, \"com.victronenergy.Solarcharger\", \"YieldTotal\"\n            )\n\n            return PVData(\n                power=float(power),\n                voltage=float(voltage),\n                current=float(current),\n                yield_today=float(yield_today),\n                yield_total=float(yield_total),\n            )\n        except Exception:\n            logger.exception(\"Failed to get PV data\")\n            raise\n\n    async def get_grid_data(self, instance: int = 0) -> GridData:\n        \"\"\"Get grid/AC data from Venus OS.\"\"\"\n        await self.connect()\n        service, path = self._service_path(instance, \"vebus\")\n\n        try:\n            power = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcPowerOut\"\n            )\n            voltage = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcVoltageOut\"\n            )\n            current = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcCurrentOut\"\n            )\n            frequency = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcFrequencyOut\"\n            )\n            status = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcActiveInState\"\n            )\n\n            return GridData(\n                power=float(power),\n                voltage=float(voltage),\n                current=float(current),\n                frequency=float(frequency),\n                status=str(status),\n            )\n        except Exception:\n            logger.exception(\"Failed to get grid data\")\n            raise\n\n    async def get_inverter_data(self, instance: int = 0) -> InverterData:\n        \"\"\"Get inverter data from Venus OS.\"\"\"\n        await self.connect()\n        service, path = self._service_path(instance, \"vebus\")\n\n        try:\n            mode = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"Mode\"\n            )\n            state = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"State\"\n            )\n            ac_power_out = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcPowerOut\"\n            )\n            ac_power_in = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"AcPowerIn\"\n            )\n            dc_power = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"DcPower\"\n            )\n            temperature = await self._get_property(\n                service, path, \"com.victronenergy.Vebus\", \"Temperature\"\n            )\n\n            return InverterData(\n                mode=str(mode),\n                state=str(state),\n                ac_power_out=float(ac_power_out),\n                ac_power_in=float(ac_power_in),\n                dc_power=float(dc_power),\n                temperature=float(temperature),\n            )\n        except Exception:\n            logger.exception(\"Failed to get inverter data\")\n            raise\n\n    async def list_devices(self) -> list[dict[str, Any]]:\n        \"\"\"List all Victron devices on D-Bus.\"\"\"\n        await self.connect()\n        if not self.bus:\n            raise NotConnectedError()\n\n        msg = Message(\n            destination=\"org.freedesktop.DBus\",\n            path=\"/org/freedesktop/DBus\",\n            interface=\"org.freedesktop.DBus\",\n            member=\"ListNames\",\n        )\n        reply = await self.bus.call(msg)\n        if reply.message_type == Message.MessageType.ERROR:\n            raise DBusCallError(reply.body)\n\n        names = reply.body[0]\n        victron_names = [\n            n for n in names if n.startswith(self.config.service_name + \".\")\n        ]\n\n        devices = []\n        for name in victron_names:\n            parts = name.split(\".\")\n            if len(parts) >= 3:\n                devices.append({\n                    \"service\": name,\n                    \"device_type\": parts[-2],\n                    \"instance\": int(parts[-1]),\n                })\n        return devices"
+    },
+    "tool_use_id": "call-4c41ba34-8bc2-4442-b6d2-9592e455d28e"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check src/mcp_venus_os/dbus_client.py",
+      "description": "Check lint for dbus_client"
+    },
+    "tool_use_id": "call-546e68e0-37e9-4a94-b1f4-b02da44fa0c0"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "echo \"\" >> /Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/dbus_client.py && uv run ruff check --fix src/mcp_venus_os/dbus_client.py",
+      "description": "Add newline and fix lint"
+    },
+    "tool_use_id": "call-eba73835-22b3-4a6a-9a32-db7fc3807c77"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Edit",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/dbus_client.py",
+      "old_string": "async def _get_property(\n        self, service: str, path: str, interface: str, property_name: str\n    ) -> Any:",
+      "new_string": "async def _get_property(\n        self, service: str, path: str, interface: str, property_name: str\n    ) -> Any:  # noqa: ANN401",
+      "replace_all": false
+    },
+    "tool_use_id": "call-0a1f28d6-58db-4fae-a35b-f71fa1b4114a"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check src/mcp_venus_os/dbus_client.py",
+      "description": "Check lint for dbus_client"
+    },
+    "tool_use_id": "call-0777c8bf-91c8-4514-b238-cfe877bb489f"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Read",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/mqtt_client.py"
+    },
+    "tool_use_id": "call-802d9275-8de1-4ceb-a77d-12937bdea622"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cat /Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/mqtt_client.py",
+      "description": "Read mqtt_client.py content"
+    },
+    "tool_use_id": "call-91845b24-481a-4297-9a0d-20e8ca53f493"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/mqtt_client.py",
+      "content": "\"\"\"MQTT client for real-time Venus OS data streaming.\"\"\"\n\nimport asyncio\nimport json\nimport logging\nfrom collections.abc import Callable\nfrom dataclasses import asdict\nfrom typing import Any\n\nimport paho.mqtt.client as mqtt\nfrom paho.mqtt.enums import CallbackAPIVersion\n\nfrom .config import get_config\nfrom .dbus_client import BatteryData, GridData, InverterData, PVData\n\nlogger = logging.getLogger(__name__)\n\n# Type alias for MQTT callback payload\nPayload = dict[str, Any] | list[Any] | str | int | float | bool | None\n\n\nclass MQTTClient:\n    \"\"\"MQTT client for Venus OS data streaming.\"\"\"\n\n    def __init__(self) -> None:\n        self.config = get_config().mqtt\n        self.client: mqtt.Client | None = None\n        self._connected = False\n        self._callbacks: dict[str, list[Callable[[Payload], None]]] = {}\n\n    def _on_connect(\n        self,\n        client: mqtt.Client,\n        userdata: Any,  # noqa: ANN401\n        flags: Any,  # noqa: ANN401\n        reason_code: int,\n        properties: Any,  # noqa: ANN401\n    ) -> None:\n        \"\"\"MQTT on_connect callback.\"\"\"\n        if reason_code == 0:\n            self._connected = True\n            logger.info(\n                \"Connected to MQTT broker at %s:%d\", self.config.host, self.config.port\n            )\n            base = self.config.base_topic\n            client.subscribe(f\"{base}/+/+/+\")\n            client.subscribe(f\"{base}/+/+/+/+\")\n            logger.debug(\"Subscribed to %s\", base)\n        else:\n            logger.error(\"Failed to connect to MQTT broker: %d\", reason_code)\n\n    def _on_disconnect(\n        self,\n        client: mqtt.Client,\n        userdata: Any,  # noqa: ANN401\n        flags: Any,  # noqa: ANN401\n        reason_code: int,\n        properties: Any,  # noqa: ANN401\n    ) -> None:\n        \"\"\"MQTT on_disconnect callback.\"\"\"\n        self._connected = False\n        logger.warning(\"Disconnected from MQTT broker: %d\", reason_code)\n\n    def _on_message(\n        self,\n        client: mqtt.Client,\n        userdata: Any,  # noqa: ANN401\n        msg: mqtt.MQTTMessage,\n    ) -> None:\n        \"\"\"MQTT on_message callback.\"\"\"\n        try:\n            payload = json.loads(msg.payload.decode())\n            topic = msg.topic\n            logger.debug(\"Received message on %s: %s\", topic, payload)\n            self._notify_callbacks(topic, payload)\n        except json.JSONDecodeError:\n            logger.warning(\"Invalid JSON on topic %s: %s\", msg.topic, msg.payload)\n        except Exception:\n            logger.exception(\"Error processing message\")\n\n    def _notify_callbacks(self, topic: str, payload: Payload) -> None:\n        \"\"\"Notify registered callbacks for a topic.\"\"\"\n        for pattern, callbacks in self._callbacks.items():\n            if self._topic_matches(pattern, topic):\n                for callback in callbacks:\n                    try:\n                        callback(payload)\n                    except Exception:\n                        logger.exception(\"Callback error\")\n\n    def _topic_matches(self, pattern: str, topic: str) -> bool:\n        \"\"\"Check if topic matches pattern (supports wildcards).\"\"\"\n        pattern_parts = pattern.split(\"/\")\n        topic_parts = topic.split(\"/\")\n        if len(pattern_parts) != len(topic_parts):\n            return False\n        for p, t in zip(pattern_parts, topic_parts, strict=False):\n            if p != \"+\" and p != \"#\" and p != t:\n                return False\n        return True\n\n    def subscribe(self, topic_pattern: str, callback: Callable[[Payload], None]) -> None:\n        \"\"\"Subscribe to a topic pattern with callback.\"\"\"\n        if topic_pattern not in self._callbacks:\n            self._callbacks[topic_pattern] = []\n        self._callbacks[topic_pattern].append(callback)\n        if self.client and self._connected:\n            self.client.subscribe(topic_pattern)\n\n    def unsubscribe(\n        self, topic_pattern: str, callback: Callable[[Payload], None]\n    ) -> None:\n        \"\"\"Unsubscribe callback from topic pattern.\"\"\"\n        if topic_pattern in self._callbacks:\n            self._callbacks[topic_pattern].remove(callback)\n\n    async def connect(self) -> None:\n        \"\"\"Connect to MQTT broker.\"\"\"\n        if self._connected:\n            return\n\n        self.client = mqtt.Client(\n            callback_api_version=CallbackAPIVersion.VERSION2,\n            client_id=self.config.client_id,\n        )\n\n        if self.config.username and self.config.password:\n            self.client.username_pw_set(self.config.username, self.config.password)\n\n        if self.config.tls:\n            self.client.tls_set()\n\n        self.client.on_connect = self._on_connect\n        self.client.on_disconnect = self._on_disconnect\n        self.client.on_message = self._on_message\n\n        self.client.connect_async(self.config.host, self.config.port)\n        self.client.loop_start()\n\n        # Wait for connection\n        for _ in range(50):\n            if self._connected:\n                break\n            await asyncio.sleep(0.1)\n        else:\n            raise RuntimeError(\"MQTT connection timeout\")\n\n    async def disconnect(self) -> None:\n        \"\"\"Disconnect from MQTT broker.\"\"\"\n        if self.client and self._connected:\n            self.client.loop_stop()\n            self.client.disconnect()\n            self._connected = False\n            logger.info(\"Disconnected from MQTT broker\")\n\n    def publish(self, topic: str, payload: Payload, retain: bool = False) -> None:\n        \"\"\"Publish a message to MQTT.\"\"\"\n        if not self.client or not self._connected:\n            raise RuntimeError(\"Not connected to MQTT broker\")\n\n        data = json.dumps(payload) if not isinstance(payload, str) else payload\n        self.client.publish(f\"{self.config.base_topic}/{topic}\", data, retain=retain)\n\n    def publish_battery(self, instance: int, data: BatteryData) -> None:\n        \"\"\"Publish battery data.\"\"\"\n        self.publish(f\"battery/{instance}\", asdict(data))\n\n    def publish_pv(self, instance: int, data: PVData) -> None:\n        \"\"\"Publish PV data.\"\"\"\n        self.publish(f\"solarcharger/{instance}\", asdict(data))\n\n    def publish_grid(self, instance: int, data: GridData) -> None:\n        \"\"\"Publish grid data.\"\"\"\n        self.publish(f\"vebus/{instance}/grid\", asdict(data))\n\n    def publish_inverter(self, instance: int, data: InverterData) -> None:\n        \"\"\"Publish inverter data.\"\"\"\n        self.publish(f\"vebus/{instance}/inverter\", asdict(data))"
+    },
+    "tool_use_id": "call-164a589d-d4d9-4967-8602-d133f0154399"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check src/mcp_venus_os/mqtt_client.py",
+      "description": "Check lint for mqtt_client"
+    },
+    "tool_use_id": "call-fd4a07f4-9a31-4fe9-a00f-46c7c963f03d"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Read",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/mqtt_client.py"
+    },
+    "tool_use_id": "call-271a0427-5a66-4715-b296-cf249e0f92c3"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/mqtt_client.py",
+      "content": "\"\"\"MQTT client for real-time Venus OS data streaming.\"\"\"\n\nimport asyncio\nimport json\nimport logging\nfrom collections.abc import Callable\nfrom dataclasses import asdict\nfrom typing import Any\n\nimport paho.mqtt.client as mqtt\nfrom paho.mqtt.enums import CallbackAPIVersion\n\nfrom .config import get_config\nfrom .dbus_client import BatteryData, GridData, InverterData, PVData\n\nlogger = logging.getLogger(__name__)\n\n\nclass MQTTError(Exception):\n    \"\"\"Base exception for MQTT errors.\"\"\"\n\n    pass\n\n\nclass NotConnectedError(MQTTError):\n    \"\"\"Raised when MQTT is not connected.\"\"\"\n\n    pass\n\n\nclass ConnectionTimeoutError(MQTTError):\n    \"\"\"Raised when MQTT connection times out.\"\"\"\n\n    pass\n\n\n# Type alias for MQTT callback payload\nPayload = dict[str, Any] | list[Any] | str | int | float | bool | None\n\n\nclass MQTTClient:\n    \"\"\"MQTT client for Venus OS data streaming.\"\"\"\n\n    def __init__(self) -> None:\n        self.config = get_config().mqtt\n        self.client: mqtt.Client | None = None\n        self._connected = False\n        self._callbacks: dict[str, list[Callable[[Payload], None]]] = {}\n\n    def _on_connect(\n        self,\n        client: mqtt.Client,\n        userdata: Any,  # noqa: ANN401\n        flags: Any,  # noqa: ANN401\n        reason_code: int,\n        properties: Any,  # noqa: ANN401\n    ) -> None:\n        \"\"\"MQTT on_connect callback.\"\"\"\n        if reason_code == 0:\n            self._connected = True\n            logger.info(\n                \"Connected to MQTT broker at %s:%d\", self.config.host, self.config.port\n            )\n            base = self.config.base_topic\n            client.subscribe(f\"{base}/+/+/+\")\n            client.subscribe(f\"{base}/+/+/+/+\")\n            logger.debug(\"Subscribed to %s\", base)\n        else:\n            logger.error(\"Failed to connect to MQTT broker: %d\", reason_code)\n\n    def _on_disconnect(\n        self,\n        client: mqtt.Client,\n        userdata: Any,  # noqa: ANN401\n        flags: Any,  # noqa: ANN401\n        reason_code: int,\n        properties: Any,  # noqa: ANN401\n    ) -> None:\n        \"\"\"MQTT on_disconnect callback.\"\"\"\n        self._connected = False\n        logger.warning(\"Disconnected from MQTT broker: %d\", reason_code)\n\n    def _on_message(\n        self,\n        client: mqtt.Client,\n        userdata: Any,  # noqa: ANN401\n        msg: mqtt.MQTTMessage,\n    ) -> None:\n        \"\"\"MQTT on_message callback.\"\"\"\n        try:\n            payload = json.loads(msg.payload.decode())\n            topic = msg.topic\n            logger.debug(\"Received message on %s: %s\", topic, payload)\n            self._notify_callbacks(topic, payload)\n        except json.JSONDecodeError:\n            logger.warning(\"Invalid JSON on topic %s: %s\", msg.topic, msg.payload)\n        except Exception:\n            logger.exception(\"Error processing message\")\n\n    def _notify_callbacks(self, topic: str, payload: Payload) -> None:\n        \"\"\"Notify registered callbacks for a topic.\"\"\"\n        for pattern, callbacks in self._callbacks.items():\n            if self._topic_matches(pattern, topic):\n                for callback in callbacks:\n                    try:\n                        callback(payload)\n                    except Exception:\n                        logger.exception(\"Callback error\")\n\n    def _topic_matches(self, pattern: str, topic: str) -> bool:\n        \"\"\"Check if topic matches pattern (supports wildcards).\"\"\"\n        pattern_parts = pattern.split(\"/\")\n        topic_parts = topic.split(\"/\")\n        if len(pattern_parts) != len(topic_parts):\n            return False\n        for p, t in zip(pattern_parts, topic_parts, strict=False):\n            if p != \"+\" and p != \"#\" and p != t:\n                return False\n        return True\n\n    def subscribe(self, topic_pattern: str, callback: Callable[[Payload], None]) -> None:\n        \"\"\"Subscribe to a topic pattern with callback.\"\"\"\n        if topic_pattern not in self._callbacks:\n            self._callbacks[topic_pattern] = []\n        self._callbacks[topic_pattern].append(callback)\n        if self.client and self._connected:\n            self.client.subscribe(topic_pattern)\n\n    def unsubscribe(\n        self, topic_pattern: str, callback: Callable[[Payload], None]\n    ) -> None:\n        \"\"\"Unsubscribe callback from topic pattern.\"\"\"\n        if topic_pattern in self._callbacks:\n            self._callbacks[topic_pattern].remove(callback)\n\n    async def connect(self) -> None:\n        \"\"\"Connect to MQTT broker.\"\"\"\n        if self._connected:\n            return\n\n        self.client = mqtt.Client(\n            callback_api_version=CallbackAPIVersion.VERSION2,\n            client_id=self.config.client_id,\n        )\n\n        if self.config.username and self.config.password:\n            self.client.username_pw_set(self.config.username, self.config.password)\n\n        if self.config.tls:\n            self.client.tls_set()\n\n        self.client.on_connect = self._on_connect\n        self.client.on_disconnect = self._on_disconnect\n        self.client.on_message = self._on_message\n\n        self.client.connect_async(self.config.host, self.config.port)\n        self.client.loop_start()\n\n        # Wait for connection\n        for _ in range(50):\n            if self._connected:\n                break\n            await asyncio.sleep(0.1)\n        else:\n            raise ConnectionTimeoutError()\n\n    async def disconnect(self) -> None:\n        \"\"\"Disconnect from MQTT broker.\"\"\"\n        if self.client and self._connected:\n            self.client.loop_stop()\n            self.client.disconnect()\n            self._connected = False\n            logger.info(\"Disconnected from MQTT broker\")\n\n    def publish(self, topic: str, payload: Payload, retain: bool = False) -> None:\n        \"\"\"Publish a message to MQTT.\"\"\"\n        if not self.client or not self._connected:\n            raise NotConnectedError()\n\n        data = json.dumps(payload) if not isinstance(payload, str) else payload\n        self.client.publish(f\"{self.config.base_topic}/{topic}\", data, retain=retain)\n\n    def publish_battery(self, instance: int, data: BatteryData) -> None:\n        \"\"\"Publish battery data.\"\"\"\n        self.publish(f\"battery/{instance}\", asdict(data))\n\n    def publish_pv(self, instance: int, data: PVData) -> None:\n        \"\"\"Publish PV data.\"\"\"\n        self.publish(f\"solarcharger/{instance}\", asdict(data))\n\n    def publish_grid(self, instance: int, data: GridData) -> None:\n        \"\"\"Publish grid data.\"\"\"\n        self.publish(f\"vebus/{instance}/grid\", asdict(data))\n\n    def publish_inverter(self, instance: int, data: InverterData) -> None:\n        \"\"\"Publish inverter data.\"\"\"\n        self.publish(f\"vebus/{instance}/inverter\", asdict(data))"
+    },
+    "tool_use_id": "call-bb77658b-a1b8-43f9-91f6-18f6e197c4fb"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "echo \"\" >> /Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/mqtt_client.py && uv run ruff check src/mcp_venus_os/mqtt_client.py",
+      "description": "Add newline and check lint"
+    },
+    "tool_use_id": "call-f7e1fe31-4a89-4042-8183-bff715515c5a"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d76ca698-a7eb-40c2-9f39-c2508ffcd402",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check src/mcp_venus_os/",
+      "description": "Check lint for all source files"
+    },
+    "tool_use_id": "call-1a584272-869d-4790-9cee-ca3a1e71486a"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/server.py",
+      "content": "\"\"\"MCP server for Venus OS management.\"\"\"\n\nimport asyncio\nimport logging\nfrom contextlib import asynccontextmanager\n\nfrom fastmcp import FastMCP\n\nfrom .config import get_config\nfrom .dbus_client import (\n    BatteryData,\n    DBusClient,\n    GridData,\n    InverterData,\n    PVData,\n)\nfrom .mqtt_client import MQTTClient\nfrom .safety import ConfirmationManager, SafetyValidator\n\nlogger = logging.getLogger(__name__)\n\n# Global instances\n_dbus_client: DBusClient | None = None\n_mqtt_client: MQTTClient | None = None\n_safety_validator: SafetyValidator | None = None\n_confirmation_manager: ConfirmationManager | None = None\n\n\ndef get_dbus_client() -> DBusClient:\n    \"\"\"Get or create D-Bus client.\"\"\"\n    global _dbus_client\n    if _dbus_client is None:\n        _dbus_client = DBusClient()\n    return _dbus_client\n\n\ndef get_mqtt_client() -> MQTTClient:\n    \"\"\"Get or create MQTT client.\"\"\"\n    global _mqtt_client\n    if _mqtt_client is None:\n        _mqtt_client = MQTTClient()\n    return _mqtt_client\n\n\ndef get_safety_validator() -> SafetyValidator:\n    \"\"\"Get or create safety validator.\"\"\"\n    global _safety_validator\n    if _safety_validator is None:\n        _safety_validator = SafetyValidator()\n    return _safety_validator\n\n\ndef get_confirmation_manager() -> ConfirmationManager:\n    \"\"\"Get or create confirmation manager.\"\"\"\n    global _confirmation_manager\n    if _confirmation_manager is None:\n        _confirmation_manager = ConfirmationManager()\n    return _confirmation_manager\n\n\n@asynccontextmanager\nasync def lifespan(app: FastMCP):\n    \"\"\"Server lifespan handler.\"\"\"\n    config = get_config()\n    logging.basicConfig(level=config.log_level)\n    logger.info(\"Starting MCP Venus OS server\")\n    yield\n    logger.info(\"Shutting down MCP Venus OS server\")\n    if _dbus_client:\n        await _dbus_client.disconnect()\n    if _mqtt_client:\n        await _mqtt_client.disconnect()\n\n\nmcp = FastMCP(\"Venus OS\", lifespan=lifespan)\n\n\n# Read tools\n@mcp.tool()\nasync def get_battery_soc(instance: int = 0) -> dict:\n    \"\"\"Get battery state of charge.\"\"\"\n    client = get_dbus_client()\n    data: BatteryData = await client.get_battery_data(instance)\n    return {\n        \"instance\": instance,\n        \"soc\": data.soc,\n        \"voltage\": data.voltage,\n        \"current\": data.current,\n        \"power\": data.power,\n        \"temperature\": data.temperature,\n        \"status\": data.status,\n        \"time_to_go\": data.time_to_go,\n    }\n\n\n@mcp.tool()\nasync def get_pv_power(instance: int = 0) -> dict:\n    \"\"\"Get PV/solar charger power data.\"\"\"\n    client = get_dbus_client()\n    data: PVData = await client.get_pv_data(instance)\n    return {\n        \"instance\": instance,\n        \"power\": data.power,\n        \"voltage\": data.voltage,\n        \"current\": data.current,\n        \"yield_today\": data.yield_today,\n        \"yield_total\": data.yield_total,\n    }\n\n\n@mcp.tool()\nasync def get_grid_status(instance: int = 0) -> dict:\n    \"\"\"Get grid/AC status.\"\"\"\n    client = get_dbus_client()\n    data: GridData = await client.get_grid_data(instance)\n    return {\n        \"instance\": instance,\n        \"power\": data.power,\n        \"voltage\": data.voltage,\n        \"current\": data.current,\n        \"frequency\": data.frequency,\n        \"status\": data.status,\n    }\n\n\n@mcp.tool()\nasync def get_inverter_status(instance: int = 0) -> dict:\n    \"\"\"Get inverter mode and state.\"\"\"\n    client = get_dbus_client()\n    data: InverterData = await client.get_inverter_data(instance)\n    return {\n        \"instance\": instance,\n        \"mode\": data.mode,\n        \"state\": data.state,\n        \"ac_power_out\": data.ac_power_out,\n        \"ac_power_in\": data.ac_power_in,\n        \"dc_power\": data.dc_power,\n        \"temperature\": data.temperature,\n    }\n\n\n@mcp.tool()\nasync def list_devices() -> list[dict]:\n    \"\"\"List all Victron devices on D-Bus.\"\"\"\n    client = get_dbus_client()\n    return await client.list_devices()\n\n\n# Write tools (with safety)\n@mcp.tool()\nasync def set_inverter_mode(mode: str, instance: int = 0, confirmed: bool = False) -> dict:\n    \"\"\"Set inverter mode (on, off, charger_only, inverter_only, eco).\n\n    Requires confirmation for write operations.\n    \"\"\"\n    validator = get_safety_validator()\n    result = validator.validate_write_operation(\n        \"set_inverter_mode\", {\"mode\": mode, \"instance\": instance}, confirmed\n    )\n\n    if not result.allowed and result.requires_confirmation:\n        return {\n            \"success\": False,\n            \"requires_confirmation\": True,\n            \"confirmation_message\": result.confirmation_message,\n        }\n\n    if not result.allowed:\n        return {\"success\": False, \"error\": result.reason}\n\n    # TODO: Implement actual D-Bus write\n    return {\"success\": True, \"message\": f\"Inverter mode set to {mode} (not implemented yet)\"}\n\n\n@mcp.tool()\nasync def set_charge_current_limit(\n    current: float, instance: int = 0, confirmed: bool = False\n) -> dict:\n    \"\"\"Set maximum charge current limit in Amps.\n\n    Requires confirmation for write operations.\n    \"\"\"\n    validator = get_safety_validator()\n    result = validator.validate_write_operation(\n        \"set_charge_current_limit\",\n        {\"charge_current\": current, \"instance\": instance},\n        confirmed,\n    )\n\n    if not result.allowed and result.requires_confirmation:\n        return {\n            \"success\": False,\n            \"requires_confirmation\": True,\n            \"confirmation_message\": result.confirmation_message,\n        }\n\n    if not result.allowed:\n        return {\"success\": False, \"error\": result.reason}\n\n    # TODO: Implement actual D-Bus write\n    return {\"success\": True, \"message\": f\"Charge current limit set to {current}A (not implemented yet)\"}\n\n\n@mcp.tool()\nasync def set_soc_limit(soc_limit: int, instance: int = 0, confirmed: bool = False) -> dict:\n    \"\"\"Set battery SoC limit percentage.\n\n    Requires confirmation for write operations.\n    \"\"\"\n    validator = get_safety_validator()\n    result = validator.validate_write_operation(\n        \"set_soc_limit\", {\"soc_limit\": soc_limit, \"instance\": instance}, confirmed\n    )\n\n    if not result.allowed and result.requires_confirmation:\n        return {\n            \"success\": False,\n            \"requires_confirmation\": True,\n            \"confirmation_message\": result.confirmation_message,\n        }\n\n    if not result.allowed:\n        return {\"success\": False, \"error\": result.reason}\n\n    # TODO: Implement actual D-Bus write\n    return {\"success\": True, \"message\": f\"SoC limit set to {soc_limit}% (not implemented yet)\"}\n\n\n# MQTT tools\n@mcp.tool()\nasync def mqtt_connect() -> dict:\n    \"\"\"Connect to MQTT broker for real-time data.\"\"\"\n    client = get_mqtt_client()\n    try:\n        await client.connect()\n        return {\"success\": True, \"connected\": True}\n    except Exception as e:\n        return {\"success\": False, \"error\": str(e)}\n\n\n@mcp.tool()\nasync def mqtt_disconnect() -> dict:\n    \"\"\"Disconnect from MQTT broker.\"\"\"\n    client = get_mqtt_client()\n    await client.disconnect()\n    return {\"success\": True, \"connected\": False}\n\n\n@mcp.tool()\nasync def mqtt_subscribe(topic_pattern: str) -> dict:\n    \"\"\"Subscribe to MQTT topic pattern.\n\n    Returns a subscription ID for polling messages.\n    \"\"\"\n    # Note: This is a placeholder - real implementation would use async iteration\n    return {\n        \"success\": True,\n        \"message\": f\"Subscribed to {topic_pattern}. Use mqtt_poll for messages.\",\n    }"
+    },
+    "tool_use_id": "call-87ca4230-d2fb-4142-9d84-317cf8201c79"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check src/mcp_venus_os/server.py",
+      "description": "Check lint for server.py"
+    },
+    "tool_use_id": "call-edb1a6b0-7597-490d-aead-39d51cb942f5"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check --fix src/mcp_venus_os/server.py",
+      "description": "Auto-fix lint issues"
+    },
+    "tool_use_id": "call-3891dc55-88c2-4748-8a0c-1fd356d7d0ec"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Read",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/server.py"
+    },
+    "tool_use_id": "call-c104e36a-c709-4bfd-9496-764210fca5c6"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cat /Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/server.py",
+      "description": "Read server.py content"
+    },
+    "tool_use_id": "call-a69a0c77-faf9-4b8a-ae0c-3d48ae16cb44"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/server.py",
+      "content": "\"\"\"MCP server for Venus OS management.\"\"\"\n\nimport logging\nfrom contextlib import asynccontextmanager\n\nfrom fastmcp import FastMCP\n\nfrom .config import get_config\nfrom .dbus_client import (\n    BatteryData,\n    DBusClient,\n    GridData,\n    InverterData,\n    PVData,\n)\nfrom .mqtt_client import MQTTClient\nfrom .safety import ConfirmationManager, SafetyValidator\n\nlogger = logging.getLogger(__name__)\n\n# Global instances\n_dbus_client: DBusClient | None = None\n_mqtt_client: MQTTClient | None = None\n_safety_validator: SafetyValidator | None = None\n_confirmation_manager: ConfirmationManager | None = None\n\n\ndef get_dbus_client() -> DBusClient:\n    \"\"\"Get or create D-Bus client.\"\"\"\n    global _dbus_client\n    if _dbus_client is None:\n        _dbus_client = DBusClient()\n    return _dbus_client\n\n\ndef get_mqtt_client() -> MQTTClient:\n    \"\"\"Get or create MQTT client.\"\"\"\n    global _mqtt_client\n    if _mqtt_client is None:\n        _mqtt_client = MQTTClient()\n    return _mqtt_client\n\n\ndef get_safety_validator() -> SafetyValidator:\n    \"\"\"Get or create safety validator.\"\"\"\n    global _safety_validator\n    if _safety_validator is None:\n        _safety_validator = SafetyValidator()\n    return _safety_validator\n\n\ndef get_confirmation_manager() -> ConfirmationManager:\n    \"\"\"Get or create confirmation manager.\"\"\"\n    global _confirmation_manager\n    if _confirmation_manager is None:\n        _confirmation_manager = ConfirmationManager()\n    return _confirmation_manager\n\n\n@asynccontextmanager\nasync def lifespan(app: FastMCP):\n    \"\"\"Server lifespan handler.\"\"\"\n    config = get_config()\n    logging.basicConfig(level=config.log_level)\n    logger.info(\"Starting MCP Venus OS server\")\n    yield\n    logger.info(\"Shutting down MCP Venus OS server\")\n    if _dbus_client:\n        await _dbus_client.disconnect()\n    if _mqtt_client:\n        await _mqtt_client.disconnect()\n\n\nmcp = FastMCP(\"Venus OS\", lifespan=lifespan)\n\n\n# Read tools\n@mcp.tool()\nasync def get_battery_soc(instance: int = 0) -> dict:\n    \"\"\"Get battery state of charge.\"\"\"\n    client = get_dbus_client()\n    data: BatteryData = await client.get_battery_data(instance)\n    return {\n        \"instance\": instance,\n        \"soc\": data.soc,\n        \"voltage\": data.voltage,\n        \"current\": data.current,\n        \"power\": data.power,\n        \"temperature\": data.temperature,\n        \"status\": data.status,\n        \"time_to_go\": data.time_to_go,\n    }\n\n\n@mcp.tool()\nasync def get_pv_power(instance: int = 0) -> dict:\n    \"\"\"Get PV/solar charger power data.\"\"\"\n    client = get_dbus_client()\n    data: PVData = await client.get_pv_data(instance)\n    return {\n        \"instance\": instance,\n        \"power\": data.power,\n        \"voltage\": data.voltage,\n        \"current\": data.current,\n        \"yield_today\": data.yield_today,\n        \"yield_total\": data.yield_total,\n    }\n\n\n@mcp.tool()\nasync def get_grid_status(instance: int = 0) -> dict:\n    \"\"\"Get grid/AC status.\"\"\"\n    client = get_dbus_client()\n    data: GridData = await client.get_grid_data(instance)\n    return {\n        \"instance\": instance,\n        \"power\": data.power,\n        \"voltage\": data.voltage,\n        \"current\": data.current,\n        \"frequency\": data.frequency,\n        \"status\": data.status,\n    }\n\n\n@mcp.tool()\nasync def get_inverter_status(instance: int = 0) -> dict:\n    \"\"\"Get inverter mode and state.\"\"\"\n    client = get_dbus_client()\n    data: InverterData = await client.get_inverter_data(instance)\n    return {\n        \"instance\": instance,\n        \"mode\": data.mode,\n        \"state\": data.state,\n        \"ac_power_out\": data.ac_power_out,\n        \"ac_power_in\": data.ac_power_in,\n        \"dc_power\": data.dc_power,\n        \"temperature\": data.temperature,\n    }\n\n\n@mcp.tool()\nasync def list_devices() -> list[dict]:\n    \"\"\"List all Victron devices on D-Bus.\"\"\"\n    client = get_dbus_client()\n    return await client.list_devices()\n\n\n# Write tools (with safety)\n@mcp.tool()\nasync def set_inverter_mode(mode: str, instance: int = 0, confirmed: bool = False) -> dict:\n    \"\"\"Set inverter mode (on, off, charger_only, inverter_only, eco).\n\n    Requires confirmation for write operations.\n    \"\"\"\n    validator = get_safety_validator()\n    result = validator.validate_write_operation(\n        \"set_inverter_mode\", {\"mode\": mode, \"instance\": instance}, confirmed\n    )\n\n    if not result.allowed and result.requires_confirmation:\n        return {\n            \"success\": False,\n            \"requires_confirmation\": True,\n            \"confirmation_message\": result.confirmation_message,\n        }\n\n    if not result.allowed:\n        return {\"success\": False, \"error\": result.reason}\n\n    # Write operation not yet implemented\n    return {\"success\": True, \"message\": f\"Inverter mode set to {mode} (not implemented yet)\"}\n\n\n@mcp.tool()\nasync def set_charge_current_limit(\n    current: float, instance: int = 0, confirmed: bool = False\n) -> dict:\n    \"\"\"Set maximum charge current limit in Amps.\n\n    Requires confirmation for write operations.\n    \"\"\"\n    validator = get_safety_validator()\n    result = validator.validate_write_operation(\n        \"set_charge_current_limit\",\n        {\"charge_current\": current, \"instance\": instance},\n        confirmed,\n    )\n\n    if not result.allowed and result.requires_confirmation:\n        return {\n            \"success\": False,\n            \"requires_confirmation\": True,\n            \"confirmation_message\": result.confirmation_message,\n        }\n\n    if not result.allowed:\n        return {\"success\": False, \"error\": result.reason}\n\n    # Write operation not yet implemented\n    msg = f\"Charge current limit set to {current}A (not implemented yet)\"\n    return {\"success\": True, \"message\": msg}\n\n\n@mcp.tool()\nasync def set_soc_limit(soc_limit: int, instance: int = 0, confirmed: bool = False) -> dict:\n    \"\"\"Set battery SoC limit percentage.\n\n    Requires confirmation for write operations.\n    \"\"\"\n    validator = get_safety_validator()\n    result = validator.validate_write_operation(\n        \"set_soc_limit\", {\"soc_limit\": soc_limit, \"instance\": instance}, confirmed\n    )\n\n    if not result.allowed and result.requires_confirmation:\n        return {\n            \"success\": False,\n            \"requires_confirmation\": True,\n            \"confirmation_message\": result.confirmation_message,\n        }\n\n    if not result.allowed:\n        return {\"success\": False, \"error\": result.reason}\n\n    # Write operation not yet implemented\n    return {\"success\": True, \"message\": f\"SoC limit set to {soc_limit}% (not implemented yet)\"}\n\n\n# MQTT tools\n@mcp.tool()\nasync def mqtt_connect() -> dict:\n    \"\"\"Connect to MQTT broker for real-time data.\"\"\"\n    client = get_mqtt_client()\n    try:\n        await client.connect()\n    except Exception as e:\n        return {\"success\": False, \"error\": str(e)}\n    else:\n        return {\"success\": True, \"connected\": True}\n\n\n@mcp.tool()\nasync def mqtt_disconnect() -> dict:\n    \"\"\"Disconnect from MQTT broker.\"\"\"\n    client = get_mqtt_client()\n    await client.disconnect()\n    return {\"success\": True, \"connected\": False}\n\n\n@mcp.tool()\nasync def mqtt_subscribe(topic_pattern: str) -> dict:\n    \"\"\"Subscribe to MQTT topic pattern.\n\n    Returns a subscription ID for polling messages.\n    \"\"\"\n    # Note: This is a placeholder - real implementation would use async iteration\n    return {\n        \"success\": True,\n        \"message\": f\"Subscribed to {topic_pattern}. Use mqtt_poll for messages.\",\n    }"
+    },
+    "tool_use_id": "call-d371398c-63bb-4688-aaad-61a21a69b48c"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check src/mcp_venus_os/server.py",
+      "description": "Check lint for server.py"
+    },
+    "tool_use_id": "call-455f97f1-e4ab-43ed-9163-78af5399b737"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "echo \"\" >> /Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/server.py && uv run ruff check src/mcp_venus_os/server.py",
+      "description": "Add newline and check lint"
+    },
+    "tool_use_id": "call-5f839414-58b6-41ea-a562-88aae7a6581a"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/README.md",
+      "content": "# MCP Venus OS\n\nMCP (Model Context Protocol) server for Victron Venus OS management. Provides tools for reading and controlling Venus OS devices via D-Bus and MQTT.\n\n## Features\n\n- **D-Bus Read Tools**: Battery SoC, PV power, grid status, inverter state\n- **Write Tools**: Set inverter mode, charge limits, SoC limits (with safety confirmation)\n- **MQTT Subscription**: Real-time data streaming from Venus OS\n- **Safety Constraints**: Refuses dangerous commands without explicit confirmation\n- **Claude Desktop Integration**: Ready-to-use MCP server configuration\n\n## Quick Start\n\n### Installation\n\n```bash\npip install mcp-venus-os\n```\n\nOr for development:\n\n```bash\ngit clone https://github.com/4alvit/mcp-venus-os\ncd mcp-venus-os\nuv sync\n```\n\n### Configuration\n\nCreate a `.env` file or set environment variables:\n\n```bash\n# D-Bus configuration\nDBUS_BUS_TYPE=system\nDBUS_SERVICE_NAME=com.victronenergy\n\n# MQTT configuration\nMQTT_HOST=localhost\nMQTT_PORT=1883\nMQTT_BASE_TOPIC=N/venus-os\n\n# Safety configuration\nSAFETY_REQUIRE_CONFIRMATION=true\nSAFETY_MAX_CHARGE_CURRENT=100\nSAFETY_MAX_DISCHARGE_CURRENT=100\nSAFETY_MIN_SOC_LIMIT=10\nSAFETY_MAX_SOC_LIMIT=100\nSAFETY_ALLOWED_MODES=on,off,charger_only,inverter_only,eco\n```\n\n### Running the Server\n\n```bash\nmcp-venus-os\n```\n\nOr with uv:\n\n```bash\nuv run mcp-venus-os\n```\n\n### Claude Desktop Integration\n\nAdd to your `claude_desktop_config.json`:\n\n```json\n{\n  \"mcpServers\": {\n    \"venus-os\": {\n      \"command\": \"uv\",\n      \"args\": [\"--directory\", \"/path/to/mcp-venus-os\", \"run\", \"mcp-venus-os\"],\n      \"env\": {\n        \"DBUS_BUS_TYPE\": \"system\",\n        \"MQTT_HOST\": \"localhost\",\n        \"MQTT_PORT\": \"1883\"\n      }\n    }\n  }\n}\n```\n\n## Available Tools\n\n### Read Tools\n\n| Tool | Description |\n|------|-------------|\n| `get_battery_soc` | Get battery state of charge, voltage, current, power, temperature |\n| `get_pv_power` | Get PV/solar charger power, voltage, current, daily/total yield |\n| `get_grid_status` | Get grid/AC power, voltage, current, frequency, status |\n| `get_inverter_status` | Get inverter mode, state, AC/DC power, temperature |\n| `list_devices` | List all Victron devices on D-Bus |\n\n### Write Tools (Requires Confirmation)\n\n| Tool | Description |\n|------|-------------|\n| `set_inverter_mode` | Set inverter mode: `on`, `off`, `charger_only`, `inverter_only`, `eco` |\n| `set_charge_current_limit` | Set maximum charge current in Amps |\n| `set_soc_limit` | Set battery SoC limit percentage |\n\n### MQTT Tools\n\n| Tool | Description |\n|------|-------------|\n| `mqtt_connect` | Connect to MQTT broker |\n| `mqtt_disconnect` | Disconnect from MQTT broker |\n| `mqtt_subscribe` | Subscribe to MQTT topic pattern |\n\n## Safety System\n\nAll write operations require explicit confirmation by default. Set `confirmed=true` in the tool call to bypass the confirmation prompt.\n\nConfiguration options:\n- `SAFETY_REQUIRE_CONFIRMATION` - Require confirmation for write operations (default: true)\n- `SAFETY_MAX_CHARGE_CURRENT` - Maximum allowed charge current in Amps (default: 100)\n- `SAFETY_MAX_DISCHARGE_CURRENT` - Maximum allowed discharge current in Amps (default: 100)\n- `SAFETY_MIN_SOC_LIMIT` - Minimum allowed SoC limit % (default: 10)\n- `SAFETY_MAX_SOC_LIMIT` - Maximum allowed SoC limit % (default: 100)\n- `SAFETY_ALLOWED_MODES` - Comma-separated list of allowed inverter modes\n\n## Architecture\n\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510     D-Bus      \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502   Venus OS  \u2502 \u25c4\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u25ba \u2502  mcp-venus-os \u2502\n\u2502  (Cerbo GX) \u2502                 \u2502   MCP Server  \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518                 \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n                                        \u2502\n                              \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n                              \u2502                   \u2502\n                       \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u25bc\u2500\u2500\u2500\u2500\u2500\u2500\u2510     \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u25bc\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n                       \u2502   D-Bus     \u2502     \u2502   MQTT      \u2502\n                       \u2502   Client    \u2502     \u2502   Client    \u2502\n                       \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n                                        \u2502\n                              \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u25bc\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n                              \u2502  FastMCP Tools    \u2502\n                              \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n                                        \u2502\n                              \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u25bc\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n                              \u2502   Claude Desktop  \u2502\n                              \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n## Development\n\n```bash\n# Install dev dependencies\nuv sync --dev\n\n# Run linter\nuv run ruff check src/\n\n# Run type checker\nuv run mypy src/\n\n# Run tests\nuv run pytest\n```\n\n## License\n\nMIT License - see LICENSE file for details."
+    },
+    "tool_use_id": "call-238bbc44-ebe6-4e3d-a9e3-05d9258a38ec"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/examples/claude_desktop_config.json",
+      "content": "# MCP Venus OS - Example Claude Desktop Configuration\n\nThis file shows how to configure the MCP Venus OS server in Claude Desktop.\n\n## Location\n\nThe config file is typically at:\n- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`\n- Windows: `%APPDATA%\\Claude\\claude_desktop_config.json`\n- Linux: `~/.config/Claude/claude_desktop_config.json`\n\n## Configuration\n\n```json\n{\n  \"mcpServers\": {\n    \"venus-os\": {\n      \"command\": \"uv\",\n      \"args\": [\n        \"--directory\",\n        \"/Users/vmedvedev/victron/mcp-venus-os\",\n        \"run\",\n        \"mcp-venus-os\"\n      ],\n      \"env\": {\n        \"DBUS_BUS_TYPE\": \"system\",\n        \"DBUS_SERVICE_NAME\": \"com.victronenergy\",\n        \"MQTT_HOST\": \"localhost\",\n        \"MQTT_PORT\": \"1883\",\n        \"MQTT_BASE_TOPIC\": \"N/venus-os\",\n        \"SAFETY_REQUIRE_CONFIRMATION\": \"true\",\n        \"SAFETY_MAX_CHARGE_CURRENT\": \"100\",\n        \"SAFETY_MAX_DISCHARGE_CURRENT\": \"100\",\n        \"SAFETY_MIN_SOC_LIMIT\": \"10\",\n        \"SAFETY_MAX_SOC_LIMIT\": \"100\",\n        \"SAFETY_ALLOWED_MODES\": \"on,off,charger_only,inverter_only,eco\"\n      }\n    }\n  }\n}\n```\n\n## Alternative: Using pip install\n\nIf you install the package globally:\n\n```json\n{\n  \"mcpServers\": {\n    \"venus-os\": {\n      \"command\": \"mcp-venus-os\",\n      \"env\": {\n        \"DBUS_BUS_TYPE\": \"system\",\n        \"MQTT_HOST\": \"localhost\",\n        \"MQTT_PORT\": \"1883\"\n      }\n    }\n  }\n}\n```\n\n## Environment Variables\n\n| Variable | Default | Description |\n|----------|---------|-------------|\n| `DBUS_BUS_TYPE` | `system` | D-Bus type: `system` or `session` |\n| `DBUS_SERVICE_NAME` | `com.victronenergy` | Base Victron service name |\n| `MQTT_HOST` | `localhost` | MQTT broker hostname |\n| `MQTT_PORT` | `1883` | MQTT broker port |\n| `MQTT_USERNAME` | - | MQTT username (optional) |\n| `MQTT_PASSWORD` | - | MQTT password (optional) |\n| `MQTT_CLIENT_ID` | `mcp-venus-os` | MQTT client ID |\n| `MQTT_BASE_TOPIC` | `N/venus-os` | Base topic for Venus OS data |\n| `MQTT_TLS` | `false` | Use TLS for MQTT |\n| `SAFETY_REQUIRE_CONFIRMATION` | `true` | Require confirmation for writes |\n| `SAFETY_MAX_CHARGE_CURRENT` | `100` | Max charge current (A) |\n| `SAFETY_MAX_DISCHARGE_CURRENT` | `100` | Max discharge current (A) |\n| `SAFETY_MIN_SOC_LIMIT` | `10` | Min SoC limit (%) |\n| `SAFETY_MAX_SOC_LIMIT` | `100` | Max SoC limit (%) |\n| `SAFETY_ALLOWED_MODES` | `on,off,charger_only,inverter_only,eco` | Allowed inverter modes |"
+    },
+    "tool_use_id": "call-94ac861e-a91a-4dd8-b69d-9722c495b402"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Read",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/pyproject.toml"
+    },
+    "tool_use_id": "call-17f9880d-4e8b-4b14-8b0f-72fa0f34aac3"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Edit",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/pyproject.toml",
+      "old_string": "[project]\nname = \"mcp-venus-os\"\nversion = \"0.1.0\"\ndescription = \"MCP server for Venus OS management - D-Bus, MQTT, and safety-constrained control\"\nreadme = \"README.md\"\nrequires-python = \">=3.11\"\nlicense = {text = \"MIT\"}\nauthors = [\n    {name = \"4alvit\", email = \"4alvit@users.noreply.github.com\"}\n]\nkeywords = [\"mcp\", \"venus-os\", \"victron\", \"dbus\", \"mqtt\", \"energy\", \"inverter\"]\nclassifiers = [\n    \"Development Status :: 3 - Alpha\",\n    \"Intended Audience :: Developers\",\n    \"License :: OSI Approved :: MIT License\",\n    \"Programming Language :: Python :: 3.11\",\n    \"Programming Language :: Python :: 3.12\",\n    \"Programming Language :: Python :: 3.13\",\n]\ndependencies = [\n    \"fastmcp>=2.0.0\",\n    \"dbus-fast>=0.50.0\",\n    \"paho-mqtt>=2.0.0\",\n    \"pydantic>=2.8.0\",\n    \"pydantic-settings>=2.4.0\",\n    \"python-dotenv>=1.0.0\",\n]",
+      "new_string": "[project]\nname = \"mcp-venus-os\"\nversion = \"0.1.0\"\ndescription = \"MCP server for Venus OS management - D-Bus, MQTT, and safety-constrained control\"\nreadme = \"README.md\"\nrequires-python = \">=3.11\"\nlicense = {text = \"MIT\"}\nauthors = [\n    {name = \"4alvit\", email = \"4alvit@users.noreply.github.com\"}\n]\nkeywords = [\"mcp\", \"venus-os\", \"victron\", \"dbus\", \"mqtt\", \"energy\", \"inverter\"]\nclassifiers = [\n    \"Development Status :: 3 - Alpha\",\n    \"Intended Audience :: Developers\",\n    \"License :: OSI Approved :: MIT License\",\n    \"Programming Language :: Python :: 3.11\",\n    \"Programming Language :: Python :: 3.12\",\n    \"Programming Language :: Python :: 3.13\",\n]\ndependencies = [\n    \"fastmcp>=2.0.0\",\n    \"dbus-fast>=0.50.0\",\n    \"paho-mqtt>=2.0.0\",\n    \"pydantic>=2.8.0\",\n    \"pydantic-settings>=2.4.0\",\n    \"python-dotenv>=1.0.0\",\n]\n\n[project.scripts]\nmcp-venus-os = \"mcp_venus_os.server:mcp\"",
+      "replace_all": false
+    },
+    "tool_use_id": "call-5bfe9bbc-e9a2-42e3-84cb-37b6eb06fb64"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check src/ examples/",
+      "description": "Check lint for all project files"
+    },
+    "tool_use_id": "call-60ac0226-fc79-4756-94db-131f7df8619b"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run mypy src/mcp_venus_os/",
+      "description": "Run mypy type checking"
+    },
+    "tool_use_id": "call-85baaa05-e0c2-4e50-a868-1be027141d6c"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run mcp-venus-os --help",
+      "description": "Test CLI entry point"
+    },
+    "tool_use_id": "call-7bdee109-bcf0-46b6-bc17-6099aca2adcd"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Read",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/server.py",
+      "limit": 10
+    },
+    "tool_use_id": "call-b8e1f1ec-b03e-4b84-a80b-86b9453926b4"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/__main__.py",
+      "content": "\"\"\"Main entry point for MCP Venus OS server.\"\"\"\n\nfrom mcp_venus_os.server import mcp\n\nif __name__ == \"__main__\":\n    mcp.run()"
+    },
+    "tool_use_id": "call-aa882bbc-6cd2-46cd-af97-331c486b91fd"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check src/mcp_venus_os/__main__.py",
+      "description": "Check lint for __main__.py"
+    },
+    "tool_use_id": "call-6422f2e9-c7f0-4644-9c41-8a30f5d3ca4c"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "echo \"\" >> /Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/__main__.py && uv run ruff check src/mcp_venus_os/__main__.py",
+      "description": "Add newline and check lint"
+    },
+    "tool_use_id": "call-0d14e415-5619-488c-a779-d3378c2a94e3"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Edit",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/pyproject.toml",
+      "old_string": "[project.scripts]\nmcp-venus-os = \"mcp_venus_os.server:mcp\"",
+      "new_string": "[project.scripts]\nmcp-venus-os = \"mcp_venus_os.__main__:main\"",
+      "replace_all": false
+    },
+    "tool_use_id": "call-e96d4bb6-b824-481b-bc0e-c40dfd8f65f9"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run mcp-venus-os --help",
+      "description": "Test CLI entry point"
+    },
+    "tool_use_id": "call-fd349a55-fbe1-4c14-9bd0-416ba112decf"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/__main__.py",
+      "content": "\"\"\"Main entry point for MCP Venus OS server.\"\"\"\n\nfrom mcp_venus_os.server import mcp\n\n\ndef main() -> None:\n    \"\"\"Main entry point.\"\"\"\n    mcp.run()\n\n\nif __name__ == \"__main__\":\n    main()"
+    },
+    "tool_use_id": "call-50c7ac32-824b-48b7-b95b-4b8d0c7febc6"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check src/mcp_venus_os/__main__.py",
+      "description": "Check lint for __main__.py"
+    },
+    "tool_use_id": "call-a70fdc23-87f9-4684-96d7-61c26536f951"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "echo \"\" >> /Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/__main__.py && uv run ruff check src/mcp_venus_os/__main__.py",
+      "description": "Add newline and check lint"
+    },
+    "tool_use_id": "call-792b540c-54d3-47e2-8027-432217966046"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run mcp-venus-os --help",
+      "description": "Test CLI entry point"
+    },
+    "tool_use_id": "call-36df1a0a-eaeb-4eef-b5ca-5bd5e086c870"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run python -c \"from mcp_venus_os import get_config; print('Config:', get_config())\"",
+      "description": "Test config import"
+    },
+    "tool_use_id": "call-607da96f-58e4-4e48-a701-351e20b9c306"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/__init__.py",
+      "content": "\"\"\"MCP Venus OS - MCP server for Victron Venus OS management.\"\"\"\n\nfrom .config import get_config\nfrom .dbus_client import (\n    BatteryData,\n    DBusClient,\n    GridData,\n    InverterData,\n    PVData,\n)\nfrom .mqtt_client import MQTTClient\nfrom .safety import ConfirmationManager, SafetyValidator\nfrom .server import mcp\n\n__version__ = \"0.1.0\"\n__author__ = \"4alvit\"\n__license__ = \"MIT\"\n\n__all__ = [\n    \"get_config\",\n    \"DBusClient\",\n    \"MQTTClient\",\n    \"SafetyValidator\",\n    \"ConfirmationManager\",\n    \"BatteryData\",\n    \"PVData\",\n    \"GridData\",\n    \"InverterData\",\n    \"mcp\",\n]"
+    },
+    "tool_use_id": "call-45987fc6-650b-4bf6-885c-6ad6df77937e"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check src/mcp_venus_os/__init__.py",
+      "description": "Check lint for __init__.py"
+    },
+    "tool_use_id": "call-b5dc245f-9367-4303-a3c9-0589dffdcada"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "echo \"\" >> /Users/vmedvedev/victron/mcp-venus-os/src/mcp_venus_os/__init__.py && uv run ruff check src/mcp_venus_os/__init__.py",
+      "description": "Add newline and check lint"
+    },
+    "tool_use_id": "call-ab953680-6ed1-4d3a-9d51-14b8aafee0a0"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run python -c \"from mcp_venus_os import get_config; print('Config:', get_config())\"",
+      "description": "Test config import"
+    },
+    "tool_use_id": "call-4a8c0c6e-dab8-4ca1-9f4f-480763eb2ebf"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "uv run ruff check src/",
+      "description": "Final full lint check"
+    },
+    "tool_use_id": "call-bb85d022-a964-4481-99ae-c409dc2fd23a"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "find /Users/vmedvedev/victron/mcp-venus-os -type f -name \"*.py\" | head -20",
+      "description": "List project Python files"
+    },
+    "tool_use_id": "call-19a0ff9d-d316-4227-b20a-8f9fcc9f965f"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "d8d42b4e-ef42-4c52-9de7-0ced202cc593",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "ls -la /Users/vmedvedev/victron/mcp-venus-os/",
+      "description": "List project root directory"
+    },
+    "tool_use_id": "call-5e2c75ef-6ce8-48c9-8a4b-20fd7c08ac81"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "208473e1-54bd-4952-b03f-bcb8b7cc2337",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "git status",
+      "description": "Check git status"
+    },
+    "tool_use_id": "call-e25e95bb-5f8f-4025-a12c-d8f8461e85a0"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "208473e1-54bd-4952-b03f-bcb8b7cc2337",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "ls -la /Users/vmedvedev/victron/4alvit/.git",
+      "description": "Check 4alvit git"
+    },
+    "tool_use_id": "call-1e7e51c0-3282-4097-af8c-262a7f627205"
+  },
+  {
+    "session_id": "71df9206-5919-4682-bbb3-139b228e08a9",
+    "transcript_path": "/Users/vmedvedev/.claude/projects/-Users-vmedvedev-victron/71df9206-5919-4682-bbb3-139b228e08a9.jsonl",
+    "cwd": "/Users/vmedvedev/victron/mcp-venus-os",
+    "prompt_id": "208473e1-54bd-4952-b03f-bcb8b7cc2337",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "git init && git add . && git commit -m \"feat: initial mcp-venus-os MCP server\n\n- D-Bus client for Venus OS data (battery, PV, grid, inverter)\n- MQTT client for real-time data streaming\n- Safety validation with confirmation for write operations\n- FastMCP server with 11 tools\n- Config via env vars / .env\n- Claude Desktop integration example\"",
+      "description": "Initialize git and commit"
+    },
+    "tool_use_id": "call-802a6388-44e4-4553-a327-0c7416c6ba64"
+  }
+]
