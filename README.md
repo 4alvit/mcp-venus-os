@@ -125,26 +125,40 @@ Configuration options:
 
 ## Architecture
 
-```
-┌─────────────┐     D-Bus      ┌──────────────┐
-│   Venus OS  │ ◄─────────────► │  mcp-venus-os │
-│  (Cerbo GX) │                 │   MCP Server  │
-└─────────────┘                 └──────┬───────┘
-                                        │
-                              ┌─────────┴─────────┐
-                              │                   │
-                       ┌──────▼──────┐     ┌──────▼──────┐
-                       │   D-Bus     │     │   MQTT      │
-                       │   Client    │     │   Client    │
-                       └─────────────┘     └─────────────┘
-                                        │
-                              ┌─────────▼─────────┐
-                              │  FastMCP Tools    │
-                              └─────────┬─────────┘
-                                        │
-                              ┌─────────▼─────────┐
-                              │   Claude Desktop  │
-                              └───────────────────┘
+```mermaid
+graph TD
+    subgraph "Venus OS Hardware"
+        VOS[Venus OS / Cerbo GX]
+        DBUS[(D-Bus System Bus)]
+        MQTT_BROKER[(MQTT Broker)]
+    end
+
+    subgraph "MCP Server (mcp-venus-os)"
+        MCP[FastMCP Server]
+        DBUS_CLIENT[D-Bus Client]
+        MQTT_CLIENT[MQTT Client]
+        SAFETY[Safety Validator]
+        TOOLS[MCP Tools]
+    end
+
+    subgraph "Clients"
+        CLAUDE[Claude Desktop]
+        OTHER[Other MCP Clients]
+    end
+
+    VOS --> DBUS
+    VOS --> MQTT_BROKER
+
+    DBUS --> DBUS_CLIENT
+    MQTT_BROKER --> MQTT_CLIENT
+
+    DBUS_CLIENT --> TOOLS
+    MQTT_CLIENT --> TOOLS
+    SAFETY --> TOOLS
+
+    TOOLS --> MCP
+    MCP -.->|stdio/JSON-RPC| CLAUDE
+    MCP -.->|stdio/JSON-RPC| OTHER
 ```
 
 ## Development
