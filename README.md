@@ -1,5 +1,18 @@
 # MCP Venus OS
 
+[![CodeQL](https://github.com/4alvit/mcp-venus-os/actions/workflows/codeql.yml/badge.svg)](https://github.com/4alvit/mcp-venus-os/actions/workflows/codeql.yml)
+[![Scorecards](https://github.com/4alvit/mcp-venus-os/actions/workflows/scorecards.yml/badge.svg)](https://github.com/4alvit/mcp-venus-os/actions/workflows/scorecards.yml)
+[![Dependency Review](https://github.com/4alvit/mcp-venus-os/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/4alvit/mcp-venus-os/actions/workflows/dependency-review.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Development Status](https://img.shields.io/badge/Status-Alpha-orange.svg)]()
+[![GitHub stars](https://img.shields.io/github/stars/4alvit/mcp-venus-os)](https://github.com/4alvit/mcp-venus-os/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/4alvit/mcp-venus-os)](https://github.com/4alvit/mcp-venus-os/network/members)
+[![GitHub last commit](https://img.shields.io/github/last-commit/4alvit/mcp-venus-os)](https://github.com/4alvit/mcp-venus-os/commits/main)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/4alvit/mcp-venus-os/graphs/commit-activity)
+[![Made with Python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
+[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-blueviolet)](https://modelcontextprotocol.io/)
+
 MCP (Model Context Protocol) server for Victron Venus OS management. Provides tools for reading and controlling Venus OS devices via D-Bus and MQTT.
 
 ## Features
