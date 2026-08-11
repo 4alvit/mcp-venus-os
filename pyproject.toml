@@ -1,6 +1,6 @@
 [project]
 name = "mcp-venus-os"
-version = "0.1.1"
+version = "0.1.0"
 description = "MCP server for Venus OS management - D-Bus, MQTT, and safety-constrained control"
 readme = "README.md"
 requires-python = ">=3.11"
