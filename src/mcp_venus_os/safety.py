@@ -2,6 +2,7 @@
 
 import logging
 from dataclasses import dataclass
+from typing import Any
 
 from .config import get_config
 
@@ -17,7 +18,7 @@ class SafetyError(Exception):
 class ConfirmationRequiredError(SafetyError):
     """Raised when user confirmation is required for an operation."""
 
-    def __init__(self, message: str, operation: str, params: dict):
+    def __init__(self, message: str, operation: str, params: dict[str, Any]):
         super().__init__(message)
         self.operation = operation
         self.params = params
@@ -38,6 +39,7 @@ class InvalidModeError(SafetyError):
 @dataclass
 class SafetyCheckResult:
     """Result of a safety check."""
+
     allowed: bool
     reason: str | None = None
     requires_confirmation: bool = False
@@ -57,7 +59,7 @@ class SafetyValidator:
         if current > self.config.max_charge_current:
             return SafetyCheckResult(
                 False,
-                f"Charge current {current}A exceeds maximum {self.config.max_charge_current}A"
+                f"Charge current {current}A exceeds maximum {self.config.max_charge_current}A",
             )
         return SafetyCheckResult(True)
 
@@ -68,7 +70,8 @@ class SafetyValidator:
         if current > self.config.max_discharge_current:
             return SafetyCheckResult(
                 False,
-                f"Discharge current {current}A exceeds maximum {self.config.max_discharge_current}A"
+                f"Discharge current {current}A exceeds maximum " +
+                f"{self.config.max_discharge_current}A",
             )
         return SafetyCheckResult(True)
 
@@ -76,13 +79,11 @@ class SafetyValidator:
         """Validate state of charge limit."""
         if soc < self.config.min_soc_limit:
             return SafetyCheckResult(
-                False,
-                f"SoC limit {soc}% below minimum {self.config.min_soc_limit}%"
+                False, f"SoC limit {soc}% below minimum {self.config.min_soc_limit}%"
             )
         if soc > self.config.max_soc_limit:
             return SafetyCheckResult(
-                False,
-                f"SoC limit {soc}% exceeds maximum {self.config.max_soc_limit}%"
+                False, f"SoC limit {soc}% exceeds maximum {self.config.max_soc_limit}%"
             )
         return SafetyCheckResult(True)
 
@@ -90,16 +91,12 @@ class SafetyValidator:
         """Validate inverter mode."""
         if mode not in self.config.allowed_modes:
             return SafetyCheckResult(
-                False,
-                f"Mode '{mode}' not allowed. Allowed: {', '.join(self.config.allowed_modes)}"
+                False, f"Mode '{mode}' not allowed. Allowed: {', '.join(self.config.allowed_modes)}"
             )
         return SafetyCheckResult(True)
 
     def validate_write_operation(
-        self,
-        operation: str,
-        params: dict,
-        confirmed: bool = False
+        self, operation: str, params: dict[str, Any], confirmed: bool = False
     ) -> SafetyCheckResult:
         """Validate a write operation with all parameters."""
         logger.info("Validating write operation: %s with params: %s", operation, params)
@@ -134,7 +131,7 @@ class SafetyValidator:
                     f"Confirm {operation} with parameters: {params}? "
                     f"This will change device settings on Venus OS."
                 ),
-                reason="Confirmation required for write operation"
+                reason="Confirmation required for write operation",
             )
 
         return SafetyCheckResult(True)
@@ -144,16 +141,12 @@ class ConfirmationManager:
     """Manages user confirmations for dangerous operations."""
 
     def __init__(self) -> None:
-        self._pending: dict[str, dict] = {}
+        self._pending: dict[str, dict[str, Any]] = {}
 
-    def request_confirmation(
-        self,
-        operation: str,
-        params: dict,
-        message: str
-    ) -> str:
+    def request_confirmation(self, operation: str, params: dict[str, Any], message: str) -> str:
         """Request confirmation for an operation. Returns confirmation ID."""
         import uuid
+
         confirmation_id = str(uuid.uuid4())[:8]
         self._pending[confirmation_id] = {
             "operation": operation,
@@ -170,11 +163,10 @@ class ConfirmationManager:
         self._pending[confirmation_id]["confirmed"] = True
         return True
 
-    def get_pending(self, confirmation_id: str) -> dict | None:
+    def get_pending(self, confirmation_id: str) -> dict[str, Any] | None:
         """Get pending confirmation details."""
         return self._pending.get(confirmation_id)
 
     def clear(self, confirmation_id: str) -> None:
         """Clear a confirmation."""
         self._pending.pop(confirmation_id, None)
-
