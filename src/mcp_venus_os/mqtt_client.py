@@ -52,15 +52,13 @@ class MQTTClient:
         client: mqtt.Client,
         userdata: Any,  # noqa: ANN401
         flags: Any,  # noqa: ANN401
-        reason_code: int,
-        properties: Any,  # noqa: ANN401
+        reason_code: mqtt.ReasonCode,  # type: ignore[name-defined]
+        properties: mqtt.Properties,  # type: ignore[name-defined]
     ) -> None:
         """MQTT on_connect callback."""
         if reason_code == 0:
             self._connected = True
-            logger.info(
-                "Connected to MQTT broker at %s:%d", self.config.host, self.config.port
-            )
+            logger.info("Connected to MQTT broker at %s:%d", self.config.host, self.config.port)
             base = self.config.base_topic
             client.subscribe(f"{base}/+/+/+")
             client.subscribe(f"{base}/+/+/+/+")
@@ -73,8 +71,8 @@ class MQTTClient:
         client: mqtt.Client,
         userdata: Any,  # noqa: ANN401
         flags: Any,  # noqa: ANN401
-        reason_code: int,
-        properties: Any,  # noqa: ANN401
+        reason_code: mqtt.ReasonCode,  # type: ignore[name-defined]
+        properties: mqtt.Properties,  # type: ignore[name-defined]
     ) -> None:
         """MQTT on_disconnect callback."""
         self._connected = False
@@ -126,9 +124,7 @@ class MQTTClient:
         if self.client and self._connected:
             self.client.subscribe(topic_pattern)
 
-    def unsubscribe(
-        self, topic_pattern: str, callback: Callable[[Payload], None]
-    ) -> None:
+    def unsubscribe(self, topic_pattern: str, callback: Callable[[Payload], None]) -> None:
         """Unsubscribe callback from topic pattern."""
         if topic_pattern in self._callbacks:
             self._callbacks[topic_pattern].remove(callback)

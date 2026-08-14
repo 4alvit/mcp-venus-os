@@ -1,7 +1,9 @@
 """MCP server for Venus OS management."""
 
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastmcp import FastMCP
 
@@ -58,7 +60,7 @@ def get_confirmation_manager() -> ConfirmationManager:
 
 
 @asynccontextmanager
-async def lifespan(app: FastMCP):
+async def lifespan(app: FastMCP) -> AsyncIterator[None]:
     """Server lifespan handler."""
     config = get_config()
     logging.basicConfig(level=config.log_level)
@@ -76,7 +78,7 @@ mcp = FastMCP("Venus OS", lifespan=lifespan)
 
 # Read tools
 @mcp.tool()
-async def get_battery_soc(instance: int = 0) -> dict:
+async def get_battery_soc(instance: int = 0) -> dict[str, Any]:
     """Get battery state of charge."""
     client = get_dbus_client()
     data: BatteryData = await client.get_battery_data(instance)
@@ -93,7 +95,7 @@ async def get_battery_soc(instance: int = 0) -> dict:
 
 
 @mcp.tool()
-async def get_pv_power(instance: int = 0) -> dict:
+async def get_pv_power(instance: int = 0) -> dict[str, Any]:
     """Get PV/solar charger power data."""
     client = get_dbus_client()
     data: PVData = await client.get_pv_data(instance)
@@ -108,7 +110,7 @@ async def get_pv_power(instance: int = 0) -> dict:
 
 
 @mcp.tool()
-async def get_grid_status(instance: int = 0) -> dict:
+async def get_grid_status(instance: int = 0) -> dict[str, Any]:
     """Get grid/AC status."""
     client = get_dbus_client()
     data: GridData = await client.get_grid_data(instance)
@@ -123,7 +125,7 @@ async def get_grid_status(instance: int = 0) -> dict:
 
 
 @mcp.tool()
-async def get_inverter_status(instance: int = 0) -> dict:
+async def get_inverter_status(instance: int = 0) -> dict[str, Any]:
     """Get inverter mode and state."""
     client = get_dbus_client()
     data: InverterData = await client.get_inverter_data(instance)
@@ -139,7 +141,7 @@ async def get_inverter_status(instance: int = 0) -> dict:
 
 
 @mcp.tool()
-async def list_devices() -> list[dict]:
+async def list_devices() -> list[dict[str, Any]]:
     """List all Victron devices on D-Bus."""
     client = get_dbus_client()
     return await client.list_devices()
@@ -147,7 +149,9 @@ async def list_devices() -> list[dict]:
 
 # Write tools (with safety)
 @mcp.tool()
-async def set_inverter_mode(mode: str, instance: int = 0, confirmed: bool = False) -> dict:
+async def set_inverter_mode(
+    mode: str, instance: int = 0, confirmed: bool = False
+) -> dict[str, Any]:
     """Set inverter mode (on, off, charger_only, inverter_only, eco).
 
     Requires confirmation for write operations.
@@ -174,7 +178,7 @@ async def set_inverter_mode(mode: str, instance: int = 0, confirmed: bool = Fals
 @mcp.tool()
 async def set_charge_current_limit(
     current: float, instance: int = 0, confirmed: bool = False
-) -> dict:
+) -> dict[str, Any]:
     """Set maximum charge current limit in Amps.
 
     Requires confirmation for write operations.
@@ -202,7 +206,11 @@ async def set_charge_current_limit(
 
 
 @mcp.tool()
-async def set_soc_limit(soc_limit: int, instance: int = 0, confirmed: bool = False) -> dict:
+async def set_soc_limit(
+    soc_limit: int,
+    instance: int = 0,
+    confirmed: bool = False
+) -> dict[str, Any]:
     """Set battery SoC limit percentage.
 
     Requires confirmation for write operations.
@@ -228,7 +236,7 @@ async def set_soc_limit(soc_limit: int, instance: int = 0, confirmed: bool = Fal
 
 # MQTT tools
 @mcp.tool()
-async def mqtt_connect() -> dict:
+async def mqtt_connect() -> dict[str, Any]:
     """Connect to MQTT broker for real-time data."""
     client = get_mqtt_client()
     try:
@@ -240,7 +248,7 @@ async def mqtt_connect() -> dict:
 
 
 @mcp.tool()
-async def mqtt_disconnect() -> dict:
+async def mqtt_disconnect() -> dict[str, Any]:
     """Disconnect from MQTT broker."""
     client = get_mqtt_client()
     await client.disconnect()
@@ -248,7 +256,7 @@ async def mqtt_disconnect() -> dict:
 
 
 @mcp.tool()
-async def mqtt_subscribe(topic_pattern: str) -> dict:
+async def mqtt_subscribe(topic_pattern: str) -> dict[str, Any]:
     """Subscribe to MQTT topic pattern.
 
     Returns a subscription ID for polling messages.

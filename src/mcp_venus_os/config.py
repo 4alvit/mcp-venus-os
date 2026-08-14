@@ -12,9 +12,7 @@ class DBusConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="DBUS_")
 
     bus_type: str = Field(default="system", description="D-Bus type: system or session")
-    service_name: str = Field(
-        default="com.victronenergy", description="Base Victron service name"
-    )
+    service_name: str = Field(default="com.victronenergy", description="Base Victron service name")
 
 
 class MQTTConfig(BaseSettings):
@@ -49,7 +47,7 @@ class SafetyConfig(BaseSettings):
     max_soc_limit: int = Field(default=100, description="Maximum allowed SoC limit (%)")
     allowed_modes: list[str] = Field(
         default=["on", "off", "charger_only", "inverter_only", "eco"],
-        description="Allowed inverter modes"
+        description="Allowed inverter modes",
     )
 
 

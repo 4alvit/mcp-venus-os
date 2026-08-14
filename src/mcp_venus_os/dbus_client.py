@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from dbus_fast import BusType, Message
+from dbus_fast import BusType, Message, MessageType
 from dbus_fast.aio import MessageBus
 
 from .config import get_config
@@ -33,6 +33,7 @@ class DBusCallError(DBusError):
 @dataclass
 class BatteryData:
     """Battery data from Venus OS."""
+
     soc: float
     voltage: float
     current: float
@@ -45,6 +46,7 @@ class BatteryData:
 @dataclass
 class PVData:
     """PV/Solar data from Venus OS."""
+
     power: float
     voltage: float
     current: float
@@ -55,6 +57,7 @@ class PVData:
 @dataclass
 class GridData:
     """Grid/AC data from Venus OS."""
+
     power: float
     voltage: float
     current: float
@@ -65,6 +68,7 @@ class GridData:
 @dataclass
 class InverterData:
     """Inverter data from Venus OS."""
+
     mode: str
     state: str
     ac_power_out: float
@@ -120,7 +124,7 @@ class DBusClient:
             body=[interface, property_name],
         )
         reply = await self.bus.call(msg)
-        if reply.message_type == Message.MessageType.ERROR:
+        if reply.message_type == MessageType.ERROR:
             raise DBusCallError(reply.body)
         return reply.body[0][1]
 
@@ -130,24 +134,18 @@ class DBusClient:
         service, path = self._service_path(instance, "battery")
 
         try:
-            soc = await self._get_property(
-                service, path, "com.victronenergy.Battery", "Soc"
-            )
+            soc = await self._get_property(service, path, "com.victronenergy.Battery", "Soc")
             voltage = await self._get_property(
                 service, path, "com.victronenergy.Battery", "Voltage"
             )
             current = await self._get_property(
                 service, path, "com.victronenergy.Battery", "Current"
             )
-            power = await self._get_property(
-                service, path, "com.victronenergy.Battery", "Power"
-            )
+            power = await self._get_property(service, path, "com.victronenergy.Battery", "Power")
             temperature = await self._get_property(
                 service, path, "com.victronenergy.Battery", "Temperature"
             )
-            status = await self._get_property(
-                service, path, "com.victronenergy.Battery", "Status"
-            )
+            status = await self._get_property(service, path, "com.victronenergy.Battery", "Status")
             time_to_go = await self._get_property(
                 service, path, "com.victronenergy.Battery", "TimeToGo"
             )
@@ -204,9 +202,7 @@ class DBusClient:
         service, path = self._service_path(instance, "vebus")
 
         try:
-            power = await self._get_property(
-                service, path, "com.victronenergy.Vebus", "AcPowerOut"
-            )
+            power = await self._get_property(service, path, "com.victronenergy.Vebus", "AcPowerOut")
             voltage = await self._get_property(
                 service, path, "com.victronenergy.Vebus", "AcVoltageOut"
             )
@@ -237,21 +233,15 @@ class DBusClient:
         service, path = self._service_path(instance, "vebus")
 
         try:
-            mode = await self._get_property(
-                service, path, "com.victronenergy.Vebus", "Mode"
-            )
-            state = await self._get_property(
-                service, path, "com.victronenergy.Vebus", "State"
-            )
+            mode = await self._get_property(service, path, "com.victronenergy.Vebus", "Mode")
+            state = await self._get_property(service, path, "com.victronenergy.Vebus", "State")
             ac_power_out = await self._get_property(
                 service, path, "com.victronenergy.Vebus", "AcPowerOut"
             )
             ac_power_in = await self._get_property(
                 service, path, "com.victronenergy.Vebus", "AcPowerIn"
             )
-            dc_power = await self._get_property(
-                service, path, "com.victronenergy.Vebus", "DcPower"
-            )
+            dc_power = await self._get_property(service, path, "com.victronenergy.Vebus", "DcPower")
             temperature = await self._get_property(
                 service, path, "com.victronenergy.Vebus", "Temperature"
             )
@@ -281,21 +271,21 @@ class DBusClient:
             member="ListNames",
         )
         reply = await self.bus.call(msg)
-        if reply.message_type == Message.MessageType.ERROR:
+        if reply.message_type == MessageType.ERROR:
             raise DBusCallError(reply.body)
 
         names = reply.body[0]
-        victron_names = [
-            n for n in names if n.startswith(self.config.service_name + ".")
-        ]
+        victron_names = [n for n in names if n.startswith(self.config.service_name + ".")]
 
         devices = []
         for name in victron_names:
             parts = name.split(".")
             if len(parts) >= 3:
-                devices.append({
-                    "service": name,
-                    "device_type": parts[-2],
-                    "instance": int(parts[-1]),
-                })
+                devices.append(
+                    {
+                        "service": name,
+                        "device_type": parts[-2],
+                        "instance": int(parts[-1]),
+                    }
+                )
         return devices
