@@ -14,3 +14,6 @@ logs/
 .env.local
 *.log
 logs
+.coverage
+htmlcov/
+*.bak
