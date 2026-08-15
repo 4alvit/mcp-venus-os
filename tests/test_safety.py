@@ -55,6 +55,7 @@ def test_validate_charge_current_negative() -> None:
     validator = SafetyValidator()
     result = validator.validate_charge_current(-1.0)
     assert not result.allowed
+    assert result.reason is not None
     assert "cannot be negative" in result.reason
 
 
