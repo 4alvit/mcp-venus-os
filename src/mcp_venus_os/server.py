@@ -172,7 +172,7 @@ async def set_inverter_mode(
         return {"success": False, "error": result.reason}
 
     # Write operation not yet implemented
-    return {"success": False, "error": "Operation not implemented yet"}}
+    return {"success": False, "error": "Operation not implemented yet"}
 
 
 @mcp.tool()
@@ -201,7 +201,6 @@ async def set_charge_current_limit(
         return {"success": False, "error": result.reason}
 
     # Write operation not yet implemented
-    msg = f"Charge current limit set to {current}A (not implemented yet)"
     return {"success": False, "error": "Operation not implemented yet"}
 
 
@@ -231,7 +230,7 @@ async def set_soc_limit(
         return {"success": False, "error": result.reason}
 
     # Write operation not yet implemented
-    return {"success": False, "error": "Operation not implemented yet"}}
+    return {"success": False, "error": "Operation not implemented yet"}
 
 
 # MQTT tools
