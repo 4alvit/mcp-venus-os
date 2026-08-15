@@ -56,7 +56,7 @@ def test_validate_charge_current_negative() -> None:
     result = validator.validate_charge_current(-1.0)
     assert not result.allowed
     assert result.reason is not None
-    assert "cannot be negative" in result.reason
+    assert "cannot be negative" in (result.reason or "")
 
 
 def test_validate_charge_current_at_maximum() -> None:
@@ -71,9 +71,9 @@ def test_validate_charge_current_over_maximum() -> None:
     validator = SafetyValidator()
     result = validator.validate_charge_current(100.1)  # Just over max_charge_current
     assert not result.allowed
-    assert "exceeds maximum" in result.reason
-    assert "100.1A" in result.reason
-    assert "100.0A" in result.reason
+    assert "exceeds maximum" in (result.reason or "")
+    assert "100.1A" in (result.reason or "")
+    assert "100.0A" in (result.reason or "")
 
 
 def test_validate_discharge_current_negative() -> None:
@@ -81,7 +81,7 @@ def test_validate_discharge_current_negative() -> None:
     validator = SafetyValidator()
     result = validator.validate_discharge_current(-1.0)
     assert not result.allowed
-    assert "cannot be negative" in result.reason
+    assert "cannot be negative" in (result.reason or "")
 
 
 def test_validate_discharge_current_at_maximum() -> None:
@@ -96,9 +96,9 @@ def test_validate_discharge_current_over_maximum() -> None:
     validator = SafetyValidator()
     result = validator.validate_discharge_current(100.1)  # Just over max_discharge_current
     assert not result.allowed
-    assert "exceeds maximum" in result.reason
-    assert "100.1A" in result.reason
-    assert "100.0A" in result.reason
+    assert "exceeds maximum" in (result.reason or "")
+    assert "100.1A" in (result.reason or "")
+    assert "100.0A" in (result.reason or "")
 
 
 def test_validate_soc_limit_below_minimum() -> None:
@@ -106,9 +106,9 @@ def test_validate_soc_limit_below_minimum() -> None:
     validator = SafetyValidator()
     result = validator.validate_soc_limit(9)  # Just below min_soc_limit (10)
     assert not result.allowed
-    assert "below minimum" in result.reason
-    assert "9%" in result.reason
-    assert "10%" in result.reason
+    assert "below minimum" in (result.reason or "")
+    assert "9%" in (result.reason or "")
+    assert "10%" in (result.reason or "")
 
 
 def test_validate_soc_limit_at_minimum() -> None:
@@ -130,9 +130,9 @@ def test_validate_soc_limit_over_maximum() -> None:
     validator = SafetyValidator()
     result = validator.validate_soc_limit(101)  # Just over max_soc_limit
     assert not result.allowed
-    assert "exceeds maximum" in result.reason
-    assert "101%" in result.reason
-    assert "100%" in result.reason
+    assert "exceeds maximum" in (result.reason or "")
+    assert "101%" in (result.reason or "")
+    assert "100%" in (result.reason or "")
 
 
 def test_validate_mode_allowed() -> None:
@@ -148,9 +148,9 @@ def test_validate_mode_not_allowed() -> None:
     validator = SafetyValidator()
     result = validator.validate_mode("invalid_mode")
     assert not result.allowed
-    assert "not allowed" in result.reason
-    assert "invalid_mode" in result.reason
-    assert "on, off, charger_only, inverter_only, eco" in result.reason
+    assert "not allowed" in (result.reason or "")
+    assert "invalid_mode" in (result.reason or "")
+    assert "on, off, charger_only, inverter_only, eco" in (result.reason or "")
 
 
 def test_confirmation_manager() -> None:
@@ -211,7 +211,7 @@ def test_validate_write_operation_with_charge_current() -> None:
         confirmed=True,
     )
     assert not result.allowed
-    assert "exceeds maximum" in result.reason
+    assert "exceeds maximum" in (result.reason or "")
 
 
 def test_validate_write_operation_with_discharge_current() -> None:
@@ -231,7 +231,7 @@ def test_validate_write_operation_with_discharge_current() -> None:
         confirmed=True,
     )
     assert not result.allowed
-    assert "exceeds maximum" in result.reason
+    assert "exceeds maximum" in (result.reason or "")
 
 
 def test_validate_write_operation_with_soc_limit() -> None:
@@ -249,7 +249,7 @@ def test_validate_write_operation_with_soc_limit() -> None:
         confirmed=True,
     )
     assert not result.allowed
-    assert "below minimum" in result.reason
+    assert "below minimum" in (result.reason or "")
 
     # Test with invalid SoC limit (too high)
     result = validator.validate_write_operation(
@@ -258,7 +258,7 @@ def test_validate_write_operation_with_soc_limit() -> None:
         confirmed=True,
     )
     assert not result.allowed
-    assert "exceeds maximum" in result.reason
+    assert "exceeds maximum" in (result.reason or "")
 
 
 def test_validate_write_operation_with_mode() -> None:
@@ -274,7 +274,7 @@ def test_validate_write_operation_with_mode() -> None:
         "set_inverter_mode", {"mode": "invalid_mode"}, confirmed=True
     )
     assert not result.allowed
-    assert "not allowed" in result.reason
+    assert "not allowed" in (result.reason or "")
 
 
 def test_validate_write_operation_confirmation_required() -> None:
@@ -287,8 +287,8 @@ def test_validate_write_operation_confirmation_required() -> None:
     )
     assert not result.allowed
     assert result.requires_confirmation is True
-    assert "Confirmation required" in result.reason
-    assert "test_operation" in result.confirmation_message
+    assert "Confirmation required" in (result.reason or "")
+    assert "test_operation" in (result.confirmation_message or "")
 
     # Test with confirmed=True when require_confirmation is True
     result = validator.validate_write_operation(
