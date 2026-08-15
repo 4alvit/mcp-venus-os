@@ -13,9 +13,7 @@ from mcp_venus_os.server import (
 @pytest.mark.asyncio
 async def test_set_inverter_mode_requires_confirmation():
     # When confirmed=False, safety validator returns not allowed and requires confirmation
-    with patch(
-        "mcp_venus_os.server.get_safety_validator"
-    ) as mock_get_validator:
+    with patch("mcp_venus_os.server.get_safety_validator") as mock_get_validator:
         mock_validator = Mock()
         mock_get_validator.return_value = mock_validator
         mock_validator.validate_write_operation.return_value = SafetyCheckResult(
@@ -34,9 +32,7 @@ async def test_set_inverter_mode_requires_confirmation():
 
 @pytest.mark.asyncio
 async def test_set_inverter_mode_not_allowed():
-    with patch(
-        "mcp_venus_os.server.get_safety_validator"
-    ) as mock_get_validator:
+    with patch("mcp_venus_os.server.get_safety_validator") as mock_get_validator:
         mock_validator = Mock()
         mock_get_validator.return_value = mock_validator
         mock_validator.validate_write_operation.return_value = SafetyCheckResult(
@@ -54,9 +50,7 @@ async def test_set_inverter_mode_not_allowed():
 
 @pytest.mark.asyncio
 async def test_set_inverter_mode_not_implemented():
-    with patch(
-        "mcp_venus_os.server.get_safety_validator"
-    ) as mock_get_validator:
+    with patch("mcp_venus_os.server.get_safety_validator") as mock_get_validator:
         mock_validator = Mock()
         mock_get_validator.return_value = mock_validator
         mock_validator.validate_write_operation.return_value = SafetyCheckResult(
@@ -75,9 +69,7 @@ async def test_set_inverter_mode_not_implemented():
 # Similar tests for set_charge_current_limit and set_soc_limit
 @pytest.mark.asyncio
 async def test_set_charge_current_limit_requires_confirmation():
-    with patch(
-        "mcp_venus_os.server.get_safety_validator"
-    ) as mock_get_validator:
+    with patch("mcp_venus_os.server.get_safety_validator") as mock_get_validator:
         mock_validator = Mock()
         mock_get_validator.return_value = mock_validator
         mock_validator.validate_write_operation.return_value = SafetyCheckResult(
@@ -87,9 +79,7 @@ async def test_set_charge_current_limit_requires_confirmation():
             confirmation_message="Please confirm",
         )
 
-        result = await set_charge_current_limit(
-            current=10.0, instance=0, confirmed=False
-        )
+        result = await set_charge_current_limit(current=10.0, instance=0, confirmed=False)
 
         assert result["success"] is False
         assert result["requires_confirmation"] is True
@@ -98,9 +88,7 @@ async def test_set_charge_current_limit_requires_confirmation():
 
 @pytest.mark.asyncio
 async def test_set_charge_current_limit_not_implemented():
-    with patch(
-        "mcp_venus_os.server.get_safety_validator"
-    ) as mock_get_validator:
+    with patch("mcp_venus_os.server.get_safety_validator") as mock_get_validator:
         mock_validator = Mock()
         mock_get_validator.return_value = mock_validator
         mock_validator.validate_write_operation.return_value = SafetyCheckResult(
@@ -110,9 +98,7 @@ async def test_set_charge_current_limit_not_implemented():
             confirmation_message="",
         )
 
-        result = await set_charge_current_limit(
-            current=10.0, instance=0, confirmed=True
-        )
+        result = await set_charge_current_limit(current=10.0, instance=0, confirmed=True)
 
         assert result["success"] is False
         assert result["error"] == "Operation not implemented yet"
@@ -120,9 +106,7 @@ async def test_set_charge_current_limit_not_implemented():
 
 @pytest.mark.asyncio
 async def test_set_soc_limit_requires_confirmation():
-    with patch(
-        "mcp_venus_os.server.get_safety_validator"
-    ) as mock_get_validator:
+    with patch("mcp_venus_os.server.get_safety_validator") as mock_get_validator:
         mock_validator = Mock()
         mock_get_validator.return_value = mock_validator
         mock_validator.validate_write_operation.return_value = SafetyCheckResult(
@@ -141,9 +125,7 @@ async def test_set_soc_limit_requires_confirmation():
 
 @pytest.mark.asyncio
 async def test_set_soc_limit_not_implemented():
-    with patch(
-        "mcp_venus_os.server.get_safety_validator"
-    ) as mock_get_validator:
+    with patch("mcp_venus_os.server.get_safety_validator") as mock_get_validator:
         mock_validator = Mock()
         mock_get_validator.return_value = mock_validator
         mock_validator.validate_write_operation.return_value = SafetyCheckResult(

@@ -70,8 +70,8 @@ class SafetyValidator:
         if current > self.config.max_discharge_current:
             return SafetyCheckResult(
                 False,
-                f"Discharge current {current}A exceeds maximum " +
-                f"{self.config.max_discharge_current}A",
+                f"Discharge current {current}A exceeds maximum "
+                + f"{self.config.max_discharge_current}A",
             )
         return SafetyCheckResult(True)
 
@@ -91,7 +91,8 @@ class SafetyValidator:
         """Validate inverter mode."""
         if mode not in self.config.allowed_modes:
             return SafetyCheckResult(
-                False, f"Mode '{mode}' not allowed. Allowed: {', '.join(self.config.allowed_modes)}"
+                False,
+                f"Mode '{mode}' not allowed. Allowed: {', '.join(self.config.allowed_modes)}",
             )
         return SafetyCheckResult(True)
 

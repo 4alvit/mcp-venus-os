@@ -206,9 +206,7 @@ async def set_charge_current_limit(
 
 @mcp.tool()
 async def set_soc_limit(
-    soc_limit: int,
-    instance: int = 0,
-    confirmed: bool = False
+    soc_limit: int, instance: int = 0, confirmed: bool = False
 ) -> dict[str, Any]:
     """Set battery SoC limit percentage.
 
