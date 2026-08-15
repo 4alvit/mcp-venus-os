@@ -155,19 +155,17 @@ def test_validate_mode_not_allowed() -> None:
 def test_confirmation_manager() -> None:
     """Test ConfirmationManager class."""
     from mcp_venus_os.safety import ConfirmationManager
-    
+
     manager = ConfirmationManager()
-    
+
     # Test requesting confirmation
     confirmation_id = manager.request_confirmation(
-        "test_operation",
-        {"param1": "value1", "param2": 42},
-        "Please confirm this operation"
+        "test_operation", {"param1": "value1", "param2": 42}, "Please confirm this operation"
     )
-    
+
     assert isinstance(confirmation_id, str)
     assert len(confirmation_id) == 8  # First 8 chars of UUID
-    
+
     # Test getting pending confirmation
     pending = manager.get_pending(confirmation_id)
     assert pending is not None
@@ -175,22 +173,22 @@ def test_confirmation_manager() -> None:
     assert pending["params"] == {"param1": "value1", "param2": 42}
     assert pending["message"] == "Please confirm this operation"
     assert pending["confirmed"] is False
-    
+
     # Test confirming operation
     assert manager.confirm(confirmation_id) is True
-    
+
     # Test getting pending confirmation after confirming
     pending_after = manager.get_pending(confirmation_id)
     assert pending_after is not None
     assert pending_after["confirmed"] is True
-    
+
     # Test clearing confirmation
     manager.clear(confirmation_id)
     assert manager.get_pending(confirmation_id) is None
-    
+
     # Test getting non-existent confirmation
     assert manager.get_pending("nonexistent") is None
-    
+
     # Test confirming non-existent confirmation
     assert manager.confirm("nonexistent") is False
 
@@ -198,20 +196,18 @@ def test_confirmation_manager() -> None:
 def test_validate_write_operation_with_charge_current() -> None:
     """Test write operation validation with charge current parameter."""
     validator = SafetyValidator()
-    
+
     # Test with valid charge current
     result = validator.validate_write_operation(
-        "set_charge_current",
-        {"charge_current": 50.0},
-        confirmed=True
+        "set_charge_current", {"charge_current": 50.0}, confirmed=True
     )
     assert result.allowed
-    
+
     # Test with invalid charge current (too high)
     result = validator.validate_write_operation(
         "set_charge_current",
         {"charge_current": 150.0},  # Over max_charge_current (100.0)
-        confirmed=True
+        confirmed=True,
     )
     assert not result.allowed
     assert "exceeds maximum" in result.reason
@@ -220,20 +216,18 @@ def test_validate_write_operation_with_charge_current() -> None:
 def test_validate_write_operation_with_discharge_current() -> None:
     """Test write operation validation with discharge current parameter."""
     validator = SafetyValidator()
-    
+
     # Test with valid discharge current
     result = validator.validate_write_operation(
-        "set_discharge_current",
-        {"discharge_current": 50.0},
-        confirmed=True
+        "set_discharge_current", {"discharge_current": 50.0}, confirmed=True
     )
     assert result.allowed
-    
+
     # Test with invalid discharge current (too high)
     result = validator.validate_write_operation(
         "set_discharge_current",
         {"discharge_current": 150.0},  # Over max_discharge_current (100.0)
-        confirmed=True
+        confirmed=True,
     )
     assert not result.allowed
     assert "exceeds maximum" in result.reason
@@ -242,29 +236,25 @@ def test_validate_write_operation_with_discharge_current() -> None:
 def test_validate_write_operation_with_soc_limit() -> None:
     """Test write operation validation with SoC limit parameter."""
     validator = SafetyValidator()
-    
+
     # Test with valid SoC limit
-    result = validator.validate_write_operation(
-        "set_soc_limit",
-        {"soc_limit": 50},
-        confirmed=True
-    )
+    result = validator.validate_write_operation("set_soc_limit", {"soc_limit": 50}, confirmed=True)
     assert result.allowed
-    
+
     # Test with invalid SoC limit (too low)
     result = validator.validate_write_operation(
         "set_soc_limit",
         {"soc_limit": 5},  # Below min_soc_limit (10)
-        confirmed=True
+        confirmed=True,
     )
     assert not result.allowed
     assert "below minimum" in result.reason
-    
+
     # Test with invalid SoC limit (too high)
     result = validator.validate_write_operation(
         "set_soc_limit",
         {"soc_limit": 150},  # Over max_soc_limit (100)
-        confirmed=True
+        confirmed=True,
     )
     assert not result.allowed
     assert "exceeds maximum" in result.reason
@@ -273,20 +263,14 @@ def test_validate_write_operation_with_soc_limit() -> None:
 def test_validate_write_operation_with_mode() -> None:
     """Test write operation validation with mode parameter."""
     validator = SafetyValidator()
-    
+
     # Test with valid mode
-    result = validator.validate_write_operation(
-        "set_inverter_mode",
-        {"mode": "on"},
-        confirmed=True
-    )
+    result = validator.validate_write_operation("set_inverter_mode", {"mode": "on"}, confirmed=True)
     assert result.allowed
-    
+
     # Test with invalid mode
     result = validator.validate_write_operation(
-        "set_inverter_mode",
-        {"mode": "invalid_mode"},
-        confirmed=True
+        "set_inverter_mode", {"mode": "invalid_mode"}, confirmed=True
     )
     assert not result.allowed
     assert "not allowed" in result.reason
@@ -295,36 +279,30 @@ def test_validate_write_operation_with_mode() -> None:
 def test_validate_write_operation_confirmation_required() -> None:
     """Test write operation validation when confirmation is required but not provided."""
     validator = SafetyValidator()
-    
+
     # Test with confirmed=False when require_confirmation is True (default)
     result = validator.validate_write_operation(
-        "test_operation",
-        {"some_param": "value"},
-        confirmed=False
+        "test_operation", {"some_param": "value"}, confirmed=False
     )
     assert not result.allowed
     assert result.requires_confirmation is True
     assert "Confirmation required" in result.reason
     assert "test_operation" in result.confirmation_message
-    
+
     # Test with confirmed=True when require_confirmation is True
     result = validator.validate_write_operation(
-        "test_operation",
-        {"some_param": "value"},
-        confirmed=True
+        "test_operation", {"some_param": "value"}, confirmed=True
     )
     assert result.allowed
-
-
 
 
 def test_main() -> None:
     """Test main entry point."""
     from mcp_venus_os import __main__
-    
+
     # Test that main function exists and is callable
     assert callable(__main__.main)
-    
+
     # We won't actually call mcp.run() as it would start the server
     # but we can verify the module imports correctly
-    assert hasattr(__main__, 'mcp')
+    assert hasattr(__main__, "mcp")
