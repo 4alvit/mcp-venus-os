@@ -256,10 +256,10 @@ async def mqtt_disconnect() -> dict[str, Any]:
 async def mqtt_subscribe(topic_pattern: str) -> dict[str, Any]:
     """Subscribe to MQTT topic pattern.
 
-    Returns a subscription ID for polling messages.
+    Not yet implemented - returns an error.
     """
-    # Note: This is a placeholder - real implementation would use async iteration
     return {
-        "success": True,
-        "message": f"Subscribed to {topic_pattern}. Use mqtt_poll for messages.",
+        "success": False,
+        "error": "unsupported",
+        "message": "MQTT subscribe not yet implemented",
     }
