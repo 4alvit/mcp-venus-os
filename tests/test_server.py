@@ -184,7 +184,10 @@ async def test_mqtt_disconnect() -> None:
 
 
 @pytest.mark.asyncio
-async def test_mqtt_subscribe() -> None:
+async def test_mqtt_subscribe_unsupported() -> None:
+    # mqtt_subscribe is a documented stub: it must report failure rather
+    # than pretend a subscription was created (see server.mqtt_subscribe).
     result = await server.mqtt_subscribe("N/venus-os/+")
-    assert result["success"] is True
-    assert "N/venus-os/+" in result["message"]
+    assert result["success"] is False
+    assert result["error"] == "unsupported"
+    assert "not yet implemented" in result["message"]
