@@ -72,8 +72,8 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 ## 9. Claude Code registration cleanup
 
 - [ ] Consolidate registration: remove `venus-os` block from `/Users/vmedvedev/victron/.mcp.json` once user-scope (or HTTP) entry exists
-- [ ] Clear stale `disabledMcpServers` entries (`/victron`, `/victron/inverter-desktop`, `/victron/inverter-dashboard-go`)
-- [ ] Repo-local `.mcp.json`: keep only graphify or add venus-os explicitly — pick one convention
+- [x] Clear stale `disabledMcpServers` entries (`venus-os` removed for `/victron`, `/victron/inverter-desktop`, `/victron/inverter-dashboard-go`; other servers' disables untouched; backup at `~/.claude.json.bak-*`)
+- [x] Repo-local `.mcp.json`: keep only graphify (convention picked — repo-local stays minimal, venus-os registered user-scope in §8)
 
 ## 10. Docs & release
 
