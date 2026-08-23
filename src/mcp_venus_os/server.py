@@ -1,5 +1,7 @@
 """MCP server for Venus OS management."""
 
+import asyncio
+import contextlib
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -76,12 +78,94 @@ async def lifespan(app: FastMCP) -> AsyncIterator[None]:
 mcp = FastMCP("Venus OS", lifespan=lifespan)
 
 
+def _use_mqtt() -> bool:
+    """True unless the on-device D-Bus backend is explicitly selected."""
+    return get_config().transport_backend != "dbus"
+
+
+async def _mqtt_ready() -> MQTTClient:
+    """Get the MQTT client connected with at least some cached telemetry."""
+    client = get_mqtt_client()
+    await client.connect()
+    for _ in range(20):
+        if client._cache:
+            break
+        await asyncio.sleep(0.1)
+    else:
+        logger.warning("No MQTT telemetry received yet from %s", client.prefix)
+    return client
+
+
+# MQTT item paths per tool field; first available candidate wins. Paths follow
+# the Venus OS MQTT gateway layout (mirrors D-Bus item paths).
+BATTERY_PATHS: dict[str, list[str]] = {
+    "soc": ["Soc"],
+    "voltage": ["Dc/0/Voltage", "Voltage"],
+    "current": ["Dc/0/Current", "Current"],
+    "power": ["Dc/0/Power", "Power"],
+    "temperature": ["Dc/0/Temperature", "Temperature"],
+    "status": ["Status"],
+    "time_to_go": ["TimeToGo"],
+}
+PV_PATHS: dict[str, list[str]] = {
+    "power": ["Yield/Power"],
+    "voltage": ["Pv/V"],
+    "current": ["Pv/I"],
+    "yield_today": ["Yield/Today"],
+    "yield_total": ["Yield/Pv", "Yield/User"],
+}
+GRID_PATHS: dict[str, list[str]] = {  # served by system/0 aggregate readings
+    "power": ["Ac/Grid/Power"],
+    "voltage": ["Ac/Grid/L1/Voltage", "Ac/Grid/Voltage"],
+    "current": ["Ac/Grid/L1/Current", "Ac/Grid/Current"],
+    "frequency": ["Ac/Grid/L1/Frequency", "Ac/Grid/Frequency"],
+    "status": ["Ac/GridOnIsland"],
+}
+INVERTER_PATHS: dict[str, list[str]] = {
+    "mode": ["Mode"],
+    "state": ["State"],
+    "ac_power_out": ["Ac/Out/P"],
+    "ac_power_in": ["Ac/ActiveIn/P"],
+    "dc_power": ["Dc/0/Power", "Dc/Pv/Power"],
+    "temperature": ["Dc/0/Temperature", "Temperature"],
+}
+
+
+def _collect_mqtt(
+    client: MQTTClient,
+    field_paths: dict[str, list[str]],
+    device_type: str,
+    instance: int,
+) -> dict[str, Any]:
+    """Collect fields from the MQTT read cache with a stale-data guard."""
+    stale_after = client.config.stale_after_seconds
+    out: dict[str, Any] = {}
+    max_age = 0.0
+    seen_any = False
+    for field, candidates in field_paths.items():
+        result = client.read_first(device_type, instance, candidates)
+        if result is None:
+            out[field] = None
+            continue
+        value, age = result
+        out[field] = value
+        seen_any = True
+        max_age = max(max_age, age)
+    out["stale"] = bool(seen_any and max_age > stale_after) or not seen_any
+    out["age_seconds"] = round(max_age, 1) if seen_any else None
+    return out
+
+
 # Read tools
 @mcp.tool()
 async def get_battery_soc(instance: int = 0) -> dict[str, Any]:
     """Get battery state of charge."""
-    client = get_dbus_client()
-    data: BatteryData = await client.get_battery_data(instance)
+    if _use_mqtt():
+        client = await _mqtt_ready()
+        return {"instance": instance} | _collect_mqtt(client, BATTERY_PATHS, "battery", instance)
+
+    dbus_client = get_dbus_client()
+    data: BatteryData = await dbus_client.get_battery_data(instance)
     return {
         "instance": instance,
         "soc": data.soc,
@@ -97,8 +181,17 @@ async def get_battery_soc(instance: int = 0) -> dict[str, Any]:
 @mcp.tool()
 async def get_pv_power(instance: int = 0) -> dict[str, Any]:
     """Get PV/solar charger power data."""
-    client = get_dbus_client()
-    data: PVData = await client.get_pv_data(instance)
+    if _use_mqtt():
+        client = await _mqtt_ready()
+        out = {"instance": instance} | _collect_mqtt(client, PV_PATHS, "solarcharger", instance)
+        # Fall back to computed power from voltage × current when absent
+        if out["power"] is None and out["voltage"] is not None and out["current"] is not None:
+            with contextlib.suppress(TypeError, ValueError):
+                out["power"] = round(float(out["voltage"]) * float(out["current"]), 1)
+        return out
+
+    dbus_client = get_dbus_client()
+    data: PVData = await dbus_client.get_pv_data(instance)
     return {
         "instance": instance,
         "power": data.power,
@@ -112,8 +205,12 @@ async def get_pv_power(instance: int = 0) -> dict[str, Any]:
 @mcp.tool()
 async def get_grid_status(instance: int = 0) -> dict[str, Any]:
     """Get grid/AC status."""
-    client = get_dbus_client()
-    data: GridData = await client.get_grid_data(instance)
+    if _use_mqtt():
+        client = await _mqtt_ready()
+        return {"instance": instance} | _collect_mqtt(client, GRID_PATHS, "system", instance)
+
+    dbus_client = get_dbus_client()
+    data: GridData = await dbus_client.get_grid_data(instance)
     return {
         "instance": instance,
         "power": data.power,
@@ -127,8 +224,12 @@ async def get_grid_status(instance: int = 0) -> dict[str, Any]:
 @mcp.tool()
 async def get_inverter_status(instance: int = 0) -> dict[str, Any]:
     """Get inverter mode and state."""
-    client = get_dbus_client()
-    data: InverterData = await client.get_inverter_data(instance)
+    if _use_mqtt():
+        client = await _mqtt_ready()
+        return {"instance": instance} | _collect_mqtt(client, INVERTER_PATHS, "vebus", instance)
+
+    dbus_client = get_dbus_client()
+    data: InverterData = await dbus_client.get_inverter_data(instance)
     return {
         "instance": instance,
         "mode": data.mode,
@@ -142,9 +243,13 @@ async def get_inverter_status(instance: int = 0) -> dict[str, Any]:
 
 @mcp.tool()
 async def list_devices() -> list[dict[str, Any]]:
-    """List all Victron devices on D-Bus."""
-    client = get_dbus_client()
-    return await client.list_devices()
+    """List all Victron devices visible to the server."""
+    if _use_mqtt():
+        client = await _mqtt_ready()
+        return client.list_devices()
+
+    dbus_client = get_dbus_client()
+    return await dbus_client.list_devices()
 
 
 # Write tools (with safety)
