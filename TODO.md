@@ -50,7 +50,7 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 
 - [x] Multi-stage `Dockerfile` (uv install → slim runtime, non-root user, no build deps in final image; `--no-editable` so venv is self-contained)
 - [x] `docker-compose.yml`: env-file based config, `restart: unless-stopped`, healthcheck hitting MCP HTTP endpoint
-- [x] Pin base image digest (python:3.13-slim multi-arch index); image build via toolkit `docker-build.yml` on PRs, push to ghcr.io/4alvit/mcp-venus-os on main
+- [x] Pin base image digest (python:3.13-slim multi-arch index); image build in `docker-build.yml` (buildx, all actions SHA-pinned) on PRs → push to ghcr.io/4alvit/mcp-venus-os on main (toolkit reusable docker-build currently broken: `setup-docker` action reads `secrets.` in a composite step — upstream fix needed)
 
 ## 7. Synology deployment (`/volume1/docker/mcp-venus-os/`)
 
@@ -72,8 +72,8 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 ## 9. Claude Code registration cleanup
 
 - [ ] Consolidate registration: remove `venus-os` block from `/Users/vmedvedev/victron/.mcp.json` once user-scope (or HTTP) entry exists
-- [ ] Clear stale `disabledMcpServers` entries (`/victron`, `/victron/inverter-desktop`, `/victron/inverter-dashboard-go`)
-- [ ] Repo-local `.mcp.json`: keep only graphify or add venus-os explicitly — pick one convention
+- [x] Clear stale `disabledMcpServers` entries (`venus-os` removed for `/victron`, `/victron/inverter-desktop`, `/victron/inverter-dashboard-go`; other servers' disables untouched; backup at `~/.claude.json.bak-*`)
+- [x] Repo-local `.mcp.json`: keep only graphify (convention picked — repo-local stays minimal, venus-os registered user-scope in §8)
 
 ## 10. Docs & release
 
