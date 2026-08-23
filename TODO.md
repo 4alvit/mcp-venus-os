@@ -30,14 +30,14 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 
 ## 4. Write tools: implement over `W/<portalId>/…`
 
-- [ ] Implement Victron write protocol: publish value to `W/<portalId>/<type>/<instance>/<Path>`, then publish empty payload to `W/<portalId>/<type>/<instance>/<Path>/Keepalive` every ≤60s while value active
-- [ ] Background asyncio task managing active keepalives; cancel on disconnect/shutdown
-- [ ] Wire `set_inverter_mode` (path `/Mode`, int codes: 1=on? map enum per docs) through validation → publish
-- [ ] Wire `set_charge_current_limit` (path `/Dc/0/MaxChargeCurrent`) through validation → publish
-- [ ] Wire `set_soc_limit` (path `/SocLimit` or BMS equivalent — confirm exact path on target battery) through validation → publish
-- [ ] Read-back verification: after publish, confirm `N/…` reflects new value within timeout, else report error
+- [x] Implement Victron write protocol: publish value to `W/<portalId>/<type>/<instance>/<Path>`, then publish empty payload to `W/<portalId>/<type>/<instance>/<Path>/Keepalive` every ≤60s while value active (50s interval)
+- [x] Background asyncio task managing active keepalives; cancel on disconnect/shutdown
+- [x] Wire `set_inverter_mode` (path `/Mode`, per-device enum tables in `MODE_CODES` — verify codes on target firmware)
+- [x] Wire `set_charge_current_limit` (path `/Dc/0/MaxChargeCurrent`) through validation → publish
+- [x] Wire `set_soc_limit` (path `/SocLimit` or BMS equivalent — confirm exact path on target battery) through validation → publish
+- [x] Read-back verification: after publish, confirm `N/…` reflects new value within timeout, else report error (5s window)
 - [ ] Integration test against local mosquitto broker (docker) simulating Venus topic layout
-- [ ] Safety re-check: confirmation flow still gates all three writes; limits enforced pre-publish
+- [x] Safety re-check: confirmation flow still gates all three writes; limits enforced pre-publish
 
 ## 5. Server transports (how Claude Code reaches it)
 
