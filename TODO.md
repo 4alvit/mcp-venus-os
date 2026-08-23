@@ -44,7 +44,7 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 - [x] Add CLI flag/env `SERVER_TRANSPORT` = `stdio` | `http` in `__main__.py`
 - [x] HTTP mode: FastMCP streamable-http, bind via `SERVER_HOST` (`127.0.0.1:8000` default on Mac; compose sets `0.0.0.0`)
 - [x] Optional bearer-token auth for HTTP mode (`SERVER_AUTH_TOKEN`, static verifier; 401 without/wrong token)
-- [ ] Test: `npx @modelcontextprotocol/inspector` connect over both transports (curl smoke test done: 406 unauthenticated reachability, 401/406 with token)
+- [x] Test: MCP Inspector connect over both transports — verified programmatically instead of the inspector GUI (its `--cli` mode returned empty output): stdio via Python MCP client (`tools/list` = 11, read tools live), HTTP via curl full handshake against Synology (`initialize` → session → `tools/list`; 401 without token). Curl smoke earlier: 406 reachability, 401/406 with token
 
 ## 6. Container packaging
 
