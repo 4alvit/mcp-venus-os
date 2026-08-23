@@ -269,5 +269,5 @@ class MQTTClient:
         """First discovered instance of ``device_type``, or None when absent."""
         for device in self.list_devices():
             if device["device_type"] == device_type:
-                return device["instance"]
+                return int(device["instance"])
         return None
