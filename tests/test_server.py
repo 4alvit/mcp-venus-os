@@ -2,7 +2,7 @@
 
 import json
 import time
-from typing import cast
+from typing import Any, cast
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -10,6 +10,7 @@ from fastmcp import FastMCP
 
 import mcp_venus_os.server as server
 from mcp_venus_os.dbus_client import BatteryData, GridData, InverterData, PVData
+from mcp_venus_os.mqtt_client import MQTTClient
 
 
 def test_get_dbus_client_creates_and_caches() -> None:
@@ -219,7 +220,7 @@ def _dbus_backend() -> Mock:
     return cfg
 
 
-def _feed(client: server.MQTTClient, topic: str, payload: bytes) -> None:
+def _feed(client: MQTTClient, topic: str, payload: bytes) -> None:
     import paho.mqtt.client as paho
 
     msg = paho.MQTTMessage()
@@ -230,9 +231,8 @@ def _feed(client: server.MQTTClient, topic: str, payload: bytes) -> None:
 
 def _mqtt_read_client(
     entries: dict[str, object], stale_after_seconds: float = 60.0
-) -> server.MQTTClient:
+) -> MQTTClient:
     """Real MQTTClient preloaded with cached telemetry, connect() mocked out."""
-
     from mcp_venus_os.config import MQTTConfig, ServerConfig
     from mcp_venus_os.mqtt_client import Payload
 
@@ -249,7 +249,7 @@ def _mqtt_read_client(
         _feed(client, topic.replace("<portal>", "testportal"), json.dumps(value).encode())
     if stale_after_seconds != 60.0:
         client.config.stale_after_seconds = stale_after_seconds
-    client.connect = AsyncMock()
+    cast(Any, client).connect = AsyncMock()
     return client
 
 
