@@ -6,10 +6,10 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 
 ## 1. Venus OS prerequisites (Cerbo side)
 
-- [ ] Enable MQTT Gateway on Cerbo: Settings → Services → MQTT Gateway, mode = "Local network" (listens on LAN :1883)
-- [ ] Record Venus `portalId` (shown on the MQTT Gateway page / `com.victronenergy.system/Serial`)
-- [ ] Verify from Mac: `mosquitto_sub -h <cerbo-ip> -t 'N/<portalId>/system/#' -v` returns telemetry
-- [ ] Decide broker auth (Venus local gateway allows anonymous on LAN; document if reverse-proxied)
+- [x] Enable MQTT Gateway on Cerbo: Settings → Services → MQTT Gateway, mode = "Local network" (listens on LAN :1883)
+- [x] Record Venus `portalId` (shown on the MQTT Gateway page / `com.victronenergy.system/Serial`) — `b827ebea1ece`
+- [x] Verify from Mac: `mosquitto_sub -h <cerbo-ip> -t 'N/<portalId>/system/#' -v` returns telemetry
+- [x] Decide broker auth: anonymous on LAN (gateway confirmed open on :1883; no TLS/auth for local use)
 
 ## 2. Config changes (`config.py`, `.env.sample`)
 
@@ -63,15 +63,14 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 
 ## 8. macOS deployment (same machine as Claude Code)
 
-- [ ] `uv sync` in repo; smoke-run `uv run mcp-venus-os` (already verified working)
-- [ ] Register user-scope (skips per-project approval):
-      `claude mcp add --scope user venus-os -e TRANSPORT_BACKEND=mqtt -e MQTT_HOST=<cerbo> -e MQTT_PORTAL_ID=<id> -- uv --directory /Users/vmedvedev/victron/mcp-venus-os run mcp-venus-os`
+- [x] `uv sync` in repo; smoke-run `uv run mcp-venus-os` (already verified working)
+- [x] Register user-scope: `claude mcp add --scope user venus-os -e TRANSPORT_BACKEND=mqtt -e MQTT_HOST=192.168.160.150 -e MQTT_PORTAL_ID=b827ebea1ece -- uv --directory /Users/vmedvedev/victron/mcp-venus-os run mcp-venus-os`
 - [ ] Alternative (shared with other machines): point Claude Code at Synology HTTP endpoint instead of local process
-- [ ] `claude mcp list` shows `✔ Connected`; call one read tool end-to-end
+- [x] `claude mcp list` shows `✔ Connected`; read tools verified end-to-end against live Cerbo (battery/grid/PV/inverter via stdio client)
 
 ## 9. Claude Code registration cleanup
 
-- [ ] Consolidate registration: remove `venus-os` block from `/Users/vmedvedev/victron/.mcp.json` once user-scope (or HTTP) entry exists
+- [x] Consolidate registration: remove `venus-os` block from `/Users/vmedvedev/victron/.mcp.json` once user-scope entry exists
 - [x] Clear stale `disabledMcpServers` entries (`venus-os` removed for `/victron`, `/victron/inverter-desktop`, `/victron/inverter-dashboard-go`; other servers' disables untouched; backup at `~/.claude.json.bak-*`)
 - [x] Repo-local `.mcp.json`: keep only graphify (convention picked — repo-local stays minimal, venus-os registered user-scope in §8)
 

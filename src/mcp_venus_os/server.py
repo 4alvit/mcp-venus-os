@@ -96,21 +96,38 @@ def _use_mqtt() -> bool:
     return get_config().transport_backend != "dbus"
 
 
+# Cold-start cap waiting for the gateway's initial full publish
+MQTT_WARMUP_TIMEOUT_S = 20.0
+
+
 async def _mqtt_ready() -> MQTTClient:
-    """Get the MQTT client connected with at least some cached telemetry."""
+    """Get the MQTT client once the gateway finished its initial full publish.
+
+    After a fresh connect the Venus MQTT gateway waits ~2-3s, then floods the
+    entire item tree, ending with ``N/<portalId>/full_publish_completed``.
+    Wait for that marker so instance auto-discovery sees the complete tree;
+    proceed after the timeout on gateways that never send it.
+    """
     client = get_mqtt_client()
     await client.connect()
-    for _ in range(20):
-        if client._cache:
+    if client._cache:
+        return client
+    done_topic = f"{client.prefix}/full_publish_completed"
+    deadline = time.monotonic() + MQTT_WARMUP_TIMEOUT_S
+    while done_topic not in client._cache:
+        if time.monotonic() > deadline:
+            logger.warning(
+                "MQTT full publish not seen within %.0fs (%d topics cached)",
+                MQTT_WARMUP_TIMEOUT_S,
+                len(client._cache),
+            )
             break
-        await asyncio.sleep(0.1)
-    else:
-        logger.warning("No MQTT telemetry received yet from %s", client.prefix)
+        await asyncio.sleep(0.25)
     return client
 
 
 # MQTT item paths per tool field; first available candidate wins. Paths follow
-# the Venus OS MQTT gateway layout (mirrors D-Bus item paths).
+# the Venus OS MQTT gateway layout (verified against live gateway topics).
 BATTERY_PATHS: dict[str, list[str]] = {
     "soc": ["Soc"],
     "voltage": ["Dc/0/Voltage", "Voltage"],
@@ -120,19 +137,19 @@ BATTERY_PATHS: dict[str, list[str]] = {
     "status": ["Status"],
     "time_to_go": ["TimeToGo"],
 }
-PV_PATHS: dict[str, list[str]] = {
-    "power": ["Yield/Power"],
-    "voltage": ["Pv/V"],
-    "current": ["Pv/I"],
-    "yield_today": ["Yield/Today"],
-    "yield_total": ["Yield/Pv", "Yield/User"],
+PV_PATHS: dict[str, list[str]] = {  # pvinverter layout first, solarcharger second
+    "power": ["Ac/Power", "Yield/Power"],
+    "voltage": ["Ac/L1/Voltage", "Ac/L2/Voltage", "Ac/L3/Voltage", "Pv/V"],
+    "current": ["Ac/L1/Current", "Ac/L2/Current", "Ac/L3/Current", "Pv/I"],
+    "yield_today": ["Ac/Energy/Daily", "Yield/Today"],
+    "yield_total": ["Ac/Energy/Forward", "Yield/Pv", "Yield/User"],
 }
-GRID_PATHS: dict[str, list[str]] = {  # served by system/0 aggregate readings
-    "power": ["Ac/Grid/Power"],
-    "voltage": ["Ac/Grid/L1/Voltage", "Ac/Grid/Voltage"],
-    "current": ["Ac/Grid/L1/Current", "Ac/Grid/Current"],
-    "frequency": ["Ac/Grid/L1/Frequency", "Ac/Grid/Frequency"],
-    "status": ["Ac/GridOnIsland"],
+GRID_PATHS: dict[str, list[str]] = {  # grid meter service (grid/<instance>)
+    "power": ["Ac/Power", "Ac/L1/Power", "Ac/L2/Power", "Ac/L3/Power"],
+    "voltage": ["Ac/L1/Voltage", "Ac/L2/Voltage", "Ac/L3/Voltage"],
+    "current": ["Ac/L1/Current", "Ac/L2/Current", "Ac/L3/Current"],
+    "frequency": ["Ac/Frequency", "Ac/L1/Frequency"],
+    "status": ["Connected"],
 }
 INVERTER_PATHS: dict[str, list[str]] = {
     "mode": ["Mode"],
@@ -167,6 +184,23 @@ def _collect_mqtt(
     out["stale"] = bool(seen_any and max_age > stale_after) or not seen_any
     out["age_seconds"] = round(max_age, 1) if seen_any else None
     return out
+
+
+def _resolve_mqtt_instance(
+    client: MQTTClient, device_types: tuple[str, ...], instance: int
+) -> tuple[str, int]:
+    """Pick the service type/instance to read; auto-discover when instance <= 0.
+
+    Venus services use nonzero device instances (e.g. battery/513, grid/40),
+    so a default ``instance=0`` resolves against the discovered topic cache.
+    """
+    if instance > 0:
+        return device_types[0], instance
+    for device_type in device_types:
+        found = client.discover_instance(device_type)
+        if found is not None:
+            return device_type, found
+    return device_types[0], instance
 
 
 async def _mqtt_write_and_verify(
@@ -244,7 +278,8 @@ async def get_battery_soc(instance: int = 0) -> dict[str, Any]:
     """Get battery state of charge."""
     if _use_mqtt():
         client = await _mqtt_ready()
-        return {"instance": instance} | _collect_mqtt(client, BATTERY_PATHS, "battery", instance)
+        dtype, inst = _resolve_mqtt_instance(client, ("battery",), instance)
+        return {"instance": inst} | _collect_mqtt(client, BATTERY_PATHS, dtype, inst)
 
     dbus_client = get_dbus_client()
     data: BatteryData = await dbus_client.get_battery_data(instance)
@@ -265,7 +300,8 @@ async def get_pv_power(instance: int = 0) -> dict[str, Any]:
     """Get PV/solar charger power data."""
     if _use_mqtt():
         client = await _mqtt_ready()
-        out = {"instance": instance} | _collect_mqtt(client, PV_PATHS, "solarcharger", instance)
+        dtype, inst = _resolve_mqtt_instance(client, ("solarcharger", "pvinverter"), instance)
+        out = {"instance": inst} | _collect_mqtt(client, PV_PATHS, dtype, inst)
         # Fall back to computed power from voltage × current when absent
         if out["power"] is None and out["voltage"] is not None and out["current"] is not None:
             with contextlib.suppress(TypeError, ValueError):
@@ -289,7 +325,8 @@ async def get_grid_status(instance: int = 0) -> dict[str, Any]:
     """Get grid/AC status."""
     if _use_mqtt():
         client = await _mqtt_ready()
-        return {"instance": instance} | _collect_mqtt(client, GRID_PATHS, "system", instance)
+        dtype, inst = _resolve_mqtt_instance(client, ("grid",), instance)
+        return {"instance": inst} | _collect_mqtt(client, GRID_PATHS, dtype, inst)
 
     dbus_client = get_dbus_client()
     data: GridData = await dbus_client.get_grid_data(instance)
@@ -308,7 +345,8 @@ async def get_inverter_status(instance: int = 0) -> dict[str, Any]:
     """Get inverter mode and state."""
     if _use_mqtt():
         client = await _mqtt_ready()
-        return {"instance": instance} | _collect_mqtt(client, INVERTER_PATHS, "vebus", instance)
+        dtype, inst = _resolve_mqtt_instance(client, ("vebus",), instance)
+        return {"instance": inst} | _collect_mqtt(client, INVERTER_PATHS, dtype, inst)
 
     dbus_client = get_dbus_client()
     data: InverterData = await dbus_client.get_inverter_data(instance)

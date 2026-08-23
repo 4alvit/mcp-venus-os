@@ -264,3 +264,10 @@ class MQTTClient:
                     continue
                 devices.append({"device_type": rest[0], "instance": instance})
         return sorted(devices, key=lambda d: (d["device_type"], d["instance"]))
+
+    def discover_instance(self, device_type: str) -> int | None:
+        """First discovered instance of ``device_type``, or None when absent."""
+        for device in self.list_devices():
+            if device["device_type"] == device_type:
+                return device["instance"]
+        return None
