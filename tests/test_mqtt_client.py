@@ -1,5 +1,7 @@
 """Tests for the MQTT client."""
 
+import asyncio
+import contextlib
 from typing import cast
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -321,3 +323,44 @@ async def test_disconnect() -> None:
 async def test_disconnect_not_connected() -> None:
     client = _make_client()
     await client.disconnect()
+
+
+def test_write_prefix() -> None:
+    client = _make_client()
+    assert client.write_prefix == f"W/{PORTAL}"
+
+
+@pytest.mark.asyncio
+async def test_start_keepalive_publishes_periodically() -> None:
+    client = _make_client()
+    paho_client = Mock()
+    client.client = cast(mqtt.Client, paho_client)
+    client._connected = True
+    with patch("mcp_venus_os.mqtt_client.KEEPALIVE_INTERVAL_S", 0.01):
+        client.start_keepalive(f"W/{PORTAL}/battery/512/Soc")
+        await asyncio.sleep(0.05)
+        client.cancel_keepalives()
+    keepalive_calls = [
+        c for c in paho_client.publish.call_args_list if c.args[0].endswith("/Keepalive")
+    ]
+    assert len(keepalive_calls) >= 1
+    assert keepalive_calls[0].args[1] == ""
+
+
+@pytest.mark.asyncio
+async def test_disconnect_cancels_keepalives() -> None:
+    client = _make_client()
+    paho_client = Mock()
+    client.client = cast(mqtt.Client, paho_client)
+    client._connected = True
+
+    async def _spin() -> None:
+        await asyncio.sleep(10)
+
+    task = asyncio.create_task(_spin())
+    client._keepalives["W/x"] = task
+    await client.disconnect()
+    with contextlib.suppress(asyncio.CancelledError):
+        await task
+    assert client._keepalives == {}
+    assert task.cancelled()

@@ -10,9 +10,12 @@ from typing import Any
 import paho.mqtt.client as mqtt
 from paho.mqtt.enums import CallbackAPIVersion
 
-from .config import get_config
+from .config import MissingPortalIdError, get_config
 
 logger = logging.getLogger(__name__)
+
+# Venus expires written values after 60s without keepalive; stay under it.
+KEEPALIVE_INTERVAL_S = 50.0
 
 
 class MQTTError(Exception):
@@ -47,11 +50,20 @@ class MQTTClient:
         self._callbacks: dict[str, list[Callable[[Payload], None]]] = {}
         # Last value per topic, with monotonic receive time (read cache)
         self._cache: dict[str, tuple[Payload, float]] = {}
+        # Active write keepalives: item topic -> periodic publisher task
+        self._keepalives: dict[str, asyncio.Task[None]] = {}
 
     @property
     def prefix(self) -> str:
         """Topic prefix for this portal, e.g. N/<portalId>."""
         return self.config.topic_prefix
+
+    @property
+    def write_prefix(self) -> str:
+        """Write-topic prefix for this portal, e.g. W/<portalId>."""
+        if not self.config.portal_id:
+            raise MissingPortalIdError()
+        return f"W/{self.config.portal_id}"
 
     def _on_connect(
         self,
@@ -175,6 +187,7 @@ class MQTTClient:
 
     async def disconnect(self) -> None:
         """Disconnect from MQTT broker."""
+        self.cancel_keepalives()
         if self.client and self._connected:
             self.client.loop_stop()
             self.client.disconnect()
@@ -188,6 +201,34 @@ class MQTTClient:
 
         data = json.dumps(payload) if not isinstance(payload, str) else payload
         self.client.publish(topic, data, retain=retain)
+
+    def start_keepalive(self, item_topic: str) -> None:
+        """Keep a written value active with periodic empty keepalive publishes.
+
+        Venus OS expires values written to ``W/…`` unless ``<item>/Keepalive``
+        receives an empty payload at least every 60s.
+        """
+        keepalive_topic = f"{item_topic}/Keepalive"
+        existing = self._keepalives.get(keepalive_topic)
+        if existing is not None:
+            existing.cancel()
+
+        async def _keepalive_loop() -> None:
+            while True:
+                await asyncio.sleep(KEEPALIVE_INTERVAL_S)
+                try:
+                    self.publish(keepalive_topic, "")
+                except MQTTError:
+                    return  # disconnected; disconnect() cancels the rest
+
+        task = asyncio.create_task(_keepalive_loop())
+        self._keepalives[keepalive_topic] = task
+
+    def cancel_keepalives(self) -> None:
+        """Cancel all active write keepalive tasks."""
+        for task in self._keepalives.values():
+            task.cancel()
+        self._keepalives.clear()
 
     def read_path(self, device_type: str, instance: int, path: str) -> tuple[Payload, float] | None:
         """Read a cached value from ``N/<portalId>/<type>/<instance>/<path>``.
