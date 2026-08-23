@@ -6,8 +6,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Development Status](https://img.shields.io/badge/Status-Alpha-orange.svg)]()
-[![GitHub stars](https://img.shields.io/github/stars/4alvit/mcp-venus-os)](https://github.com/4alvit/mcp-venus-os/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/4alvit/mcp-venus-os)](https://github.com/4alvit/mcp-venus-os/network/members)
 [![GitHub last commit](https://img.shields.io/github/last-commit/4alvit/mcp-venus-os)](https://github.com/4alvit/mcp-venus-os/commits/main)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/4alvit/mcp-venus-os/graphs/commit-activity)
 [![Made with Python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
