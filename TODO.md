@@ -41,10 +41,10 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/â€
 
 ## 5. Server transports (how Claude Code reaches it)
 
-- [ ] Add CLI flag/env `SERVER_TRANSPORT` = `stdio` | `http` in `__main__.py`
-- [ ] HTTP mode: FastMCP streamable-http on `0.0.0.0:8000` (container), bind `127.0.0.1:8000` default on Mac
-- [ ] Optional bearer-token auth for HTTP mode (`SERVER_AUTH_TOKEN`)
-- [ ] Test: `npx @modelcontextprotocol/inspector` connect over both transports
+- [x] Add CLI flag/env `SERVER_TRANSPORT` = `stdio` | `http` in `__main__.py`
+- [x] HTTP mode: FastMCP streamable-http, bind via `SERVER_HOST` (`127.0.0.1:8000` default on Mac; compose sets `0.0.0.0`)
+- [x] Optional bearer-token auth for HTTP mode (`SERVER_AUTH_TOKEN`, static verifier; 401 without/wrong token)
+- [ ] Test: `npx @modelcontextprotocol/inspector` connect over both transports (curl smoke test done: 406 unauthenticated reachability, 401/406 with token)
 
 ## 6. Container packaging
 

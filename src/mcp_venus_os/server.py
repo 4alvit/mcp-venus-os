@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastmcp import FastMCP
+from fastmcp.server.auth import StaticTokenVerifier
 
 from .config import get_config
 from .dbus_client import (
@@ -79,7 +80,15 @@ async def lifespan(app: FastMCP) -> AsyncIterator[None]:
         await _mqtt_client.disconnect()
 
 
-mcp = FastMCP("Venus OS", lifespan=lifespan)
+def _http_auth() -> StaticTokenVerifier | None:
+    """Static bearer-token verifier when SERVER_AUTH_TOKEN is set (HTTP mode only)."""
+    cfg = get_config()
+    if cfg.server_auth_token:
+        return StaticTokenVerifier(tokens={cfg.server_auth_token: {"client_id": "claude-code"}})
+    return None
+
+
+mcp = FastMCP("Venus OS", lifespan=lifespan, auth=_http_auth())
 
 
 def _use_mqtt() -> bool:
