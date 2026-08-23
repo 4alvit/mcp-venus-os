@@ -8,17 +8,20 @@ services:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: "8000"
     ports:
+      # Host port may need remapping (e.g. "8080:8000" when 8000 is taken)
       - "8000:8000"
     restart: unless-stopped
     healthcheck:
-      # 406 from /mcp without MCP headers = process up and listening
+      # Any HTTP response from /mcp (incl. 401/406 without MCP headers or
+      # auth token) proves the process is up and listening.
       test:
         - CMD
         - python
         - -c
         - >-
-          import urllib.request as u, sys;
-          sys.exit(0 if u.urlopen('http://127.0.0.1:8000/mcp', timeout=3).status in (200, 406) else 1)
+          import urllib.request as u, urllib.error as e, sys;
+          try: sys.exit(0 if u.urlopen('http://127.0.0.1:8000/mcp', timeout=3).status else 1)
+          except e.HTTPError as ex: sys.exit(0 if ex.code < 500 else 1)
       interval: 30s
       timeout: 5s
       retries: 3

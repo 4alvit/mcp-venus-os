@@ -1,5 +1,6 @@
 """Tests for the MCP server module."""
 
+import asyncio
 import json
 import time
 from typing import Any, cast
@@ -286,22 +287,6 @@ async def test_get_pv_power_mqtt_computes_power_from_voltage_times_current() -> 
 
 
 @pytest.mark.asyncio
-async def test_get_grid_status_mqtt_reads_system_aggregates() -> None:
-    client = _mqtt_read_client(
-        {
-            "N/<portal>/system/0/Ac/Grid/Power": -1200,
-            "N/<portal>/system/0/Ac/Grid/L1/Voltage": 230.5,
-        }
-    )
-    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
-        result = await server.get_grid_status(instance=0)
-    assert result["power"] == -1200
-    assert result["voltage"] == 230.5
-    assert result["current"] is None
-    assert result["stale"] is False
-
-
-@pytest.mark.asyncio
 async def test_list_devices_mqtt_from_cache() -> None:
     client = _mqtt_read_client(
         {
@@ -325,3 +310,88 @@ def test_collect_mqtt_all_missing_marks_stale() -> None:
     assert out["soc"] is None
     assert out["stale"] is True
     assert out["age_seconds"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_battery_soc_mqtt_auto_discovers_instance() -> None:
+    """Default instance=0 resolves against discovered battery/<n> topics."""
+    client = _mqtt_read_client({"N/<portal>/battery/513/Soc": 42})
+    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
+        result = await server.get_battery_soc(instance=0)
+    assert result["instance"] == 513
+    assert result["soc"] == 42
+
+
+@pytest.mark.asyncio
+async def test_get_pv_power_mqtt_pvinverter_layout() -> None:
+    """pvinverter services use Ac/* paths and are auto-discovered."""
+    client = _mqtt_read_client(
+        {
+            "N/<portal>/pvinverter/369/Ac/Power": 1500,
+            "N/<portal>/pvinverter/369/Ac/L1/Voltage": 230.0,
+            "N/<portal>/pvinverter/369/Ac/L1/Current": 6.5,
+            "N/<portal>/pvinverter/369/Ac/Energy/Daily": 3.2,
+            "N/<portal>/pvinverter/369/Ac/Energy/Forward": 120.5,
+        }
+    )
+    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
+        result = await server.get_pv_power(instance=0)
+    assert result["instance"] == 369
+    assert result["power"] == 1500
+    assert result["voltage"] == 230.0
+    assert result["yield_today"] == 3.2
+    assert result["yield_total"] == 120.5
+
+
+@pytest.mark.asyncio
+async def test_get_grid_status_mqtt_grid_service_layout() -> None:
+    """grid/<instance> meter service paths, not system/0 aggregates."""
+    client = _mqtt_read_client(
+        {
+            "N/<portal>/grid/40/Ac/Power": -600,
+            "N/<portal>/grid/40/Ac/L1/Voltage": 231.2,
+            "N/<portal>/grid/40/Ac/Frequency": 49.98,
+            "N/<portal>/grid/40/Connected": 1,
+        }
+    )
+    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
+        result = await server.get_grid_status(instance=0)
+    assert result["instance"] == 40
+    assert result["power"] == -600
+    assert result["voltage"] == 231.2
+    assert result["frequency"] == 49.98
+
+
+def test_discover_instance_missing_type_returns_none() -> None:
+    client = _mqtt_read_client({"N/<portal>/battery/256/Soc": 77})
+    assert client.discover_instance("vebus") is None
+    assert client.discover_instance("battery") == 256
+
+
+@pytest.mark.asyncio
+async def test_mqtt_ready_waits_for_full_publish_marker() -> None:
+    """Cold start blocks until the gateway full-publish marker lands."""
+    client = _mqtt_read_client({})  # cold cache
+    cast(Any, client).connect = AsyncMock()
+
+    async def _fill_later() -> None:
+        await asyncio.sleep(0.05)
+        _feed(client, "N/testportal/full_publish_completed", b'{"value":1}')
+        _feed(client, "N/testportal/vebus/257/Mode", b'{"value":1}')
+
+    task = asyncio.create_task(_fill_later())
+    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
+        out = await server._mqtt_ready()
+    await task
+    assert any("/vebus/" in t for t in out._cache)
+
+
+@pytest.mark.asyncio
+async def test_mqtt_ready_times_out_without_marker(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No marker (old firmware) → proceed after the timeout instead of hanging."""
+    monkeypatch.setattr(server, "MQTT_WARMUP_TIMEOUT_S", 0.1)
+    client = _mqtt_read_client({"N/<portal>/battery/256/Soc": 50})
+    cast(Any, client).connect = AsyncMock()
+    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
+        out = await server._mqtt_ready()
+    assert out.read_path("battery", 256, "Soc") is not None
