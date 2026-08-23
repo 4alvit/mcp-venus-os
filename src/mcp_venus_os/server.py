@@ -110,9 +110,11 @@ async def _mqtt_ready() -> MQTTClient:
     """
     client = get_mqtt_client()
     await client.connect()
-    if client._cache:
-        return client
+    # Gate on the marker itself, not on "some topics cached": the gateway
+    # trickles a few live values (e.g. system Serial) before its flood.
     done_topic = f"{client.prefix}/full_publish_completed"
+    if done_topic in client._cache:
+        return client
     deadline = time.monotonic() + MQTT_WARMUP_TIMEOUT_S
     while done_topic not in client._cache:
         if time.monotonic() > deadline:

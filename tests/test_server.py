@@ -246,6 +246,9 @@ def _mqtt_read_client(entries: dict[str, object], stale_after_seconds: float = 6
         client = server.get_mqtt_client()
     for topic, value in entries.items():
         _feed(client, topic.replace("<portal>", "testportal"), json.dumps(value).encode())
+    # Fixture clients simulate post-warm-up state: marker already cached so
+    # _mqtt_ready returns without waiting (see server.MQTT_WARMUP_TIMEOUT_S).
+    _feed(client, "N/testportal/full_publish_completed", b'{"value":1}')
     if stale_after_seconds != 60.0:
         client.config.stale_after_seconds = stale_after_seconds
     cast(Any, client).connect = AsyncMock()
@@ -391,6 +394,8 @@ async def test_mqtt_ready_times_out_without_marker(monkeypatch: pytest.MonkeyPat
     """No marker (old firmware) → proceed after the timeout instead of hanging."""
     monkeypatch.setattr(server, "MQTT_WARMUP_TIMEOUT_S", 0.1)
     client = _mqtt_read_client({"N/<portal>/battery/256/Soc": 50})
+    # Drop the fixture's marker so the cold-start path actually runs.
+    client._cache.pop("N/testportal/full_publish_completed", None)
     cast(Any, client).connect = AsyncMock()
     with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
         out = await server._mqtt_ready()

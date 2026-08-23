@@ -117,6 +117,9 @@ def _mqtt_client(portal: str = "testportal") -> MQTTClient:
     cfg = ServerConfig(mqtt=MQTTConfig(host="localhost", portal_id=portal))
     with patch("mcp_venus_os.mqtt_client.get_config", return_value=cfg):
         client = MQTTClient()
+    # Simulate post-warm-up state so _mqtt_ready doesn't wait for the
+    # gateway's full-publish marker.
+    client._cache[f"N/{portal}/full_publish_completed"] = ({"value": 1}, _time.monotonic())
     cast(Any, client).connect = AsyncMock()
     return client
 
