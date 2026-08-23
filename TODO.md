@@ -77,6 +77,6 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/â€
 
 ## 10. Docs & release
 
-- [ ] README: deployment matrix (macOS stdio / Synology HTTP / on-Cerbo D-Bus), MQTT topic map, safety model
-- [ ] CHANGELOG entry for transport pivot
+- [x] README: deployment matrix (macOS stdio / Synology HTTP / on-Cerbo D-Bus), MQTT topic map, safety model
+- [x] CHANGELOG entry for transport pivot
 - [ ] Tag release after end-to-end write test passes against real hardware
