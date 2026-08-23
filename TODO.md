@@ -36,7 +36,7 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 - [x] Wire `set_charge_current_limit` (path `/Dc/0/MaxChargeCurrent`) through validation → publish
 - [x] Wire `set_soc_limit` (path `/SocLimit` or BMS equivalent — confirm exact path on target battery) through validation → publish
 - [x] Read-back verification: after publish, confirm `N/…` reflects new value within timeout, else report error (5s window)
-- [ ] Integration test against local mosquitto broker (docker) simulating Venus topic layout
+- [x] Integration test against local mosquitto broker (docker) simulating Venus topic layout (`tests/test_integration_mosquitto.py`, skips when docker unavailable)
 - [x] Safety re-check: confirmation flow still gates all three writes; limits enforced pre-publish
 
 ## 5. Server transports (how Claude Code reaches it)
