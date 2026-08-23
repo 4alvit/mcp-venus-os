@@ -9,8 +9,27 @@ from paho.mqtt.properties import Properties
 from paho.mqtt.reasoncodes import ReasonCode
 
 from mcp_venus_os.config import MQTTConfig, ServerConfig
-from mcp_venus_os.dbus_client import BatteryData, GridData, InverterData, PVData
-from mcp_venus_os.mqtt_client import ConnectionTimeoutError, MQTTClient, NotConnectedError, Payload
+from mcp_venus_os.mqtt_client import (
+    ConnectionTimeoutError,
+    MQTTClient,
+    NotConnectedError,
+    Payload,
+)
+
+PORTAL = "testportal"
+PREFIX = f"N/{PORTAL}"
+
+
+def _config(**overrides: object) -> ServerConfig:
+    mqtt_kwargs: dict[str, object] = {"host": "localhost", "port": 1883, "portal_id": PORTAL}
+    mqtt_kwargs.update(overrides)
+    return ServerConfig(mqtt=MQTTConfig(**mqtt_kwargs))  # type: ignore[arg-type]
+
+
+def _make_client(**config_overrides: object) -> MQTTClient:
+    """MQTT client backed by a test config with a fixed portal id."""
+    with patch("mcp_venus_os.mqtt_client.get_config", return_value=_config(**config_overrides)):
+        return MQTTClient()
 
 
 def _noop(payload: Payload) -> None:
@@ -28,17 +47,26 @@ class FakeReasonCode:
         return self.value
 
 
+def _feed(client: MQTTClient, topic: str, payload: bytes) -> None:
+    msg = mqtt.MQTTMessage()
+    msg._topic = topic.encode()
+    msg.payload = payload
+    client._on_message(cast(mqtt.Client, Mock()), None, msg)
+
+
 def test_topic_matches() -> None:
-    client = MQTTClient()
+    client = _make_client()
     assert client._topic_matches("a/+/c", "a/b/c")
     assert client._topic_matches("#", "anything")
+    assert client._topic_matches("a/#", "a/b/c/d")
+    assert not client._topic_matches("b/#", "a/b/c")
     assert not client._topic_matches("a/+/c", "a/b/d")
     assert not client._topic_matches("a/b", "a/b/c")
     assert not client._topic_matches("a/b/c", "a/b/c/d")
 
 
-def test_on_connect_success() -> None:
-    client = MQTTClient()
+def test_on_connect_success_subscribes_portal_wildcard() -> None:
+    client = _make_client()
     paho_client = Mock()
     client._on_connect(
         cast(mqtt.Client, paho_client),
@@ -48,11 +76,11 @@ def test_on_connect_success() -> None:
         cast(Properties, Mock()),
     )
     assert client._connected
-    assert paho_client.subscribe.call_count == 2
+    paho_client.subscribe.assert_called_once_with(f"{PREFIX}/#")
 
 
 def test_on_connect_failure() -> None:
-    client = MQTTClient()
+    client = _make_client()
     client._on_connect(
         cast(mqtt.Client, Mock()),
         None,
@@ -64,7 +92,7 @@ def test_on_connect_failure() -> None:
 
 
 def test_on_disconnect() -> None:
-    client = MQTTClient()
+    client = _make_client()
     client._connected = True
     client._on_disconnect(
         cast(mqtt.Client, Mock()),
@@ -76,35 +104,37 @@ def test_on_disconnect() -> None:
     assert not client._connected
 
 
-def test_on_message_valid() -> None:
-    client = MQTTClient()
+def test_on_message_valid_caches_value() -> None:
+    client = _make_client()
     received: list[Payload] = []
-    client.subscribe("N/venus-os/+/+", received.append)
-    msg = mqtt.MQTTMessage()
-    msg._topic = b"N/venus-os/battery/0"
-    msg.payload = b'{"a": 1}'
-    client._on_message(cast(mqtt.Client, Mock()), None, msg)
-    assert received == [{"a": 1}]
+    client.subscribe(f"{PREFIX}/#", received.append)
+    _feed(client, f"{PREFIX}/battery/0/Soc", b"55.5")
+    assert received == [55.5]
+    cached = client.read_path("battery", 0, "Soc")
+    assert cached is not None
+    assert cached[0] == 55.5
+
+
+def test_on_message_outside_prefix_not_cached() -> None:
+    client = _make_client()
+    _feed(client, "N/otherportal/battery/0/Soc", b"42")
+    assert client.read_path("battery", 0, "Soc") is None
 
 
 def test_on_message_invalid_json() -> None:
-    client = MQTTClient()
-    msg = mqtt.MQTTMessage()
-    msg._topic = b"N/venus-os/battery/0"
-    msg.payload = b"not json"
-    client._on_message(cast(mqtt.Client, Mock()), None, msg)
+    client = _make_client()
+    _feed(client, f"{PREFIX}/battery/0", b"not json")
+    assert client._cache == {}
 
 
 def test_on_message_decode_error() -> None:
-    client = MQTTClient()
-    msg = mqtt.MQTTMessage()
-    msg._topic = b"N/venus-os/battery/0"
-    msg.payload = b"\xff"
-    client._on_message(cast(mqtt.Client, Mock()), None, msg)
+    client = _make_client()
+    _feed(client, f"{PREFIX}/battery/0", b"\xff")
+    assert client._cache == {}
 
 
 def test_notify_callbacks_and_error() -> None:
-    client = MQTTClient()
+    client = _make_client()
     calls: list[str] = []
 
     def good(payload: Payload) -> None:
@@ -120,14 +150,14 @@ def test_notify_callbacks_and_error() -> None:
 
 
 def test_subscribe_new_and_existing() -> None:
-    client = MQTTClient()
+    client = _make_client()
     client.subscribe("x/+", _noop)
     client.subscribe("x/+", _noop)
     assert client._callbacks["x/+"] == [_noop, _noop]
 
 
 def test_subscribe_when_connected() -> None:
-    client = MQTTClient()
+    client = _make_client()
     paho_client = Mock()
     client.client = cast(mqtt.Client, paho_client)
     client._connected = True
@@ -136,7 +166,7 @@ def test_subscribe_when_connected() -> None:
 
 
 def test_unsubscribe() -> None:
-    client = MQTTClient()
+    client = _make_client()
     client.subscribe("z", _noop)
     client.unsubscribe("z", _noop)
     assert client._callbacks["z"] == []
@@ -144,45 +174,89 @@ def test_unsubscribe() -> None:
 
 
 def test_publish_not_connected() -> None:
-    client = MQTTClient()
+    client = _make_client()
     with pytest.raises(NotConnectedError):
         client.publish("x/y", {"a": 1})
 
 
-def test_publish_dict_payload() -> None:
-    client = MQTTClient()
+def test_publish_uses_absolute_topic() -> None:
+    client = _make_client()
     paho_client = Mock()
     client.client = cast(mqtt.Client, paho_client)
     client._connected = True
-    client.publish("x/y", {"a": 1}, retain=True)
-    paho_client.publish.assert_called_once_with("N/venus-os/x/y", '{"a": 1}', retain=True)
+    client.publish("W/testportal/battery/512/Soc", 50, retain=True)
+    paho_client.publish.assert_called_once_with("W/testportal/battery/512/Soc", "50", retain=True)
 
 
 def test_publish_string_payload() -> None:
-    client = MQTTClient()
+    client = _make_client()
     paho_client = Mock()
     client.client = cast(mqtt.Client, paho_client)
     client._connected = True
-    client.publish("x/y", "hello")
-    paho_client.publish.assert_called_once_with("N/venus-os/x/y", "hello", retain=False)
+    client.publish("W/testportal/x/y", "hello")
+    paho_client.publish.assert_called_once_with("W/testportal/x/y", "hello", retain=False)
 
 
-def test_publish_helpers() -> None:
-    client = MQTTClient()
-    paho_client = Mock()
-    client.client = cast(mqtt.Client, paho_client)
-    client._connected = True
-    client.publish_battery(0, BatteryData(50.0, 13.0, 5.0, 65.0, 20.0, "Discharging"))
-    client.publish_pv(0, PVData(100.0, 50.0, 2.0, 10.0, 1000.0))
-    client.publish_grid(0, GridData(200.0, 230.0, 1.0, 50.0, "ok"))
-    client.publish_inverter(0, InverterData("on", "running", 500.0, 0.0, 600.0, 35.0))
-    assert paho_client.publish.call_count == 4
+def test_read_path_returns_age() -> None:
+    client = _make_client()
+    assert client.read_path("battery", 256, "Soc") is None
+    _feed(client, f"{PREFIX}/battery/256/Soc", b"55.5")
+    result = client.read_path("battery", 256, "Soc")
+    assert result is not None
+    value, age = result
+    assert value == 55.5
+    assert 0.0 <= age < 1.0
+
+
+def test_read_first_prefers_first_available_candidate() -> None:
+    client = _make_client()
+    _feed(client, f"{PREFIX}/battery/256/Dc/0/Voltage", b"13.2")
+    result = client.read_first("battery", 256, ["Voltage", "Dc/0/Voltage"])
+    assert result is not None
+    assert result[0] == 13.2
+
+
+def test_list_devices_from_cache() -> None:
+    client = _make_client()
+    for topic in (
+        f"{PREFIX}/battery/256/Soc",
+        f"{PREFIX}/battery/256/Dc/0/Voltage",
+        f"{PREFIX}/solarcharger/1/Yield/Power",
+        f"{PREFIX}/vebus/257/Ac/Out/P",
+        f"{PREFIX}/system/0/Serial",
+    ):
+        _feed(client, topic, b"1")
+    devices = client.list_devices()
+    assert devices == [
+        {"device_type": "battery", "instance": 256},
+        {"device_type": "solarcharger", "instance": 1},
+        {"device_type": "system", "instance": 0},
+        {"device_type": "vebus", "instance": 257},
+    ]
+
+
+def test_list_devices_skips_non_numeric_instances() -> None:
+    client = _make_client()
+    _feed(client, f"{PREFIX}/settings/Settings", b"{}")
+    assert client.list_devices() == []
+
+
+def test_stale_after_seconds_configured() -> None:
+    client = _make_client(stale_after_seconds=5.0)
+    assert client.config.stale_after_seconds == 5.0
+
+
+def test_topic_prefix_requires_portal_id() -> None:
+    from mcp_venus_os.config import MissingPortalIdError
+
+    with pytest.raises(MissingPortalIdError):
+        _ = MQTTConfig().topic_prefix
 
 
 @pytest.mark.asyncio
 async def test_connect_success() -> None:
     with patch("mcp_venus_os.mqtt_client.mqtt.Client") as mock_client_cls:
-        client = MQTTClient()
+        client = _make_client()
         mock_client_cls.return_value.connect_async.side_effect = lambda _host, _port: setattr(
             client, "_connected", True
         )
@@ -195,6 +269,7 @@ async def test_connect_success() -> None:
 @pytest.mark.asyncio
 async def test_connect_timeout() -> None:
     with (
+        patch("mcp_venus_os.mqtt_client.get_config", return_value=_config()),
         patch("mcp_venus_os.mqtt_client.mqtt.Client") as mock_client_cls,
         patch("mcp_venus_os.mqtt_client.asyncio.sleep", new=AsyncMock()),
     ):
@@ -207,7 +282,14 @@ async def test_connect_timeout() -> None:
 @pytest.mark.asyncio
 async def test_connect_with_auth_and_tls() -> None:
     config = ServerConfig(
-        mqtt=MQTTConfig(host="broker", port=8883, username="u", password="p", tls=True)
+        mqtt=MQTTConfig(
+            host="broker",
+            port=8883,
+            username="u",
+            password="p",
+            tls=True,
+            portal_id="p1",
+        )
     )
     with (
         patch("mcp_venus_os.mqtt_client.get_config", return_value=config),
@@ -225,7 +307,7 @@ async def test_connect_with_auth_and_tls() -> None:
 
 @pytest.mark.asyncio
 async def test_disconnect() -> None:
-    client = MQTTClient()
+    client = _make_client()
     paho_client = Mock()
     client.client = cast(mqtt.Client, paho_client)
     client._connected = True
@@ -237,5 +319,5 @@ async def test_disconnect() -> None:
 
 @pytest.mark.asyncio
 async def test_disconnect_not_connected() -> None:
-    client = MQTTClient()
+    client = _make_client()
     await client.disconnect()

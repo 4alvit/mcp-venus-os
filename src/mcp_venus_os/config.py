@@ -6,6 +6,10 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class MissingPortalIdError(ValueError):
+    """Raised when MQTT_PORTAL_ID is required but not configured."""
+
+
 class DBusConfig(BaseSettings):
     """D-Bus connection configuration."""
 
@@ -25,8 +29,21 @@ class MQTTConfig(BaseSettings):
     username: str | None = Field(default=None, description="MQTT username")
     password: str | None = Field(default=None, description="MQTT password")
     client_id: str = Field(default="mcp-venus-os", description="MQTT client ID")
-    base_topic: str = Field(default="N/venus-os", description="Base topic for Venus OS data")
+    portal_id: str | None = Field(
+        default=None,
+        description="Venus OS portal ID (required when transport backend is mqtt)",
+    )
+    stale_after_seconds: float = Field(
+        default=60.0, description="Mark cached readings older than this as stale"
+    )
     tls: bool = Field(default=False, description="Use TLS for MQTT connection")
+
+    @property
+    def topic_prefix(self) -> str:
+        """Base topic prefix for the Venus MQTT gateway (N/<portalId>)."""
+        if not self.portal_id:
+            raise MissingPortalIdError()
+        return f"N/{self.portal_id}"
 
 
 class SafetyConfig(BaseSettings):
@@ -63,6 +80,9 @@ class ServerConfig(BaseSettings):
     dbus: DBusConfig = Field(default_factory=DBusConfig)
     mqtt: MQTTConfig = Field(default_factory=MQTTConfig)
     safety: SafetyConfig = Field(default_factory=SafetyConfig)
+    transport_backend: str = Field(
+        default="mqtt", description="Transport backend: mqtt (default) or dbus (on-device)"
+    )
     log_level: str = Field(default="INFO", description="Logging level")
 
 

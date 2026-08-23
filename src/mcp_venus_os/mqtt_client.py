@@ -1,17 +1,16 @@
-"""MQTT client for real-time Venus OS data streaming."""
+"""MQTT client for the Venus OS MQTT gateway (read path)."""
 
 import asyncio
 import json
 import logging
+import time
 from collections.abc import Callable
-from dataclasses import asdict
 from typing import Any
 
 import paho.mqtt.client as mqtt
 from paho.mqtt.enums import CallbackAPIVersion
 
 from .config import get_config
-from .dbus_client import BatteryData, GridData, InverterData, PVData
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +45,13 @@ class MQTTClient:
         self.client: mqtt.Client | None = None
         self._connected = False
         self._callbacks: dict[str, list[Callable[[Payload], None]]] = {}
+        # Last value per topic, with monotonic receive time (read cache)
+        self._cache: dict[str, tuple[Payload, float]] = {}
+
+    @property
+    def prefix(self) -> str:
+        """Topic prefix for this portal, e.g. N/<portalId>."""
+        return self.config.topic_prefix
 
     def _on_connect(
         self,
@@ -59,12 +65,11 @@ class MQTTClient:
         if reason_code == 0:
             self._connected = True
             logger.info("Connected to MQTT broker at %s:%d", self.config.host, self.config.port)
-            base = self.config.base_topic
-            client.subscribe(f"{base}/+/+/+")
-            client.subscribe(f"{base}/+/+/+/+")
+            base = f"{self.prefix}/#"
+            client.subscribe(base)
             logger.debug("Subscribed to %s", base)
         else:
-            logger.error("Failed to connect to MQTT broker: %d", reason_code)
+            logger.error("Failed to connect to MQTT broker: %s", reason_code)
 
     def _on_disconnect(
         self,
@@ -89,6 +94,8 @@ class MQTTClient:
             payload = json.loads(msg.payload.decode())
             topic = msg.topic
             logger.debug("Received message on %s: %s", topic, payload)
+            if topic.startswith(self.prefix + "/"):
+                self._cache[topic] = (payload, time.monotonic())
             self._notify_callbacks(topic, payload)
         except json.JSONDecodeError:
             logger.warning("Invalid JSON on topic %s: %s", msg.topic, msg.payload)
@@ -109,7 +116,13 @@ class MQTTClient:
         """Check if topic matches pattern (supports wildcards)."""
         pattern_parts = pattern.split("/")
         topic_parts = topic.split("/")
-        if len(pattern_parts) != len(topic_parts):
+        if pattern_parts[-1] == "#":
+            # Trailing '#' matches the parent level plus any number of sublevels
+            prefix_parts = pattern_parts[:-1]
+            if topic_parts[: len(prefix_parts)] != prefix_parts:
+                return False
+            pattern_parts, topic_parts = [], []
+        elif len(pattern_parts) != len(topic_parts):
             return False
         for p, t in zip(pattern_parts, topic_parts, strict=False):
             if p != "+" and p != "#" and p != t:
@@ -169,25 +182,44 @@ class MQTTClient:
             logger.info("Disconnected from MQTT broker")
 
     def publish(self, topic: str, payload: Payload, retain: bool = False) -> None:
-        """Publish a message to MQTT."""
+        """Publish a message to an absolute MQTT topic."""
         if not self.client or not self._connected:
             raise NotConnectedError()
 
         data = json.dumps(payload) if not isinstance(payload, str) else payload
-        self.client.publish(f"{self.config.base_topic}/{topic}", data, retain=retain)
+        self.client.publish(topic, data, retain=retain)
 
-    def publish_battery(self, instance: int, data: BatteryData) -> None:
-        """Publish battery data."""
-        self.publish(f"battery/{instance}", asdict(data))
+    def read_path(self, device_type: str, instance: int, path: str) -> tuple[Payload, float] | None:
+        """Read a cached value from ``N/<portalId>/<type>/<instance>/<path>``.
 
-    def publish_pv(self, instance: int, data: PVData) -> None:
-        """Publish PV data."""
-        self.publish(f"solarcharger/{instance}", asdict(data))
+        Returns ``(value, age_seconds)``, or None when nothing has been received.
+        """
+        entry = self._cache.get(f"{self.prefix}/{device_type}/{instance}/{path}")
+        if entry is None:
+            return None
+        return entry[0], time.monotonic() - entry[1]
 
-    def publish_grid(self, instance: int, data: GridData) -> None:
-        """Publish grid data."""
-        self.publish(f"vebus/{instance}/grid", asdict(data))
+    def read_first(
+        self, device_type: str, instance: int, paths: list[str]
+    ) -> tuple[Payload, float] | None:
+        """Read the first available cached value among candidate item paths."""
+        for path in paths:
+            result = self.read_path(device_type, instance, path)
+            if result is not None:
+                return result
+        return None
 
-    def publish_inverter(self, instance: int, data: InverterData) -> None:
-        """Publish inverter data."""
-        self.publish(f"vebus/{instance}/inverter", asdict(data))
+    def list_devices(self) -> list[dict[str, Any]]:
+        """List devices discovered from cached ``N/<portalId>/<type>/<instance>`` topics."""
+        seen: set[tuple[str, str]] = set()
+        devices: list[dict[str, Any]] = []
+        for topic in self._cache:
+            rest = topic[len(self.prefix) + 1 :].split("/")
+            if len(rest) >= 2 and (rest[0], rest[1]) not in seen:
+                seen.add((rest[0], rest[1]))
+                try:
+                    instance = int(rest[1])
+                except ValueError:
+                    continue
+                devices.append({"device_type": rest[0], "instance": instance})
+        return sorted(devices, key=lambda d: (d["device_type"], d["instance"]))
