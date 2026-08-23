@@ -83,6 +83,17 @@ class ServerConfig(BaseSettings):
     transport_backend: str = Field(
         default="mqtt", description="Transport backend: mqtt (default) or dbus (on-device)"
     )
+    server_transport: str = Field(
+        default="stdio", description="How Claude Code reaches the MCP server: stdio or http"
+    )
+    server_host: str = Field(
+        default="127.0.0.1",
+        description="HTTP bind address (use 0.0.0.0 in containers)",
+    )
+    server_port: int = Field(default=8000, description="HTTP port when server_transport=http")
+    server_auth_token: str | None = Field(
+        default=None, description="Bearer token required for HTTP mode (optional)"
+    )
     log_level: str = Field(default="INFO", description="Logging level")
 
 

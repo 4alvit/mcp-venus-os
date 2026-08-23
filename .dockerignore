@@ -1,0 +1,15 @@
+.git
+.github
+.venv
+.mypy_cache
+.pytest_cache
+.ruff_cache
+logs
+tests
+examples
+TODO.md
+.env
+.env.*
+*.local.py
+Dockerfile
+docker-compose.yml
