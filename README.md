@@ -106,6 +106,13 @@ claude mcp add --scope user venus-os \
 For the Synology HTTP deployment, point clients at `http://<synology-ip>:8000/mcp`
 (send `Authorization: Bearer $SERVER_AUTH_TOKEN` when configured).
 
+DSM notes (deployed at `/volume1/docker/mcp-venus-os/`):
+
+- Plain `docker compose` (full path `/usr/local/bin/docker`) works fine; Container Manager is not required.
+- Host port 8000 is taken by Portainer on typical DSM installs — remap in the compose `ports:` (e.g. `"8080:8000"`).
+- SFTP/scp may be disabled; copy files via `ssh ... 'cat > file'`.
+- The `.env` (portal id, token) lives only on the NAS, mode 600.
+
 ## Available Tools
 
 ### Read Tools

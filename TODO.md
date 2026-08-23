@@ -54,12 +54,12 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 
 ## 7. Synology deployment (`/volume1/docker/mcp-venus-os/`)
 
-- [ ] `ssh synology 'sudo mkdir -p /volume1/docker/mcp-venus-os'` (config + docker files live here)
-- [ ] Copy `docker-compose.yml` + `.env` (real values: cerbo IP, portal id, auth token) to that folder
-- [ ] `ssh synology 'cd /volume1/docker/mcp-venus-os && sudo docker compose up -d'`
-- [ ] Verify: `docker compose ps` healthy, logs show MQTT connected to cerbo, no reconnect loop
-- [ ] Verify from Mac: MCP handshake against `http://<synology-ip>:8000/mcp` returns 11 tools
-- [ ] Document DSM-side notes (Container Manager vs plain compose) in README
+- [x] `ssh synology 'sudo mkdir -p /volume1/docker/mcp-venus-os'` (config + docker files live here)
+- [x] Copy `docker-compose.yml` + `.env` (real values: cerbo IP, portal id, auth token) to that folder — `.env` generated on the NAS itself (token via openssl there), mode 600
+- [x] `ssh synology 'cd /volume1/docker/mcp-venus-os && sudo docker compose up -d'` — host port remapped to **8080** (8000 = Portainer)
+- [x] Verify: `docker compose ps` healthy, logs show MQTT connected to cerbo, no reconnect loop
+- [x] Verify from Mac: MCP handshake against `http://<synology-ip>:8080/mcp`, bearer auth enforced (401 without token), all read tools live end-to-end
+- [x] Document DSM-side notes (Container Manager vs plain compose, port remap, no-scp workaround) in README
 
 ## 8. macOS deployment (same machine as Claude Code)
 
