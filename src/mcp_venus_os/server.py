@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import logging
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -17,10 +18,13 @@ from .dbus_client import (
     InverterData,
     PVData,
 )
-from .mqtt_client import MQTTClient
+from .mqtt_client import MQTTClient, MQTTError, Payload
 from .safety import ConfirmationManager, SafetyValidator
 
 logger = logging.getLogger(__name__)
+
+# Read-back window for W/… writes before reporting failure
+WRITE_VERIFY_TIMEOUT_S = 5.0
 
 # Global instances
 _dbus_client: DBusClient | None = None
@@ -156,6 +160,75 @@ def _collect_mqtt(
     return out
 
 
+async def _mqtt_write_and_verify(
+    client: MQTTClient,
+    device_type: str,
+    instance: int,
+    path: str,
+    value: Payload,
+) -> dict[str, Any]:
+    """Publish a value to ``W/…`` and confirm it appears on the matching N topic."""
+    item_topic = f"{client.write_prefix}/{device_type}/{instance}/{path}"
+    try:
+        client.publish(item_topic, value)
+        client.start_keepalive(item_topic)
+    except MQTTError as exc:
+        return {"success": False, "error": f"publish failed: {exc}"}
+
+    deadline = time.monotonic() + WRITE_VERIFY_TIMEOUT_S
+    while time.monotonic() < deadline:
+        result = client.read_first(device_type, instance, [path])
+        if result is not None and _values_match(result[0], value):
+            elapsed = round(WRITE_VERIFY_TIMEOUT_S - (deadline - time.monotonic()), 1)
+            return {
+                "success": True,
+                "value": value,
+                "topic": item_topic,
+                "verified_after_s": elapsed,
+            }
+        await asyncio.sleep(0.2)
+    return {
+        "success": False,
+        "error": (
+            f"write published to {item_topic} but read-back on "
+            f"N/{client.config.portal_id}/…/{path} did not reflect it within "
+            f"{WRITE_VERIFY_TIMEOUT_S}s"
+        ),
+        "value": value,
+        "topic": item_topic,
+    }
+
+
+def _values_match(received: Payload, expected: Payload) -> bool:
+    """Compare a read-back value with the written one (numeric-tolerant)."""
+    if received == expected:
+        return True
+    with contextlib.suppress(TypeError, ValueError):
+        return float(received) == float(expected)  # type: ignore[arg-type]
+    return False
+
+
+def _mode_code(device_type: str, mode: str) -> int | None:
+    """Map a safety-validated mode name to its device-type enum code.
+
+    ponytail: per-device enums from Victron docs; verify against target
+    firmware before trusting charger_only/inverter_only entries.
+    """
+    codes = MODE_CODES.get(device_type, {})
+    code = codes.get(mode)
+    return int(code) if code is not None else None
+
+
+MODE_CODES: dict[str, dict[str, int]] = {
+    # MultiPlus/Quattro vebus Mode enum
+    "vebus": {"on": 1, "off": 4},
+    # Phoenix-style inverter Mode enum
+    "inverter": {"on": 1, "off": 2, "eco": 4},
+    # Solar charger Mode enum
+    "solarcharger": {"on": 1, "off": 4},
+}
+
+
 # Read tools
 @mcp.tool()
 async def get_battery_soc(instance: int = 0) -> dict[str, Any]:
@@ -276,8 +349,17 @@ async def set_inverter_mode(
     if not result.allowed:
         return {"success": False, "error": result.reason}
 
-    # Write operation not yet implemented
-    return {"success": False, "error": "Operation not implemented yet"}
+    if _use_mqtt():
+        client = await _mqtt_ready()
+        code = _mode_code("vebus", mode)
+        if code is None:
+            return {
+                "success": False,
+                "error": f"mode '{mode}' has no known enum code for vebus devices",
+            }
+        return await _mqtt_write_and_verify(client, "vebus", instance, "Mode", code)
+
+    return {"success": False, "error": "dbus writes not implemented"}
 
 
 @mcp.tool()
@@ -305,8 +387,13 @@ async def set_charge_current_limit(
     if not result.allowed:
         return {"success": False, "error": result.reason}
 
-    # Write operation not yet implemented
-    return {"success": False, "error": "Operation not implemented yet"}
+    if _use_mqtt():
+        client = await _mqtt_ready()
+        return await _mqtt_write_and_verify(
+            client, "vebus", instance, "Dc/0/MaxChargeCurrent", current
+        )
+
+    return {"success": False, "error": "dbus writes not implemented"}
 
 
 @mcp.tool()
@@ -332,8 +419,13 @@ async def set_soc_limit(
     if not result.allowed:
         return {"success": False, "error": result.reason}
 
-    # Write operation not yet implemented
-    return {"success": False, "error": "Operation not implemented yet"}
+    if _use_mqtt():
+        client = await _mqtt_ready()
+        # ponytail: /SocLimit assumed for target battery; confirm exact BMS
+        # path on real hardware (TODO §4) before trusting read-back success.
+        return await _mqtt_write_and_verify(client, "battery", instance, "SocLimit", soc_limit)
+
+    return {"success": False, "error": "dbus writes not implemented"}
 
 
 # MQTT tools
