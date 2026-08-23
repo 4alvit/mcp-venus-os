@@ -229,9 +229,7 @@ def _feed(client: MQTTClient, topic: str, payload: bytes) -> None:
     client._on_message(cast(paho.Client, Mock()), None, msg)
 
 
-def _mqtt_read_client(
-    entries: dict[str, object], stale_after_seconds: float = 60.0
-) -> MQTTClient:
+def _mqtt_read_client(entries: dict[str, object], stale_after_seconds: float = 60.0) -> MQTTClient:
     """Real MQTTClient preloaded with cached telemetry, connect() mocked out."""
     from mcp_venus_os.config import MQTTConfig, ServerConfig
     from mcp_venus_os.mqtt_client import Payload
