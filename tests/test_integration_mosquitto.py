@@ -130,7 +130,8 @@ async def test_read_and_write_roundtrip_over_real_broker(broker_port: object) ->
     time.sleep(0.5)  # allow the client to receive
 
     soc = client.read_path("battery", 256, "Soc")
-    assert soc is not None and soc[0] == 55.5
+    assert soc is not None
+    assert soc[0] == 55.5
     devices = client.list_devices()
     assert {"device_type": "battery", "instance": 256} in devices
     assert {"device_type": "system", "instance": 0} in devices
