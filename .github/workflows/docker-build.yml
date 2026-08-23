@@ -1,0 +1,20 @@
+name: Docker Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker:
+    name: Docker
+    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/docker-build.yml@90fae60a049bbd1a55ac218c379f36cb101299f1
+    with:
+      image-name: mcp-venus-os
+      push: ${{ github.ref == 'refs/heads/main' }}
+    secrets: inherit

@@ -1,0 +1,25 @@
+services:
+  mcp-venus-os:
+    build: .
+    image: ghcr.io/4alvit/mcp-venus-os:latest
+    env_file: .env
+    environment:
+      SERVER_TRANSPORT: http
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: "8000"
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      # 406 from /mcp without MCP headers = process up and listening
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request as u, sys;
+          sys.exit(0 if u.urlopen('http://127.0.0.1:8000/mcp', timeout=3).status in (200, 406) else 1)
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

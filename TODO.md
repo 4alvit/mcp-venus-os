@@ -48,9 +48,9 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 
 ## 6. Container packaging
 
-- [ ] Multi-stage `Dockerfile` (uv install → slim runtime, non-root user, no build deps in final image)
-- [ ] `docker-compose.yml`: env-file based config, `restart: unless-stopped`, healthcheck hitting MCP HTTP endpoint
-- [ ] Pin base image digest; add image build to CI (existing toolkit workflows)
+- [x] Multi-stage `Dockerfile` (uv install → slim runtime, non-root user, no build deps in final image; `--no-editable` so venv is self-contained)
+- [x] `docker-compose.yml`: env-file based config, `restart: unless-stopped`, healthcheck hitting MCP HTTP endpoint
+- [x] Pin base image digest (python:3.13-slim multi-arch index); image build via toolkit `docker-build.yml` on PRs, push to ghcr.io/4alvit/mcp-venus-os on main
 
 ## 7. Synology deployment (`/volume1/docker/mcp-venus-os/`)
 
