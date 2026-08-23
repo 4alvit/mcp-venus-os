@@ -93,7 +93,7 @@ class MQTTClient:
     ) -> None:
         """MQTT on_disconnect callback."""
         self._connected = False
-        logger.warning("Disconnected from MQTT broker: %d", reason_code)
+        logger.warning("Disconnected from MQTT broker: %s", reason_code)
 
     def _on_message(
         self,
