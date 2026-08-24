@@ -10,6 +10,7 @@ from typing import Any
 import paho.mqtt.client as mqtt
 from paho.mqtt.enums import CallbackAPIVersion
 
+from .capabilities import capability_subscriptions, is_capability_topic
 from .config import MissingPortalIdError, get_config
 
 logger = logging.getLogger(__name__)
@@ -80,6 +81,10 @@ class MQTTClient:
             base = f"{self.prefix}/#"
             client.subscribe(base)
             logger.debug("Subscribed to %s", base)
+            # Companion-service topics (inverter-control, dbus-pump, …)
+            for pattern in capability_subscriptions():
+                client.subscribe(pattern)
+                logger.debug("Subscribed to %s", pattern)
         else:
             logger.error("Failed to connect to MQTT broker: %s", reason_code)
 
@@ -106,7 +111,7 @@ class MQTTClient:
             payload = json.loads(msg.payload.decode())
             topic = msg.topic
             logger.debug("Received message on %s: %s", topic, payload)
-            if topic.startswith(self.prefix + "/"):
+            if topic.startswith(self.prefix + "/") or is_capability_topic(topic):
                 self._cache[topic] = (payload, time.monotonic())
             self._notify_callbacks(topic, payload)
         except json.JSONDecodeError:

@@ -423,3 +423,61 @@ async def test_mqtt_ready_times_out_without_marker(monkeypatch: pytest.MonkeyPat
     with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
         out = await server._mqtt_ready()
     assert out.read_path("battery", 256, "Soc") is not None
+
+
+# --- capability detection / conditional tools -------------------------------
+
+from mcp_venus_os.capabilities import detect_capabilities  # noqa: E402
+
+
+def test_detect_capabilities_markers() -> None:
+    topics = [
+        "N/testportal/battery/289/Soc",
+        "inverter/state",
+        "tank/21/Level",
+        "tank/22/Level",
+        "battery/sensor/current_total",  # dbus-mqtt-battery, no marker → ignored
+        "tele/tasmota_120/SENSOR",
+    ]
+    assert detect_capabilities(topics) == {"control", "pump"}
+
+
+def test_detect_capabilities_empty_without_companions() -> None:
+    assert detect_capabilities(["N/x/system/0/Serial", "W/x/vebus/1/Mode"]) == set()
+
+
+@pytest.mark.asyncio
+async def test_apply_capability_tools_registers_once() -> None:
+    client = _mqtt_read_client({"inverter/state": {"gt": -1}, "tank/21/Level": 44})
+    with (
+        patch.object(server, "_registered_capabilities", set()),
+        patch.object(server.mcp, "add_tool") as mock_add,
+    ):
+        first = server._apply_capability_tools(client)
+        second = server._apply_capability_tools(client)
+    assert first == ["control", "pump"]
+    assert second == []
+    registered_names = [c.args[0].__name__ for c in mock_add.call_args_list]
+    assert registered_names == ["get_control_state", "get_tank_level"]
+
+
+@pytest.mark.asyncio
+async def test_get_control_state_serves_cached_payload() -> None:
+    state = {"gt": -537, "inverter_state": "Bulk", "batteries": [{"soc": 44.0}]}
+    client = _mqtt_read_client({"inverter/state": state})
+    cast(Any, client).connect = AsyncMock()
+    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
+        result = await server.get_control_state()
+    assert result["success"] is True
+    assert result["state"]["inverter_state"] == "Bulk"
+    assert result["stale"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_tank_level_reads_cached_tanks() -> None:
+    client = _mqtt_read_client({"tank/21/Level": 44, "tank/9/Level": 80})
+    cast(Any, client).connect = AsyncMock()
+    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
+        result = await server.get_tank_level()
+    levels = sorted(r["level"] for r in result["readings"])
+    assert levels == [44, 80]
