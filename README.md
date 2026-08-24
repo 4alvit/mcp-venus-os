@@ -84,8 +84,8 @@ uv run mcp-venus-os --transport http  # or SERVER_TRANSPORT=http
 
 | Target | Transport backend | Server transport | Notes |
 |--------|-------------------|------------------|-------|
-| macOS (same machine as Claude Code) | `mqtt` → Cerbo LAN | `stdio` | registered user-scope via `claude mcp add` |
-| Synology Docker | `mqtt` → Cerbo LAN | `http` :8000 | compose in repo, optional bearer token |
+| **Synology Docker (primary)** | `mqtt` → Cerbo LAN | `http` :8080 | shared endpoint for all machines on the LAN |
+| macOS (fallback) | `mqtt` → Cerbo LAN | `stdio` | local process via `claude mcp add`, no NAS dependency |
 | On-device (Cerbo) | `dbus` | `stdio` | legacy mode, no gateway needed |
 
 Docker:
@@ -95,7 +95,48 @@ cp .env.sample .env   # fill in cerbo IP + portal id (+ token if exposing beyond
 docker compose up -d  # healthcheck hits GET /mcp until the MCP endpoint answers
 ```
 
+### HTTP Auth Token
+
+HTTP mode is protected by a static bearer token (`SERVER_AUTH_TOKEN`). Without it the
+server runs unauthenticated — only sensible on a trusted home LAN.
+
+Generate and apply:
+
+```bash
+openssl rand -hex 24          # generate once
+echo 'SERVER_AUTH_TOKEN=<hex>' >> .env   # add to the deployment .env
+docker compose up -d          # restart so the container picks it up
+```
+
+Clients then send `Authorization: Bearer <token>` on every request. Unauthenticated or
+wrong-token requests get `401`. For Claude Code:
+
+```bash
+claude mcp add --scope user --transport http venus-os \
+  http://<synology-ip>:8080/mcp \
+  --header "Authorization: Bearer <token>"
+```
+
+Or via the project-level [`.mcp.json`](.mcp.json), which reads the token from the
+`VENUS_MCP_TOKEN` environment variable (`export VENUS_MCP_TOKEN=<hex>` before launching
+Claude Code):
+
+```json
+{
+  "mcpServers": {
+    "venus-os": {
+      "type": "http",
+      "url": "http://192.168.167.25:8080/mcp",
+      "headers": { "Authorization": "Bearer ${VENUS_MCP_TOKEN}" }
+    }
+  }
+}
+```
+
 ### Claude Code Registration
+
+Primary (shared Synology HTTP endpoint — see above). Fallback: launch the server locally
+so it works even when the NAS is down:
 
 ```bash
 claude mcp add --scope user venus-os \
@@ -103,15 +144,29 @@ claude mcp add --scope user venus-os \
   -- uv --directory /path/to/mcp-venus-os run mcp-venus-os
 ```
 
-For the Synology HTTP deployment, point clients at `http://<synology-ip>:8000/mcp`
-(send `Authorization: Bearer $SERVER_AUTH_TOKEN` when configured).
-
 DSM notes (deployed at `/volume1/docker/mcp-venus-os/`):
 
 - Plain `docker compose` (full path `/usr/local/bin/docker`) works fine; Container Manager is not required.
 - Host port 8000 is taken by Portainer on typical DSM installs — remap in the compose `ports:` (e.g. `"8080:8000"`).
 - SFTP/scp may be disabled; copy files via `ssh ... 'cat > file'`.
 - The `.env` (portal id, token) lives only on the NAS, mode 600.
+
+### Container Images
+
+Two registries, both multi-arch (`linux/amd64` + `linux/arm64`):
+
+| Registry | Image | Updated on |
+|----------|-------|------------|
+| GitHub Container Registry | `ghcr.io/4alvit/mcp-venus-os:latest` (+ `:<sha>`) | every push to `main` |
+| Docker Hub | `4alvit/mcp-venus-os:vX.Y.Z` + `:latest` | every `v*` tag push |
+
+```bash
+docker pull 4alvit/mcp-venus-os:v0.2.0
+```
+
+The Docker Hub publish workflow ([`docker-hub-release.yml`](.github/workflows/docker-hub-release.yml))
+needs repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
+(Docker Hub → Account Settings → Security → New Access Token, Read & Write).
 
 ## Available Tools
 
@@ -177,7 +232,12 @@ Defense runs in order, before any publish:
 Known caveats: vebus/inverter/solarcharger Mode enum tables come from Victron's
 documented enums but should be sanity-checked against your firmware before
 relying on non-default modes; the exact SoC-limit path depends on the battery
-BMS.
+BMS. Also note that *acceptance ≠ persistence*: when another service owns a
+path (e.g. a BMS driver continuously asserting `/Dc/0/MaxChargeCurrent`), Venus
+acknowledges and echoes the written value but re-applies its own within seconds —
+verified live, where a 45 A write to a BMS-owned 52 A limit echoed successfully
+and snapped back ~3 s later despite keepalives. The tool reports acceptance;
+whether the value sticks depends on which service owns the item.
 
 Configuration options:
 - `SAFETY_REQUIRE_CONFIRMATION` - Require confirmation for write operations (default: true)

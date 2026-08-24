@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-08-23
 
 ### Changed
 
@@ -30,3 +30,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Container packaging: multi-stage `Dockerfile` (uv, digest-pinned
   python:3.13-slim runtime, non-root), `docker-compose.yml` with healthcheck,
   CI image build/push to ghcr.io on main.
+- Multi-arch release publishing to **Docker Hub** (`4alvit/mcp-venus-os:vX.Y.Z`
+  + `latest`) on `v*` tag pushes (`docker-hub-release.yml`; requires
+  `DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN` secrets).
+- Project `.mcp.json`: venus-os HTTP entry reading the token from
+  `VENUS_MCP_TOKEN`.
+- Instance auto-discovery for read tools (real Venus instances are nonzero,
+  e.g. battery/289, grid/40, vebus/290) and per-layout topic maps for
+  pvinverter/grid-meter services; cold-start warm-up gated on the gateway's
+  `full_publish_completed` marker.
+
+### Fixed
+
+- W-topic writes now publish the value wrapped as `{"value": …}` — the Venus
+  MQTT gateway silently ignores bare scalars (verified live); read-back
+  verification unwraps the gateway's echo dicts before comparing.
+- Compose healthcheck used a folded YAML scalar that produced invalid Python
+  (`try:` after `;` → SyntaxError → container permanently unhealthy despite a
+  working server); now a literal block.
+
+[Unreleased]: https://github.com/4alvit/mcp-venus-os/compare/v0.2.0...HEAD

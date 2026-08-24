@@ -3,6 +3,13 @@
     "graphify": {
       "type": "http",
       "url": "https://api.graphify.com/mcp"
+    },
+    "venus-os": {
+      "type": "http",
+      "url": "http://192.168.167.25:8080/mcp",
+      "headers": {
+        "Authorization": "Bearer ${VENUS_MCP_TOKEN}"
+      }
     }
   }
 }
