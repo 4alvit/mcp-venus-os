@@ -609,13 +609,40 @@ def _mode_code(device_type: str, mode: str) -> int | None:
 
 
 MODE_CODES: dict[str, dict[str, int]] = {
-    # MultiPlus/Quattro vebus Mode enum
-    "vebus": {"on": 1, "off": 4},
+    # MultiPlus/Quattro vebus Mode enum (On/Eco/Off); eco verified live on
+    # v3.75 where the running unit reports Mode=3
+    "vebus": {"on": 1, "eco": 3, "off": 4},
     # Phoenix-style inverter Mode enum
     "inverter": {"on": 1, "off": 2, "eco": 4},
     # Solar charger Mode enum
     "solarcharger": {"on": 1, "off": 4},
 }
+
+# VE.Bus charge/run states — same table as inverter-control's INVERTER_STATES
+VEBUS_STATES: dict[int, str] = {
+    0: "off",
+    1: "low_power",
+    2: "fault",
+    3: "bulk",
+    4: "absorption",
+    5: "float",
+    6: "storage",
+    7: "equalize",
+    8: "passthru",
+    9: "inverting",
+    10: "power_assist",
+    11: "power_supply",
+    252: "external_control",
+}
+
+
+def _decode_vebus_enums(reading: dict[str, Any]) -> None:
+    """Add human-readable ``mode_name``/``state_name`` next to raw codes."""
+    if reading.get("mode") is not None:
+        reverse = {v: k for k, v in MODE_CODES["vebus"].items()}
+        reading["mode_name"] = reverse.get(reading["mode"], f"code {reading['mode']}")
+    if reading.get("state") is not None:
+        reading["state_name"] = VEBUS_STATES.get(reading["state"], f"code {reading['state']}")
 
 
 def _confirm_gate(operation: str, params: dict[str, Any], confirmed: bool) -> dict[str, Any] | None:
@@ -730,10 +757,14 @@ async def get_inverter_status(instance: int = 0) -> dict[str, Any]:
     if _use_mqtt():
         client = await _mqtt_ready()
         if instance <= 0:
-            return _read_all_instances(client, INVERTER_PATHS, ("vebus",))
+            return _read_all_instances(
+                client, INVERTER_PATHS, ("vebus",), postprocess=_decode_vebus_enums
+            )
         dtype = _instance_device_type(client, ("vebus",), instance)
         inst = instance
-        return {"instance": inst} | _collect_mqtt(client, INVERTER_PATHS, dtype, inst)
+        out = {"instance": inst} | _collect_mqtt(client, INVERTER_PATHS, dtype, inst)
+        _decode_vebus_enums(out)
+        return out
 
     dbus_client = get_dbus_client()
     data: InverterData = await dbus_client.get_inverter_data(instance)

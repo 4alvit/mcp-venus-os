@@ -518,3 +518,22 @@ async def test_startup_warmup_failure_is_not_fatal(monkeypatch: pytest.MonkeyPat
     ):
         async with server.lifespan(app):
             pass
+
+
+@pytest.mark.asyncio
+async def test_get_inverter_status_decodes_enums() -> None:
+    """Raw vebus codes come back with mode_name/state_name alongside."""
+    client = _mqtt_read_client({"N/<portal>/vebus/290/Mode": 3, "N/<portal>/vebus/290/State": 3})
+    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
+        result = await server.get_inverter_status(instance=290)
+    assert result["mode_name"] == "eco"
+    assert result["state_name"] == "bulk"
+
+
+@pytest.mark.asyncio
+async def test_get_inverter_status_unknown_codes_fall_back() -> None:
+    client = _mqtt_read_client({"N/<portal>/vebus/290/Mode": 7, "N/<portal>/vebus/290/State": 99})
+    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
+        result = await server.get_inverter_status(instance=290)
+    assert result["mode_name"] == "code 7"
+    assert result["state_name"] == "code 99"
