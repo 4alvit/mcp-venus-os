@@ -226,12 +226,23 @@ groups; 🔒 = confirmation-gated:
 | 🔒 `cerbo_ssh_exec(command)` | arbitrary command, output capped |
 
 ```bash
-# .env
+# .env (local/stdio runs)
 SSH_HOST=            # defaults to MQTT_HOST
 SSH_USER=root
 SSH_KEY_PATH=~/.ssh/id_ed25519    # preferred…
 # SSH_PASSWORD=                   # …or password
 CERBO_ROOT_PASSWORD=              # used by cerbo_enable_ssh when not passed
+```
+
+Docker deployments mount the key instead of passing secrets through `.env`:
+
+```bash
+mkdir keys && cp ~/.ssh/<cerbo-key> keys/cerbo_rsa
+chown 999:999 keys/cerbo_rsa   # uid of the container's app user
+chmod 600 keys/cerbo_rsa       # compose already mounts ./keys:/app/keys:ro
+# compose sets SSH_KEY_PATH=/app/keys/cerbo_rsa; remove those lines to use
+# SSH_PASSWORD from .env instead
+docker compose up -d
 ```
 
 To bootstrap access on a fresh Cerbo: GUI → Settings → General → set the root

@@ -7,6 +7,12 @@ services:
       SERVER_TRANSPORT: http
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: "8000"
+      # Cerbo SSH key mounted below; drop the two lines + volume to use
+      # SSH_PASSWORD from .env instead
+      SSH_KEY_PATH: /app/keys/cerbo_rsa
+    volumes:
+      # Private key for the SSH management tools (owned by uid 999, mode 600)
+      - ./keys:/app/keys:ro
     ports:
       # Host port may need remapping (e.g. "8080:8000" when 8000 is taken)
       - "8000:8000"
