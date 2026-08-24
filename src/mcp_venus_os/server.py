@@ -22,6 +22,7 @@ from .dbus_client import (
 )
 from .mqtt_client import MQTTClient, MQTTError, Payload
 from .safety import ConfirmationManager, SafetyValidator
+from .ssh_client import CerboSSHClient, close_ssh_client, get_ssh_client
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,7 @@ async def lifespan(app: FastMCP) -> AsyncIterator[None]:
         await _dbus_client.disconnect()
     if _mqtt_client:
         await _mqtt_client.disconnect()
+    await close_ssh_client()
 
 
 def _http_auth() -> StaticTokenVerifier | None:
@@ -197,6 +199,170 @@ CAPABILITY_TOOLS: dict[str, tuple[Callable[..., Any], ...]] = {
 }
 
 
+# --- Cerbo management over SSH (registered when credentials configured) ---
+
+
+def _ssh_client_or_error() -> CerboSSHClient | dict[str, Any]:
+    """Configured client or an error payload (narrow with isinstance)."""
+    client = get_ssh_client()
+    if not client.configured:
+        return {
+            "success": False,
+            "error": "SSH not configured — set SSH_PASSWORD or SSH_KEY_PATH",
+        }
+    return client
+
+
+async def cerbo_ssh_available() -> dict[str, Any]:
+    """Check whether the Cerbo is reachable on its SSH port (no auth)."""
+    client = _ssh_client_or_error()
+    if isinstance(client, dict):
+        return client
+    return await client.available()
+
+
+async def cerbo_version() -> dict[str, Any]:
+    """Venus OS firmware version from the Cerbo (``/opt/victronenergy/version``)."""
+    client = _ssh_client_or_error()
+    if isinstance(client, dict):
+        return client
+    return await client.firmware_version()
+
+
+async def cerbo_ip() -> dict[str, Any]:
+    """Cerbo IP address(es): configured MQTT host plus device-reported addresses."""
+    client = _ssh_client_or_error()
+    if isinstance(client, dict):
+        return client
+    out: dict[str, Any] = {"success": True, "mqtt_host": get_config().mqtt.host}
+    probe = await client.available()
+    out["ssh_reachable"] = probe.get("reachable", False)
+    if probe.get("reachable"):
+        addrs = await client.run("ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}'")
+        ips = [ln.strip() for ln in addrs.get("stdout", "").splitlines() if ln.strip()]
+        if ips:
+            out["addresses"] = ips
+    return out
+
+
+async def cerbo_check_updates() -> dict[str, Any]:
+    """Check for Venus OS firmware updates without installing anything."""
+    client = _ssh_client_or_error()
+    if isinstance(client, dict):
+        return client
+    return await client.check_updates()
+
+
+async def cerbo_firmware_update(confirmed: bool = False) -> dict[str, Any]:
+    """Download and apply pending Venus OS firmware updates (reboot likely).
+
+    Requires confirmation; runs ``check-updates.sh -force -update`` on the Cerbo.
+    """
+    gate = _confirm_gate("cerbo_firmware_update", {}, confirmed)
+    if gate is not None:
+        return gate
+    client = _ssh_client_or_error()
+    if isinstance(client, dict):
+        return client
+    return await client.apply_updates()
+
+
+async def cerbo_enable_ssh(password: str | None = None, confirmed: bool = False) -> dict[str, Any]:
+    """Set the Cerbo root password so SSH login works.
+
+    Uses the provided password, ``CERBO_ROOT_PASSWORD``, or generates one
+    (returned once in the result).
+    """
+    gate = _confirm_gate("cerbo_enable_ssh", {"set_root_password": True}, confirmed)
+    if gate is not None:
+        return gate
+    import secrets
+
+    client = _ssh_client_or_error()
+    if isinstance(client, dict):
+        return client
+    pwd = password or get_config().cerbo.root_password or secrets.token_urlsafe(12)
+    result = await client.enable_root_password(pwd)
+    if result.get("success") and not password and not get_config().cerbo.root_password:
+        result["generated_password"] = pwd  # shown exactly once
+    result["host"] = client.config.effective_host
+    result["user"] = client.config.user
+    return result
+
+
+async def setuphelper_status() -> dict[str, Any]:
+    """SetupHelper presence/version and installed packages on the Cerbo."""
+    client = _ssh_client_or_error()
+    if isinstance(client, dict):
+        return client
+    return await client.setuphelper_status()
+
+
+async def setuphelper_install_package(
+    package: str, repo: str, confirmed: bool = False
+) -> dict[str, Any]:
+    """Install/refresh a SetupHelper package from a GitHub repo.
+
+    Runs the documented wget+tar+setup pattern; ``repo`` is ``owner/repo``
+    (e.g. ``kwindrem/GuiMods``).
+    """
+    gate = _confirm_gate(
+        "setuphelper_install_package", {"package": package, "repo": repo}, confirmed
+    )
+    if gate is not None:
+        return gate
+    client = _ssh_client_or_error()
+    if isinstance(client, dict):
+        return client
+    return await client.setuphelper_install_package(package, repo)
+
+
+async def setuphelper_remove_package(package: str, confirmed: bool = False) -> dict[str, Any]:
+    """Uninstall a SetupHelper package via its own setup script."""
+    gate = _confirm_gate("setuphelper_remove_package", {"package": package}, confirmed)
+    if gate is not None:
+        return gate
+    client = _ssh_client_or_error()
+    if isinstance(client, dict):
+        return client
+    script = (
+        f"if [ -f /data/{package}/setup ]; then "
+        f"/data/{package}/setup uninstall || /data/{package}/setup remove; "
+        f"else rm -rf /data/{package}; fi"
+    )
+    return await client.run(script, timeout_s=300)
+
+
+async def cerbo_ssh_exec(
+    command: str, timeout_s: float = 30.0, confirmed: bool = False
+) -> dict[str, Any]:
+    """Run an arbitrary shell command on the Cerbo over SSH.
+
+    Confirmation-gated like the write tools; output truncated to 4 KB.
+    """
+    gate = _confirm_gate("cerbo_ssh_exec", {"command": command}, confirmed)
+    if gate is not None:
+        return gate
+    client = _ssh_client_or_error()
+    if isinstance(client, dict):
+        return client
+    return await client.run(command, timeout_s=timeout_s)
+
+
+SSH_TOOLS: tuple[Callable[..., Any], ...] = (
+    cerbo_ssh_available,
+    cerbo_version,
+    cerbo_ip,
+    cerbo_check_updates,
+    cerbo_firmware_update,
+    cerbo_enable_ssh,
+    setuphelper_status,
+    setuphelper_install_package,
+    setuphelper_remove_package,
+    cerbo_ssh_exec,
+)
+
+
 def _apply_capability_tools(client: MQTTClient) -> list[str]:
     """Register tools for companion services detected on the broker.
 
@@ -210,6 +376,12 @@ def _apply_capability_tools(client: MQTTClient) -> list[str]:
             mcp.add_tool(fn)
             logger.info("Registered %s tools (capability '%s' detected)", fn.__name__, cap)
         _registered_capabilities.add(cap)
+    # SSH management tools depend on configuration, not broker content
+    if get_ssh_client().configured and "ssh" not in _registered_capabilities:
+        for fn in SSH_TOOLS:
+            mcp.add_tool(fn)
+        _registered_capabilities.add("ssh")
+        logger.info("Registered %d Cerbo SSH management tools", len(SSH_TOOLS))
     return sorted(new)
 
 
@@ -401,6 +573,20 @@ MODE_CODES: dict[str, dict[str, int]] = {
 }
 
 
+def _confirm_gate(operation: str, params: dict[str, Any], confirmed: bool) -> dict[str, Any] | None:
+    """Shared confirmation gate; returns an error payload or None to proceed."""
+    result = get_safety_validator().validate_write_operation(operation, params, confirmed)
+    if not result.allowed and result.requires_confirmation:
+        return {
+            "success": False,
+            "requires_confirmation": True,
+            "confirmation_message": result.confirmation_message,
+        }
+    if not result.allowed:
+        return {"success": False, "error": result.reason}
+    return None
+
+
 # Read tools
 @mcp.tool()
 async def get_battery_soc(instance: int = 0) -> dict[str, Any]:
@@ -537,20 +723,9 @@ async def set_inverter_mode(
 
     Requires confirmation for write operations.
     """
-    validator = get_safety_validator()
-    result = validator.validate_write_operation(
-        "set_inverter_mode", {"mode": mode, "instance": instance}, confirmed
-    )
-
-    if not result.allowed and result.requires_confirmation:
-        return {
-            "success": False,
-            "requires_confirmation": True,
-            "confirmation_message": result.confirmation_message,
-        }
-
-    if not result.allowed:
-        return {"success": False, "error": result.reason}
+    gate = _confirm_gate("set_inverter_mode", {"mode": mode, "instance": instance}, confirmed)
+    if gate is not None:
+        return gate
 
     if _use_mqtt():
         client = await _mqtt_ready()
@@ -573,22 +748,11 @@ async def set_charge_current_limit(
 
     Requires confirmation for write operations.
     """
-    validator = get_safety_validator()
-    result = validator.validate_write_operation(
-        "set_charge_current_limit",
-        {"charge_current": current, "instance": instance},
-        confirmed,
+    gate = _confirm_gate(
+        "set_charge_current_limit", {"charge_current": current, "instance": instance}, confirmed
     )
-
-    if not result.allowed and result.requires_confirmation:
-        return {
-            "success": False,
-            "requires_confirmation": True,
-            "confirmation_message": result.confirmation_message,
-        }
-
-    if not result.allowed:
-        return {"success": False, "error": result.reason}
+    if gate is not None:
+        return gate
 
     if _use_mqtt():
         client = await _mqtt_ready()
@@ -607,20 +771,9 @@ async def set_soc_limit(
 
     Requires confirmation for write operations.
     """
-    validator = get_safety_validator()
-    result = validator.validate_write_operation(
-        "set_soc_limit", {"soc_limit": soc_limit, "instance": instance}, confirmed
-    )
-
-    if not result.allowed and result.requires_confirmation:
-        return {
-            "success": False,
-            "requires_confirmation": True,
-            "confirmation_message": result.confirmation_message,
-        }
-
-    if not result.allowed:
-        return {"success": False, "error": result.reason}
+    gate = _confirm_gate("set_soc_limit", {"soc_limit": soc_limit, "instance": instance}, confirmed)
+    if gate is not None:
+        return gate
 
     if _use_mqtt():
         client = await _mqtt_ready()
