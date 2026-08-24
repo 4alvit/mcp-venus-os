@@ -13,15 +13,19 @@ services:
     restart: unless-stopped
     healthcheck:
       # Any HTTP response from /mcp (incl. 401/406 without MCP headers or
-      # auth token) proves the process is up and listening.
+      # auth token) proves the process is up and listening. Literal block (|),
+      # not folded (>-): python -c needs real newlines for try/except.
       test:
         - CMD
         - python
         - -c
-        - >-
-          import urllib.request as u, urllib.error as e, sys;
-          try: sys.exit(0 if u.urlopen('http://127.0.0.1:8000/mcp', timeout=3).status else 1)
-          except e.HTTPError as ex: sys.exit(0 if ex.code < 500 else 1)
+        - |
+          import sys, urllib.request as u, urllib.error as e
+          try:
+              r = u.urlopen("http://127.0.0.1:8000/mcp", timeout=3)
+              sys.exit(0 if r.status < 500 else 1)
+          except e.HTTPError as ex:
+              sys.exit(0 if ex.code < 500 else 1)
       interval: 30s
       timeout: 5s
       retries: 3

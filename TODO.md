@@ -65,7 +65,7 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 
 - [x] `uv sync` in repo; smoke-run `uv run mcp-venus-os` (already verified working)
 - [x] Register user-scope: `claude mcp add --scope user venus-os -e TRANSPORT_BACKEND=mqtt -e MQTT_HOST=192.168.160.150 -e MQTT_PORTAL_ID=b827ebea1ece -- uv --directory /Users/vmedvedev/victron/mcp-venus-os run mcp-venus-os`
-- [ ] Alternative (shared with other machines): point Claude Code at Synology HTTP endpoint instead of local process
+- [x] Alternative (shared with other machines): point Claude Code at Synology HTTP endpoint instead of local process — done 2026-08-23: HTTP endpoint is now the **primary** registration (`http://192.168.167.25:8080/mcp` + bearer token, ✔ Connected); local stdio kept as documented NAS-down fallback; project `.mcp.json` carries a venus-os entry using `VENUS_MCP_TOKEN`
 - [x] `claude mcp list` shows `✔ Connected`; read tools verified end-to-end against live Cerbo (battery/grid/PV/inverter via stdio client)
 
 ## 9. Claude Code registration cleanup
