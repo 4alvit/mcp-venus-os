@@ -11,6 +11,7 @@ from typing import Any
 from fastmcp import FastMCP
 from fastmcp.server.auth import StaticTokenVerifier
 
+from .capabilities import detect_capabilities
 from .config import get_config
 from .dbus_client import (
     BatteryData,
@@ -113,19 +114,103 @@ async def _mqtt_ready() -> MQTTClient:
     # Gate on the marker itself, not on "some topics cached": the gateway
     # trickles a few live values (e.g. system Serial) before its flood.
     done_topic = f"{client.prefix}/full_publish_completed"
-    if done_topic in client._cache:
-        return client
-    deadline = time.monotonic() + MQTT_WARMUP_TIMEOUT_S
-    while done_topic not in client._cache:
-        if time.monotonic() > deadline:
-            logger.warning(
-                "MQTT full publish not seen within %.0fs (%d topics cached)",
-                MQTT_WARMUP_TIMEOUT_S,
-                len(client._cache),
-            )
-            break
-        await asyncio.sleep(0.25)
+    if done_topic not in client._cache:
+        deadline = time.monotonic() + MQTT_WARMUP_TIMEOUT_S
+        while done_topic not in client._cache:
+            if time.monotonic() > deadline:
+                logger.warning(
+                    "MQTT full publish not seen within %.0fs (%d topics cached)",
+                    MQTT_WARMUP_TIMEOUT_S,
+                    len(client._cache),
+                )
+                break
+            await asyncio.sleep(0.25)
+    _apply_capability_tools(client)
     return client
+
+
+# --- Companion-service tools (registered only when their service is detected) ---
+
+# Capabilities whose tools were already registered (idempotent re-scans)
+_registered_capabilities: set[str] = set()
+
+
+async def get_control_state() -> dict[str, Any]:
+    """Aggregated system state published by the inverter-control service.
+
+    Grid powers, per-battery detail (SoC/voltage/current/power/time-to-go),
+    per-MPPT breakdown, tasmota plug powers, EV data, water level, control
+    booleans, inverter state and setpoint — one retained JSON document.
+    """
+    client = await _mqtt_ready()
+    entry = client._cache.get("inverter/state")
+    if entry is None:
+        return {"success": False, "error": "inverter/state not received"}
+    payload, received_at = entry
+    age = time.monotonic() - received_at
+    stale_after = client.config.stale_after_seconds
+    return {
+        "success": True,
+        "state": payload,
+        "stale": age > stale_after,
+        "age_seconds": round(age, 1),
+    }
+
+
+async def get_tank_level(instance: int = 0) -> dict[str, Any]:
+    """Fresh-water tank level (%) from the dbus-pump tank service.
+
+    instance=0 returns every discovered tank as ``readings``.
+    """
+    client = await _mqtt_ready()
+    instances = sorted(
+        int(topic.split("/")[1])
+        for topic in client._cache
+        if topic.startswith("tank/") and topic.endswith("/Level")
+    )
+    targets = [instance] if instance > 0 else instances
+    stale_after = client.config.stale_after_seconds
+    readings: list[dict[str, Any]] = []
+    for inst in targets:
+        entry = client._cache.get(f"tank/{inst}/Level")
+        if entry is None:
+            readings.append({"instance": inst, "level": None, "stale": True})
+            continue
+        value, received_at = entry
+        age = time.monotonic() - received_at
+        readings.append(
+            {
+                "instance": inst,
+                "level": value,
+                "stale": age > stale_after,
+                "age_seconds": round(age, 1),
+            }
+        )
+    if len(readings) == 1:
+        return {"success": True} | readings[0]
+    return {"success": True, "readings": readings}
+
+
+CAPABILITY_TOOLS: dict[str, tuple[Callable[..., Any], ...]] = {
+    "control": (get_control_state,),
+    "pump": (get_tank_level,),
+}
+
+
+def _apply_capability_tools(client: MQTTClient) -> list[str]:
+    """Register tools for companion services detected on the broker.
+
+    Idempotent: already-registered capabilities are skipped so repeated
+    warm-ups (every read-tool call) stay cheap. Returns newly registered
+    capability names.
+    """
+    new = detect_capabilities(client._cache) - _registered_capabilities
+    for cap in sorted(new):
+        for fn in CAPABILITY_TOOLS.get(cap, ()):
+            mcp.add_tool(fn)
+            logger.info("Registered %s tools (capability '%s' detected)", fn.__name__, cap)
+        _registered_capabilities.add(cap)
+    return sorted(new)
 
 
 # MQTT item paths per tool field; first available candidate wins. Paths follow

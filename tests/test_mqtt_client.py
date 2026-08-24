@@ -78,7 +78,11 @@ def test_on_connect_success_subscribes_portal_wildcard() -> None:
         cast(Properties, Mock()),
     )
     assert client._connected
-    paho_client.subscribe.assert_called_once_with(f"{PREFIX}/#")
+    subs = [c.args[0] for c in paho_client.subscribe.call_args_list]
+    assert subs[0] == f"{PREFIX}/#"
+    # companion-service subscriptions ride along (inverter-control, dbus-pump)
+    assert "inverter/state" in subs
+    assert "tank/#" in subs
 
 
 def test_on_connect_failure() -> None:
