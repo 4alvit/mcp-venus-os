@@ -109,6 +109,10 @@ class MQTTClient:
         """MQTT on_message callback."""
         try:
             payload = json.loads(msg.payload.decode())
+            # Venus gateway wraps item values as {"value": X}; unwrap so the
+            # cache (and every reader) sees plain scalars.
+            if isinstance(payload, dict) and set(payload) == {"value"}:
+                payload = payload["value"]
             topic = msg.topic
             logger.debug("Received message on %s: %s", topic, payload)
             if topic.startswith(self.prefix + "/") or is_capability_topic(topic):

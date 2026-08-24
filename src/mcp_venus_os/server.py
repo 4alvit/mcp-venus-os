@@ -74,6 +74,10 @@ async def lifespan(app: FastMCP) -> AsyncIterator[None]:
     config = get_config()
     logging.basicConfig(level=config.log_level)
     logger.info("Starting MCP Venus OS server")
+    if config.transport_backend != "dbus":
+        # prime cache → conditional tools visible in tools/list; never fatal
+        with contextlib.suppress(Exception):
+            await _startup_warmup()
     yield
     logger.info("Shutting down MCP Venus OS server")
     if _dbus_client:
@@ -111,6 +115,20 @@ def _use_mqtt() -> bool:
 
 # Cold-start cap waiting for the gateway's initial full publish
 MQTT_WARMUP_TIMEOUT_S = 20.0
+
+
+async def _startup_warmup() -> None:
+    """Prime the MQTT cache at server start (never fatal).
+
+    Registering capability groups during startup means clients see them on
+    their very first tools/list instead of after an arbitrary read call.
+    """
+    try:
+        await asyncio.wait_for(_mqtt_ready(), timeout=MQTT_WARMUP_TIMEOUT_S + 5)
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        logger.warning("Startup MQTT warm-up failed; tools will register lazily")
 
 
 async def _mqtt_ready() -> MQTTClient:
