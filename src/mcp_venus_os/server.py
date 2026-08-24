@@ -4,7 +4,7 @@ import asyncio
 import contextlib
 import logging
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -188,21 +188,54 @@ def _collect_mqtt(
     return out
 
 
-def _resolve_mqtt_instance(
-    client: MQTTClient, device_types: tuple[str, ...], instance: int
-) -> tuple[str, int]:
-    """Pick the service type/instance to read; auto-discover when instance <= 0.
+def _instance_device_type(client: MQTTClient, device_types: tuple[str, ...], instance: int) -> str:
+    """Device type owning ``instance`` per the discovery cache; first type as fallback."""
+    pairs = {(d["device_type"], int(d["instance"])) for d in client.list_devices()}
+    return next((dt for dt in device_types if (dt, instance) in pairs), device_types[0])
 
-    Venus services use nonzero device instances (e.g. battery/513, grid/40),
-    so a default ``instance=0`` resolves against the discovered topic cache.
+
+def _pv_vxi_fallback(reading: dict[str, Any]) -> None:
+    """Compute PV power from voltage × current when the item is absent."""
+    has_v = reading["voltage"] is not None
+    has_i = reading["current"] is not None
+    if reading["power"] is None and has_v and has_i:
+        with contextlib.suppress(TypeError, ValueError):
+            reading["power"] = round(float(reading["voltage"]) * float(reading["current"]), 1)
+
+
+def _read_all_instances(
+    client: MQTTClient,
+    field_paths: dict[str, list[str]],
+    device_types: tuple[str, ...],
+    postprocess: Callable[[dict[str, Any]], None] | None = None,
+) -> dict[str, Any]:
+    """Read every discovered instance of ``device_types`` as a readings list.
+
+    Systems commonly run several units of one type (e.g. three MPPTs), and a
+    first-match-only read hides the rest — hence instance=0 fans out to all.
     """
-    if instance > 0:
-        return device_types[0], instance
+    readings: list[dict[str, Any]] = []
+    total_power = 0.0
+    has_power = False
     for device_type in device_types:
-        found = client.discover_instance(device_type)
-        if found is not None:
-            return device_type, found
-    return device_types[0], instance
+        instances = sorted(
+            d["instance"] for d in client.list_devices() if d["device_type"] == device_type
+        )
+        for inst in instances:
+            reading = {"device_type": device_type, "instance": inst} | _collect_mqtt(
+                client, field_paths, device_type, inst
+            )
+            if postprocess is not None:
+                postprocess(reading)
+            readings.append(reading)
+            power = reading.get("power")
+            if isinstance(power, (int, float)):
+                total_power += power
+                has_power = True
+    out: dict[str, Any] = {"readings": readings}
+    if has_power:
+        out["total_power"] = round(total_power, 1)
+    return out
 
 
 async def _mqtt_write_and_verify(
@@ -286,10 +319,17 @@ MODE_CODES: dict[str, dict[str, int]] = {
 # Read tools
 @mcp.tool()
 async def get_battery_soc(instance: int = 0) -> dict[str, Any]:
-    """Get battery state of charge."""
+    """Get battery state of charge.
+
+    instance=0 returns every discovered battery as ``readings``; instance=N
+    a single device dict.
+    """
     if _use_mqtt():
         client = await _mqtt_ready()
-        dtype, inst = _resolve_mqtt_instance(client, ("battery",), instance)
+        if instance <= 0:
+            return _read_all_instances(client, BATTERY_PATHS, ("battery",))
+        dtype = _instance_device_type(client, ("battery",), instance)
+        inst = instance
         return {"instance": inst} | _collect_mqtt(client, BATTERY_PATHS, dtype, inst)
 
     dbus_client = get_dbus_client()
@@ -308,15 +348,21 @@ async def get_battery_soc(instance: int = 0) -> dict[str, Any]:
 
 @mcp.tool()
 async def get_pv_power(instance: int = 0) -> dict[str, Any]:
-    """Get PV/solar charger power data."""
+    """Get PV/solar charger power data.
+
+    instance=0 returns every discovered solarcharger/pvinverter as
+    ``readings`` plus ``total_power``; instance=N a single device dict.
+    """
     if _use_mqtt():
         client = await _mqtt_ready()
-        dtype, inst = _resolve_mqtt_instance(client, ("solarcharger", "pvinverter"), instance)
+        if instance <= 0:
+            return _read_all_instances(
+                client, PV_PATHS, ("solarcharger", "pvinverter"), postprocess=_pv_vxi_fallback
+            )
+        dtype = _instance_device_type(client, ("solarcharger", "pvinverter"), instance)
+        inst = instance
         out = {"instance": inst} | _collect_mqtt(client, PV_PATHS, dtype, inst)
-        # Fall back to computed power from voltage × current when absent
-        if out["power"] is None and out["voltage"] is not None and out["current"] is not None:
-            with contextlib.suppress(TypeError, ValueError):
-                out["power"] = round(float(out["voltage"]) * float(out["current"]), 1)
+        _pv_vxi_fallback(out)
         return out
 
     dbus_client = get_dbus_client()
@@ -333,10 +379,17 @@ async def get_pv_power(instance: int = 0) -> dict[str, Any]:
 
 @mcp.tool()
 async def get_grid_status(instance: int = 0) -> dict[str, Any]:
-    """Get grid/AC status."""
+    """Get grid/AC status.
+
+    instance=0 returns every discovered grid meter as ``readings``;
+    instance=N a single device dict.
+    """
     if _use_mqtt():
         client = await _mqtt_ready()
-        dtype, inst = _resolve_mqtt_instance(client, ("grid",), instance)
+        if instance <= 0:
+            return _read_all_instances(client, GRID_PATHS, ("grid",))
+        dtype = _instance_device_type(client, ("grid",), instance)
+        inst = instance
         return {"instance": inst} | _collect_mqtt(client, GRID_PATHS, dtype, inst)
 
     dbus_client = get_dbus_client()
@@ -353,10 +406,17 @@ async def get_grid_status(instance: int = 0) -> dict[str, Any]:
 
 @mcp.tool()
 async def get_inverter_status(instance: int = 0) -> dict[str, Any]:
-    """Get inverter mode and state."""
+    """Get inverter mode and state.
+
+    instance=0 returns every discovered vebus unit as ``readings``;
+    instance=N a single device dict.
+    """
     if _use_mqtt():
         client = await _mqtt_ready()
-        dtype, inst = _resolve_mqtt_instance(client, ("vebus",), instance)
+        if instance <= 0:
+            return _read_all_instances(client, INVERTER_PATHS, ("vebus",))
+        dtype = _instance_device_type(client, ("vebus",), instance)
+        inst = instance
         return {"instance": inst} | _collect_mqtt(client, INVERTER_PATHS, dtype, inst)
 
     dbus_client = get_dbus_client()

@@ -79,3 +79,11 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 - [x] README: deployment matrix (macOS stdio / Synology HTTP / on-Cerbo D-Bus), MQTT topic map, safety model
 - [x] CHANGELOG entry for transport pivot
 - [x] Tag release after end-to-end write test passes against real hardware — done 2026-08-23: live write verified through the Synology HTTP deployment (`set_charge_current_limit` 52→45 A on vebus/290, read-back confirmed in 0.4 s, restored to 52; found+fixed the `{"value": …}` wrapper requirement, #22); tagged **v0.2.0** → GH Release + multi-arch Docker Hub publish (`docker-hub-release.yml`)
+
+## 11. Capability expansion (post-v0.2.0 feedback)
+
+- [ ] A. Multi-instance reads: `instance=0` → all devices of a type as `readings` list (+`total_power`), `instance=N` → single dict (MPPT 290/291/292 live case)
+- [ ] B. Conditional tool registration via broker detection: `inverter/state` → `get_control_state`, `tank/<n>` → `get_tank_level`; bms/tasmota data flows through existing tools (documented, no extra tools)
+- [ ] C. SSH toolkit (asyncssh): version/IP/update-check/firmware-update/enable-ssh/SetupHelper status+install+remove+update-all/arbitrary exec — confirmation-gated, key-or-password auth from env
+- [ ] D. `docs/CAPABILITIES.md` served as MCP resource `venus-os://capabilities` + FastMCP instructions so Claude knows the surface at connect
+- [ ] E. `.env.sample` SSH block, README sections, CHANGELOG Unreleased; live verification through Synology HTTP endpoint after each PR
