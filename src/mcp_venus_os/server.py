@@ -212,10 +212,14 @@ async def _mqtt_write_and_verify(
     path: str,
     value: Payload,
 ) -> dict[str, Any]:
-    """Publish a value to ``W/…`` and confirm it appears on the matching N topic."""
+    """Publish a value to ``W/…`` and confirm it appears on the matching N topic.
+
+    Venus MQTT gateway only accepts values wrapped as ``{"value": …}`` (same
+    shape it publishes on N topics); a bare scalar is silently ignored.
+    """
     item_topic = f"{client.write_prefix}/{device_type}/{instance}/{path}"
     try:
-        client.publish(item_topic, value)
+        client.publish(item_topic, {"value": value})
         client.start_keepalive(item_topic)
     except MQTTError as exc:
         return {"success": False, "error": f"publish failed: {exc}"}
@@ -245,7 +249,12 @@ async def _mqtt_write_and_verify(
 
 
 def _values_match(received: Payload, expected: Payload) -> bool:
-    """Compare a read-back value with the written one (numeric-tolerant)."""
+    """Compare a read-back value with the written one (numeric-tolerant).
+
+    The gateway echoes item values as ``{"value": …}`` dicts on N topics.
+    """
+    if isinstance(received, dict):
+        received = received.get("value")
     if received == expected:
         return True
     with contextlib.suppress(TypeError, ValueError):

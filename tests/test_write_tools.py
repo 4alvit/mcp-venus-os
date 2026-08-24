@@ -4,6 +4,7 @@ import pytest
 
 from mcp_venus_os.safety import SafetyCheckResult
 from mcp_venus_os.server import (
+    _values_match,
     set_charge_current_limit,
     set_inverter_mode,
     set_soc_limit,
@@ -135,7 +136,7 @@ async def test_set_inverter_mode_mqtt_publishes_and_verifies() -> None:
     client.client = cast(Any, paho)
     client._connected = True
     # Venus echoes the new value back on N/…; pre-seed so read-back verifies instantly
-    _seed_cache(client, "N/testportal/vebus/256/Mode", 1)
+    _seed_cache(client, "N/testportal/vebus/256/Mode", {"value": 1})
 
     with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
         result = await set_inverter_mode(mode="on", instance=256, confirmed=True)
@@ -143,7 +144,7 @@ async def test_set_inverter_mode_mqtt_publishes_and_verifies() -> None:
     assert result["success"] is True
     assert result["value"] == 1
     assert result["topic"] == "W/testportal/vebus/256/Mode"
-    paho.publish.assert_any_call("W/testportal/vebus/256/Mode", "1", retain=False)
+    paho.publish.assert_any_call("W/testportal/vebus/256/Mode", '{"value": 1}', retain=False)
     assert any(t.endswith("/Keepalive") for t in client._keepalives), "keepalive must be armed"
     client.cancel_keepalives()
 
@@ -169,14 +170,14 @@ async def test_set_charge_current_limit_mqtt_publishes_and_verifies() -> None:
     paho = Mock()
     client.client = cast(Any, paho)
     client._connected = True
-    _seed_cache(client, "N/testportal/vebus/256/Dc/0/MaxChargeCurrent", 50.0)
+    _seed_cache(client, "N/testportal/vebus/256/Dc/0/MaxChargeCurrent", {"value": 50.0})
 
     with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
         result = await set_charge_current_limit(current=50.0, instance=256, confirmed=True)
 
     assert result["success"] is True
     paho.publish.assert_any_call(
-        "W/testportal/vebus/256/Dc/0/MaxChargeCurrent", "50.0", retain=False
+        "W/testportal/vebus/256/Dc/0/MaxChargeCurrent", '{"value": 50.0}', retain=False
     )
     client.cancel_keepalives()
 
@@ -187,13 +188,13 @@ async def test_set_soc_limit_mqtt_publishes_to_battery_path() -> None:
     paho = Mock()
     client.client = cast(Any, paho)
     client._connected = True
-    _seed_cache(client, "N/testportal/battery/512/SocLimit", 80)
+    _seed_cache(client, "N/testportal/battery/512/SocLimit", {"value": 80})
 
     with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
         result = await set_soc_limit(soc_limit=80, instance=512, confirmed=True)
 
     assert result["success"] is True
-    paho.publish.assert_any_call("W/testportal/battery/512/SocLimit", "80", retain=False)
+    paho.publish.assert_any_call("W/testportal/battery/512/SocLimit", '{"value": 80}', retain=False)
     client.cancel_keepalives()
 
 
@@ -216,3 +217,12 @@ async def test_write_readback_timeout_reports_error() -> None:
     assert result["success"] is False
     assert "did not reflect it" in result["error"]
     client.cancel_keepalives()
+
+
+def test_values_match_unwraps_gateway_value_dict() -> None:
+    """Gateway echoes items as {"value": …} dicts on N topics."""
+    assert _values_match({"max": 52.0, "value": 45.0}, 45.0)
+    assert not _values_match({"value": 52.0}, 45.0)
+    assert not _values_match({"max": 52.0}, 52.0)
+    assert _values_match(3, 3)
+    assert _values_match("50", 50.0)
