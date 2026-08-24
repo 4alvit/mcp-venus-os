@@ -158,10 +158,10 @@ Two registries, both multi-arch (`linux/amd64` + `linux/arm64`):
 | Registry | Image | Updated on |
 |----------|-------|------------|
 | GitHub Container Registry | `ghcr.io/4alvit/mcp-venus-os:latest` (+ `:<sha>`) | every push to `main` |
-| Docker Hub | `4alvit/mcp-venus-os:vX.Y.Z` + `:latest` | every `v*` tag push |
+| Docker Hub | `alvit/mcp-venus-os:vX.Y.Z` + `:latest` | every `v*` tag push |
 
 ```bash
-docker pull 4alvit/mcp-venus-os:v0.2.0
+docker pull alvit/mcp-venus-os:v0.2.0
 ```
 
 The Docker Hub publish workflow ([`docker-hub-release.yml`](.github/workflows/docker-hub-release.yml))

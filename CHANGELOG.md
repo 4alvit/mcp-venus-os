@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Container packaging: multi-stage `Dockerfile` (uv, digest-pinned
   python:3.13-slim runtime, non-root), `docker-compose.yml` with healthcheck,
   CI image build/push to ghcr.io on main.
-- Multi-arch release publishing to **Docker Hub** (`4alvit/mcp-venus-os:vX.Y.Z`
+- Multi-arch release publishing to **Docker Hub** (`alvit/mcp-venus-os:vX.Y.Z`
   + `latest`) on `v*` tag pushes (`docker-hub-release.yml`; requires
   `DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN` secrets).
 - Project `.mcp.json`: venus-os HTTP entry reading the token from
