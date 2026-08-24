@@ -266,6 +266,23 @@ async def test_get_battery_soc_mqtt_serves_cache() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_pv_power_mqtt_multi_instance_fans_out() -> None:
+    """instance=0 returns every discovered solarcharger plus total power."""
+    client = _mqtt_read_client(
+        {
+            "N/<portal>/solarcharger/292/Yield/Power": 35,
+            "N/<portal>/solarcharger/290/Yield/Power": 25,
+            "N/<portal>/solarcharger/291/Yield/Power": 33,
+        }
+    )
+    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
+        result = await server.get_pv_power()
+    assert [r["instance"] for r in result["readings"]] == [290, 291, 292]
+    assert all(r["power"] is not None for r in result["readings"])
+    assert result["total_power"] == 93.0
+
+
+@pytest.mark.asyncio
 async def test_get_battery_soc_mqtt_stale_flagged() -> None:
     client = _mqtt_read_client({"N/<portal>/battery/512/Soc": 55}, stale_after_seconds=1.0)
     topic = "N/testportal/battery/512/Soc"
@@ -284,9 +301,10 @@ async def test_get_pv_power_mqtt_computes_power_from_voltage_times_current() -> 
     )
     with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
         result = await server.get_pv_power(instance=0)
-    assert result["power"] == 100.0
-    assert result["voltage"] == 50.0
-    assert result["current"] == 2.0
+    readings = result["readings"]
+    assert len(readings) == 1
+    assert readings[0]["power"] == 100.0
+    assert result["total_power"] == 100.0
 
 
 @pytest.mark.asyncio
@@ -317,12 +335,17 @@ def test_collect_mqtt_all_missing_marks_stale() -> None:
 
 @pytest.mark.asyncio
 async def test_get_battery_soc_mqtt_auto_discovers_instance() -> None:
-    """Default instance=0 resolves against discovered battery/<n> topics."""
-    client = _mqtt_read_client({"N/<portal>/battery/513/Soc": 42})
+    """Default instance=0 fans out over discovered battery/<n> topics."""
+    client = _mqtt_read_client(
+        {
+            "N/<portal>/battery/289/Soc": 44,
+            "N/<portal>/battery/513/Soc": 46,
+        }
+    )
     with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
         result = await server.get_battery_soc(instance=0)
-    assert result["instance"] == 513
-    assert result["soc"] == 42
+    assert [r["instance"] for r in result["readings"]] == [289, 513]
+    assert sorted(r["soc"] for r in result["readings"]) == [44, 46]
 
 
 @pytest.mark.asyncio
@@ -338,7 +361,7 @@ async def test_get_pv_power_mqtt_pvinverter_layout() -> None:
         }
     )
     with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
-        result = await server.get_pv_power(instance=0)
+        result = await server.get_pv_power(instance=369)
     assert result["instance"] == 369
     assert result["power"] == 1500
     assert result["voltage"] == 230.0
@@ -358,7 +381,7 @@ async def test_get_grid_status_mqtt_grid_service_layout() -> None:
         }
     )
     with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
-        result = await server.get_grid_status(instance=0)
+        result = await server.get_grid_status(instance=40)
     assert result["instance"] == 40
     assert result["power"] == -600
     assert result["voltage"] == 231.2
