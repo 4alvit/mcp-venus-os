@@ -64,6 +64,7 @@ async def test_lifespan_with_clients() -> None:
     with (
         patch.object(server, "_dbus_client", dbus_client),
         patch.object(server, "_mqtt_client", mqtt_client),
+        patch.object(server, "_startup_warmup", new=AsyncMock()),
     ):
         async with server.lifespan(app):
             pass
@@ -77,6 +78,7 @@ async def test_lifespan_without_clients() -> None:
     with (
         patch.object(server, "_dbus_client", None),
         patch.object(server, "_mqtt_client", None),
+        patch.object(server, "_startup_warmup", new=AsyncMock()),
     ):
         async with server.lifespan(app):
             pass
@@ -489,3 +491,30 @@ async def test_capabilities_resource_reflects_groups() -> None:
         text = server.capabilities_resource()
     assert "control" in text
     assert "instance=0" in text
+
+
+def test_on_message_unwraps_gateway_value_wrapper() -> None:
+    client = _mqtt_read_client({})
+    _feed(client, "N/testportal/battery/256/Soc", b'{"value": 77}')
+    cached = client.read_path("battery", 256, "Soc")
+    assert cached is not None
+    assert cached[0] == 77  # plain scalar, not {"value": 77}
+
+
+@pytest.mark.asyncio
+async def test_startup_warmup_failure_is_not_fatal(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def _boom() -> None:
+        raise RuntimeError
+
+    monkeypatch.setattr(server, "_startup_warmup", _boom)
+    cfg = Mock()
+    cfg.transport_backend = "mqtt"
+    cfg.log_level = "INFO"
+    app = cast(FastMCP, Mock())
+    with (
+        patch.object(server, "_dbus_client", None),
+        patch.object(server, "_mqtt_client", None),
+        patch("mcp_venus_os.server.get_config", return_value=cfg),
+    ):
+        async with server.lifespan(app):
+            pass
