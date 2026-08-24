@@ -46,6 +46,40 @@ class MQTTConfig(BaseSettings):
         return f"N/{self.portal_id}"
 
 
+class SSHConfig(BaseSettings):
+    """Cerbo GX SSH access configuration (management tools)."""
+
+    model_config = SettingsConfigDict(env_prefix="SSH_")
+
+    host: str | None = Field(
+        default=None,
+        description="Cerbo host for SSH tools; falls back to MQTT_HOST when unset",
+    )
+    port: int = Field(default=22, description="SSH port")
+    user: str = Field(default="root", description="SSH user")
+    key_path: str | None = Field(
+        default=None, description="Private key path (preferred over password)"
+    )
+    password: str | None = Field(default=None, description="SSH password when no key configured")
+    timeout_s: float = Field(default=15.0, description="SSH connect/command timeout")
+
+    @property
+    def effective_host(self) -> str:
+        """Configured host or the MQTT broker host as default target."""
+        return self.host or get_config().mqtt.host
+
+
+class CerboRootConfig(BaseSettings):
+    """Root-password provisioning for cerbo_enable_ssh."""
+
+    model_config = SettingsConfigDict(env_prefix="CERBO_")
+
+    root_password: str | None = Field(
+        default=None,
+        description="Password to set for root on the Cerbo (generated when unset)",
+    )
+
+
 class SafetyConfig(BaseSettings):
     """Safety constraints configuration."""
 
@@ -80,6 +114,8 @@ class ServerConfig(BaseSettings):
     dbus: DBusConfig = Field(default_factory=DBusConfig)
     mqtt: MQTTConfig = Field(default_factory=MQTTConfig)
     safety: SafetyConfig = Field(default_factory=SafetyConfig)
+    ssh: SSHConfig = Field(default_factory=SSHConfig)
+    cerbo: CerboRootConfig = Field(default_factory=CerboRootConfig)
     transport_backend: str = Field(
         default="mqtt", description="Transport backend: mqtt (default) or dbus (on-device)"
     )
