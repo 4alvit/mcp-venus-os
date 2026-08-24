@@ -91,7 +91,17 @@ def _http_auth() -> StaticTokenVerifier | None:
     return None
 
 
-mcp = FastMCP("Venus OS", lifespan=lifespan, auth=_http_auth())
+_INSTRUCTIONS = (
+    "Victron Venus OS control. Reads serve a stale-guarded MQTT cache; "
+    "instance=0 fans out to every device of a type (readings list + total_power), "
+    "explicit instance=N returns one device. Companion-service tools "
+    "(get_control_state, get_tank_level) and Cerbo SSH management tools appear "
+    "only when their service/credentials are present — see the "
+    "venus-os://capabilities resource for the full map including write-tool "
+    "safety gates."
+)
+
+mcp = FastMCP("Venus OS", lifespan=lifespan, auth=_http_auth(), instructions=_INSTRUCTIONS)
 
 
 def _use_mqtt() -> bool:
@@ -383,6 +393,23 @@ def _apply_capability_tools(client: MQTTClient) -> list[str]:
         _registered_capabilities.add("ssh")
         logger.info("Registered %d Cerbo SSH management tools", len(SSH_TOOLS))
     return sorted(new)
+
+
+@mcp.resource("venus-os://capabilities")
+def capabilities_resource() -> str:
+    """Live capability map: which tool groups are active on this install."""
+    groups = sorted(_registered_capabilities)
+    group_note = ", ".join(groups) if groups else "none beyond core reads yet"
+    return (
+        "# Venus OS MCP — capabilities\n\n"
+        "- Reads serve a stale-guarded MQTT cache (`stale`, `age_seconds` per reading).\n"
+        "- instance=0 fans out to every device of a type (`readings` list + "
+        "`total_power`); explicit instance=N returns a single device dict.\n"
+        f"- Active tool groups: {group_note}.\n"
+        "- Writes are confirmation-gated, hard-limited, enum-checked, then verified "
+        "by read-back; written values expire ~60s after keepalives stop.\n"
+        "- Full map incl. MQTT topics and SSH tools: docs/CAPABILITIES.md in the repo."
+    )
 
 
 # MQTT item paths per tool field; first available candidate wins. Paths follow

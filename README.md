@@ -196,6 +196,51 @@ needs repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
 | `mqtt_disconnect` | Disconnect; cancels all write keepalives |
 | `mqtt_subscribe` | Stub — reports "not yet implemented" rather than pretending success |
 
+### Conditional Tool Groups (context-friendly)
+
+Tools are registered **only when their service is present**, so installations
+without them never pay tool-schema context:
+
+| Group | Detected via | Tools |
+|-------|--------------|-------|
+| `control` | `inverter/state` topic ([inverter-control](https://github.com/4alvit/inverter-control)) | `get_control_state()` — grid, per-battery detail, MPPT breakdown, tasmota, EV, water level, booleans, inverter state/setpoint in one JSON |
+| `pump` | `tank/<n>/…` topics (dbus-pump) | `get_tank_level(instance=0)` |
+| `ssh` | `SSH_PASSWORD`/`SSH_KEY_PATH` set | Cerbo management toolkit (below) |
+
+Multi-instance reads: `instance=0` → `{"readings": [...], "total_power": …}` for
+every device of the type; explicit `instance=N` → single dict.
+
+### Cerbo SSH Management
+
+When SSH credentials are configured, these register alongside the broker-detected
+groups; 🔒 = confirmation-gated:
+
+| Tool | Purpose |
+|------|---------|
+| `cerbo_ssh_available` / `cerbo_version` / `cerbo_ip` | reachability, firmware version, addresses |
+| `cerbo_check_updates` | firmware dry run |
+| 🔒 `cerbo_firmware_update` | download + apply firmware |
+| 🔒 `cerbo_enable_ssh` | set root password (stdin→chpasswd) |
+| `setuphelper_status` | SetupHelper + installed packages |
+| 🔒 `setuphelper_install_package(package, repo)` / 🔒 `setuphelper_remove_package(package)` | SetupHelper package lifecycle |
+| 🔒 `cerbo_ssh_exec(command)` | arbitrary command, output capped |
+
+```bash
+# .env
+SSH_HOST=            # defaults to MQTT_HOST
+SSH_USER=root
+SSH_KEY_PATH=~/.ssh/id_ed25519    # preferred…
+# SSH_PASSWORD=                   # …or password
+CERBO_ROOT_PASSWORD=              # used by cerbo_enable_ssh when not passed
+```
+
+To bootstrap access on a fresh Cerbo: GUI → Settings → General → set the root
+password once (`cerbo_enable_ssh` automates it from then on).
+
+Clients can discover the live surface at runtime via the MCP resource
+**`venus-os://capabilities`** (also summarized in server instructions); full
+reference in [docs/CAPABILITIES.md](docs/CAPABILITIES.md).
+
 ## MQTT Topic Map
 
 The server speaks the Venus OS **MQTT-Gateway** protocol:
@@ -204,6 +249,9 @@ The server speaks the Venus OS **MQTT-Gateway** protocol:
 N/<portalId>/<type>/<instance>/<Path>          reads   (published by Venus)
 W/<portalId>/<type>/<instance>/<Path>          writes  (published by us)
 W/<portalId>/<type>/<instance>/<Path>/Keepalive  empty payload every 50s while a written value must stay active
+R/<portalId>                                   request full re-publish
+inverter/state                                 inverter-control aggregate
+tank/<n>/Level                                 dbus-pump tank level
 ```
 
 - Reads: on connect we subscribe `N/<portalId>/#` and cache the last value per
