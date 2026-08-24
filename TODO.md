@@ -82,8 +82,16 @@ so the primary transport becomes the **Venus OS MQTT gateway** (`N/<portalId>/�
 
 ## 11. Capability expansion (post-v0.2.0 feedback)
 
-- [ ] A. Multi-instance reads: `instance=0` → all devices of a type as `readings` list (+`total_power`), `instance=N` → single dict (MPPT 290/291/292 live case)
-- [ ] B. Conditional tool registration via broker detection: `inverter/state` → `get_control_state`, `tank/<n>` → `get_tank_level`; bms/tasmota data flows through existing tools (documented, no extra tools)
-- [ ] C. SSH toolkit (asyncssh): version/IP/update-check/firmware-update/enable-ssh/SetupHelper status+install+remove+update-all/arbitrary exec — confirmation-gated, key-or-password auth from env
-- [ ] D. `docs/CAPABILITIES.md` served as MCP resource `venus-os://capabilities` + FastMCP instructions so Claude knows the surface at connect
-- [ ] E. `.env.sample` SSH block, README sections, CHANGELOG Unreleased; live verification through Synology HTTP endpoint after each PR
+- [x] A. Multi-instance reads: `instance=0` → all devices of a type as `readings` list (+`total_power`), `instance=N` → single dict (MPPT 290/291/292 live case)
+- [x] B. Conditional tool registration via broker detection: `inverter/state` → `get_control_state`, `tank/<n>` → `get_tank_level`; bms/tasmota data flows through existing tools (documented, no extra tools)
+- [x] C. SSH toolkit (asyncssh): version/IP/update-check/firmware-update/enable-ssh/SetupHelper status+install+remove+update-all/arbitrary exec — confirmation-gated, key-or-password auth from env
+- [x] D. `docs/CAPABILITIES.md` served as MCP resource `venus-os://capabilities` + FastMCP instructions so Claude knows the surface at connect
+- [x] E. `.env.sample` SSH block, README sections, CHANGELOG Unreleased; live verification through Synology HTTP endpoint after each PR
+
+Live verification (2026-08-24, Synology :8080 + local HTTP w/ key auth):
+cold `tools/list` = 12 tools (`get_control_state` registered at boot); PV fan-out
+returns solarcharger 290/291/292 **and** both pvinverters (369, 9895) with plain
+numeric fields; control state live (Bulk, 3 batteries, 3 MPPT, water 37%);
+`pump` correctly absent (no tank topics). Local key-auth run: all 10 SSH tools
+registered and verified (`cerbo_version` v3.75, reachability 34 ms,
+`setuphelper_status` → dbus-mqtt-battery, gated exec, update dry-run).
