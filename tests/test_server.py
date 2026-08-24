@@ -481,3 +481,11 @@ async def test_get_tank_level_reads_cached_tanks() -> None:
         result = await server.get_tank_level()
     levels = sorted(r["level"] for r in result["readings"])
     assert levels == [44, 80]
+
+
+@pytest.mark.asyncio
+async def test_capabilities_resource_reflects_groups() -> None:
+    with patch.object(server, "_registered_capabilities", {"control"}):
+        text = server.capabilities_resource()
+    assert "control" in text
+    assert "instance=0" in text

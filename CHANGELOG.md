@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Multi-instance reads: `instance=0` returns every device of a type as a
+  `readings` list with `total_power` (live system runs three MPPTs that a
+  first-match read hid); explicit `instance=N` keeps the single-dict shape.
+- Conditional tool groups registered only when detected on the broker:
+  `get_control_state()` (inverter-control aggregate state) via the
+  `inverter/state` topic, `get_tank_level()` (dbus-pump) via `tank/<n>/…`;
+  absent services cost zero tool-schema context.
+- Cerbo SSH management toolkit over asyncssh (`SSH_PASSWORD`/`SSH_KEY_PATH`
+  gated): version/IP/update-check/firmware-update/enable-ssh,
+  SetupHelper status/install/remove, arbitrary `cerbo_ssh_exec` — destructive
+  and write-shaped operations share the write tools' confirmation gate
+  (deduplicated into `_confirm_gate`).
+- Capability discovery for clients: MCP resource `venus-os://capabilities`
+  plus server `instructions`; full reference in `docs/CAPABILITIES.md`.
+
+### Changed
+
+- MQTT client also subscribes companion-service topics (`inverter/state`,
+  `tank/#`) alongside the Venus gateway wildcard.
+
 ## [0.2.0] - 2026-08-23
 
 ### Changed
