@@ -157,7 +157,7 @@ async def test_set_inverter_mode_unknown_enum_rejected_before_publish() -> None:
     client._connected = True
 
     with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
-        result = await set_inverter_mode(mode="eco", instance=0, confirmed=True)
+        result = await set_inverter_mode(mode="charger_only", instance=0, confirmed=True)
 
     assert result["success"] is False
     assert "no known enum code" in result["error"]
