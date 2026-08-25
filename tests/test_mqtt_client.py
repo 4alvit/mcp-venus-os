@@ -410,8 +410,9 @@ def test_inbox_overflow_drops_without_raising(monkeypatch: pytest.MonkeyPatch) -
     client._on_message(cast(mqtt.Client, Mock()), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"1"))
     client._on_message(cast(mqtt.Client, Mock()), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"2"))
     client._drain_inbox()
-    assert client.read_path("battery", 0, "Soc") is not None
-    assert client.read_path("battery", 0, "Soc")[0] == 1
+    cached = client.read_path("battery", 0, "Soc")
+    assert cached is not None
+    assert cached[0] == 1
 
 
 def test_empty_payload_not_logged_as_warning(
