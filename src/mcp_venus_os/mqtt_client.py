@@ -3,6 +3,8 @@
 import asyncio
 import json
 import logging
+import queue
+import threading
 import time
 from collections.abc import Callable
 from typing import Any
@@ -17,6 +19,14 @@ logger = logging.getLogger(__name__)
 
 # Venus expires written values after 60s without keepalive; stay under it.
 KEEPALIVE_INTERVAL_S = 50.0
+# MQTT protocol keepalive (s): short enough that a broker drop is noticed fast,
+# long enough to ride out brief load spikes between PINGREQs.
+MQTT_PROTOCOL_KEEPALIVE_S = 30
+# Bound on queued inbound messages; when full, new messages are dropped (the
+# next publish of any topic refreshes the cache anyway).
+INBOX_MAXSIZE = 10_000
+# Minimum seconds between "inbox overflow" warnings.
+DROP_LOG_INTERVAL_S = 10.0
 
 
 class MQTTError(Exception):
@@ -53,6 +63,12 @@ class MQTTClient:
         self._cache: dict[str, tuple[Payload, float]] = {}
         # Active write keepalives: item topic -> periodic publisher task
         self._keepalives: dict[str, asyncio.Task[None]] = {}
+        # Inbound messages are decoded off paho's network thread: heavy work
+        # inline in _loop starves _check_keepalive → broker drops the
+        # connection every keepalive interval → full retained-tree re-flood.
+        self._inbox: queue.Queue[mqtt.MQTTMessage | None] = queue.Queue(maxsize=INBOX_MAXSIZE)
+        self._worker: threading.Thread | None = None
+        self._last_drop_log = 0.0
 
     @property
     def prefix(self) -> str:
@@ -106,7 +122,46 @@ class MQTTClient:
         userdata: Any,  # noqa: ANN401
         msg: mqtt.MQTTMessage,
     ) -> None:
-        """MQTT on_message callback."""
+        """MQTT on_message callback (paho network thread).
+
+        Only enqueues: decoding here would hold the GIL in long stretches and
+        starve paho's keepalive check.
+        """
+        try:
+            self._inbox.put_nowait(msg)
+        except queue.Full:
+            now = time.monotonic()
+            if now - self._last_drop_log >= DROP_LOG_INTERVAL_S:
+                logger.warning("MQTT inbox overflow, dropping messages")
+                self._last_drop_log = now
+
+    def _drain_inbox(self) -> None:
+        """Process all queued messages synchronously (tests, shutdown)."""
+        while True:
+            try:
+                msg = self._inbox.get_nowait()
+            except queue.Empty:
+                return
+            if msg is not None:  # skip stale shutdown sentinels
+                self._handle_message(msg)
+
+    def _process_inbox(self) -> None:
+        """Worker thread: decode messages and update the cache/callbacks."""
+        while True:
+            msg = self._inbox.get()
+            if msg is None:  # shutdown sentinel
+                return
+            self._handle_message(msg)
+
+    def _start_worker(self) -> None:
+        if self._worker is None or not self._worker.is_alive():
+            self._worker = threading.Thread(
+                target=self._process_inbox, name="mqtt-message-worker", daemon=True
+            )
+            self._worker.start()
+
+    def _handle_message(self, msg: mqtt.MQTTMessage) -> None:
+        """Decode one message, update the cache, notify callbacks."""
         try:
             payload = json.loads(msg.payload.decode())
             # Venus gateway wraps item values as {"value": X}; unwrap so the
@@ -119,7 +174,9 @@ class MQTTClient:
                 self._cache[topic] = (payload, time.monotonic())
             self._notify_callbacks(topic, payload)
         except json.JSONDecodeError:
-            logger.warning("Invalid JSON on topic %s: %s", msg.topic, msg.payload)
+            # Venus publishes empty payloads when a value expires; not worth a warning.
+            if msg.payload:
+                logger.warning("Invalid JSON on topic %s: %s", msg.topic, msg.payload)
         except Exception:
             logger.exception("Error processing message")
 
@@ -183,8 +240,11 @@ class MQTTClient:
         self.client.on_disconnect = self._on_disconnect
         self.client.on_message = self._on_message
 
-        self.client.connect_async(self.config.host, self.config.port)
+        self.client.connect_async(
+            self.config.host, self.config.port, keepalive=MQTT_PROTOCOL_KEEPALIVE_S
+        )
         self.client.loop_start()
+        self._start_worker()
 
         # Wait for connection
         for _ in range(50):
@@ -202,6 +262,11 @@ class MQTTClient:
             self.client.disconnect()
             self._connected = False
             logger.info("Disconnected from MQTT broker")
+        # Stop the decode worker (None sentinel; daemon thread never blocks exit).
+        if self._worker is not None and self._worker.is_alive():
+            self._inbox.put(None)
+            self._worker.join(timeout=2)
+        self._worker = None
 
     def publish(self, topic: str, payload: Payload, retain: bool = False) -> None:
         """Publish a message to an absolute MQTT topic."""

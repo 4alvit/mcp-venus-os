@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- MQTT keepalive-timeout reconnect loop (drop every ~7 min → full retained-tree
+  re-flood): inbound messages are now decoded on a worker thread instead of
+  inline in paho's network thread, so `_check_keepalive` can no longer be
+  starved by the message stream. Protocol keepalive set explicitly to 30s;
+  bounded inbox (10k) drops instead of raising under flood.
+- Healthcheck false-unhealthy: compose timeout raised 5s→10s — the host stalls
+  several seconds under load even though the server answers fine.
+
 ### Added
 
 - Multi-instance reads: `instance=0` returns every device of a type as a

@@ -25,6 +25,7 @@ def _mqtt_read_client(entries: dict[str, object]) -> MQTTClient:
         msg._topic = topic.encode()
         msg.payload = payload
         MQTTClient._on_message(cast(Any, client), cast(Any, Mock()), None, msg)
+        client._drain_inbox()
 
     cfg = ServerConfig(mqtt=MQTTConfig(host="localhost", portal_id="testportal"))
     with (

@@ -230,6 +230,7 @@ def _feed(client: MQTTClient, topic: str, payload: bytes) -> None:
     msg._topic = topic.encode()
     msg.payload = payload
     client._on_message(cast(paho.Client, Mock()), None, msg)
+    client._drain_inbox()
 
 
 def _mqtt_read_client(entries: dict[str, object], stale_after_seconds: float = 60.0) -> MQTTClient:
