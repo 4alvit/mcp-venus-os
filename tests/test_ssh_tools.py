@@ -162,3 +162,29 @@ async def test_cerbo_ssh_exec_runs_when_confirmed() -> None:
         result = await server.cerbo_ssh_exec(command="uname -a", confirmed=True)
     assert result["success"] is True
     fake.run.assert_awaited_once_with("uname -a", timeout_s=30.0)
+
+
+@pytest.mark.asyncio
+async def test_setuphelper_install_uses_main_branch_and_no_stdin_hang() -> None:
+    """Regression: 2026-08-24 prod incident.
+
+    - archive/latest.tar.gz resolves to the *tag* latest (months old), not main
+    - setup without scriptAction blocks forever on stdin over headless SSH
+    """
+    c = _client()
+    captured: dict[str, Any] = {}
+
+    async def _run(cmd: str, timeout_s: float | None = None) -> dict[str, Any]:
+        captured["cmd"] = cmd
+        return {"success": True, "stdout": "", "stderr": ""}
+
+    cast(Any, c).run = AsyncMock(side_effect=_run)
+    await c.setuphelper_install_package("inverter-control", "victron-venus/inverter-control")
+
+    cmd = captured["cmd"]
+    assert "archive/refs/heads/main.tar.gz" in cmd
+    assert "/archive/latest.tar.gz" not in cmd
+    assert "mv /data/inverter-control-main /data/inverter-control" in cmd
+    assert "scriptAction=INSTALL" in cmd
+    assert "packageName=inverter-control" in cmd
+    assert "</dev/null" in cmd
