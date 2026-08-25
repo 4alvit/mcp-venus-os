@@ -54,6 +54,7 @@ def _feed(client: MQTTClient, topic: str, payload: bytes) -> None:
     msg._topic = topic.encode()
     msg.payload = payload
     client._on_message(cast(mqtt.Client, Mock()), None, msg)
+    client._drain_inbox()
 
 
 def test_topic_matches() -> None:
@@ -263,13 +264,15 @@ def test_topic_prefix_requires_portal_id() -> None:
 async def test_connect_success() -> None:
     with patch("mcp_venus_os.mqtt_client.mqtt.Client") as mock_client_cls:
         client = _make_client()
-        mock_client_cls.return_value.connect_async.side_effect = lambda _host, _port: setattr(
-            client, "_connected", True
+        mock_client_cls.return_value.connect_async.side_effect = lambda _host, _port, **_kw: (
+            setattr(client, "_connected", True)
         )
         await client.connect()
         await client.connect()
     mock_client_cls.return_value.loop_start.assert_called_once()
-    mock_client_cls.return_value.connect_async.assert_called_once_with("localhost", 1883)
+    mock_client_cls.return_value.connect_async.assert_called_once_with(
+        "localhost", 1883, keepalive=30
+    )
 
 
 @pytest.mark.asyncio
@@ -302,13 +305,13 @@ async def test_connect_with_auth_and_tls() -> None:
         patch("mcp_venus_os.mqtt_client.mqtt.Client") as mock_client_cls,
     ):
         client = MQTTClient()
-        mock_client_cls.return_value.connect_async.side_effect = lambda _host, _port: setattr(
-            client, "_connected", True
+        mock_client_cls.return_value.connect_async.side_effect = lambda _host, _port, **_kw: (
+            setattr(client, "_connected", True)
         )
         await client.connect()
     mock_client_cls.return_value.username_pw_set.assert_called_once_with("u", "p")
     mock_client_cls.return_value.tls_set.assert_called_once()
-    mock_client_cls.return_value.connect_async.assert_called_once_with("broker", 8883)
+    mock_client_cls.return_value.connect_async.assert_called_once_with("broker", 8883, keepalive=30)
 
 
 @pytest.mark.asyncio
@@ -368,3 +371,59 @@ async def test_disconnect_cancels_keepalives() -> None:
         await task
     assert client._keepalives == {}
     assert task.cancelled()
+
+
+def _raw_msg(topic: str, payload: bytes) -> mqtt.MQTTMessage:
+    msg = mqtt.MQTTMessage()
+    msg._topic = topic.encode()
+    msg.payload = payload
+    return msg
+
+
+def test_worker_thread_processes_enqueued_messages() -> None:
+    import time as time_mod
+
+    client = _make_client()
+    received: list[Payload] = []
+    client.subscribe(f"{PREFIX}/#", received.append)
+    client._start_worker()
+    try:
+        client._on_message(
+            cast(mqtt.Client, Mock()), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"55.5")
+        )
+        deadline = time_mod.monotonic() + 2.0
+        while not received and time_mod.monotonic() < deadline:
+            time_mod.sleep(0.01)
+        assert received == [55.5]
+        assert client.read_path("battery", 0, "Soc") is not None
+    finally:
+        if client._worker is not None and client._worker.is_alive():
+            client._inbox.put(None)
+            client._worker.join(timeout=1)
+
+
+def test_inbox_overflow_drops_without_raising(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("mcp_venus_os.mqtt_client.INBOX_MAXSIZE", 1)
+    client = _make_client()
+    # Fill the queue (maxsize=1) without draining; the next message must be
+    # dropped silently instead of raising inside paho's network thread.
+    client._on_message(cast(mqtt.Client, Mock()), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"1"))
+    client._on_message(cast(mqtt.Client, Mock()), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"2"))
+    client._drain_inbox()
+    cached = client.read_path("battery", 0, "Soc")
+    assert cached is not None
+    assert cached[0] == 1
+
+
+def test_empty_payload_not_logged_as_warning(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    import logging
+
+    client = _make_client()
+    with caplog.at_level(logging.WARNING, logger="mcp_venus_os.mqtt_client"):
+        _feed(client, f"{PREFIX}/acload/71/ProductName", b"")
+        _feed(client, f"{PREFIX}/acload/71/ProductName", b"not json")
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    # Empty payload (Venus value expiry) is silent; real garbage still warns.
+    assert len(warnings) == 1
