@@ -168,13 +168,24 @@ class CerboSSHClient:
         }
 
     async def setuphelper_install_package(self, package: str, repo: str) -> dict[str, Any]:
-        """Install a package via the documented wget+tar+setup pattern."""
-        url = f"https://github.com/{repo}/archive/latest.tar.gz"
+        """Install a package via the documented wget+tar+setup pattern.
+
+        Two hazards this method guards against (both bit us on 2026-08-24):
+        - ``archive/latest.tar.gz`` resolves to the *tag* ``latest``, which
+          can be months old. Always fetch ``refs/heads/main``.
+        - Running ``setup`` without ``scriptAction`` drops it into
+          standardActionPrompt, which blocks forever reading stdin over a
+          headless SSH channel. Set the env PackageManager would set and
+          redirect stdin from /dev/null so any stray read gets EOF.
+        """
+        url = f"https://github.com/{repo}/archive/refs/heads/main.tar.gz"
         script = (
             f"wget -qO - {url} | tar -xzf - -C /data && "
             f"rm -rf /data/{package} && "
-            f"mv /data/{package}-latest /data/{package} && "
-            f"/data/{package}/setup"
+            f"mv /data/{package}-main /data/{package} && "
+            f"cd /data/{package} && "
+            f"scriptAction=INSTALL packageName={package} scriptDir=/data/{package} "
+            f"/data/{package}/setup </dev/null"
         )
         return await self.run(script, timeout_s=300)
 
