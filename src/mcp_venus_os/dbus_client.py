@@ -281,11 +281,15 @@ class DBusClient:
         for name in victron_names:
             parts = name.split(".")
             if len(parts) >= 3:
+                try:
+                    instance = int(parts[-1])
+                except ValueError:
+                    continue
                 devices.append(
                     {
                         "service": name,
                         "device_type": parts[-2],
-                        "instance": int(parts[-1]),
+                        "instance": instance,
                     }
                 )
         return devices
