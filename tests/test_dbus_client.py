@@ -301,6 +301,19 @@ async def test_list_devices_error() -> None:
 
 
 @pytest.mark.asyncio
+async def test_list_devices_skips_non_numeric_instance() -> None:
+    client = DBusClient()
+    fake = FakeBus(
+        names=["com.victronenergy.ev22", "com.victronenergy.battery.0", "com.victronenergy"]
+    )
+    with _patched_dbus(fake):
+        devices = await client.list_devices()
+    assert devices == [
+        {"service": "com.victronenergy.battery.0", "device_type": "battery", "instance": 0},
+    ]
+
+
+@pytest.mark.asyncio
 async def test_list_devices_not_connected() -> None:
     client = DBusClient()
     with patch("mcp_venus_os.dbus_client.MessageBus") as mock_bus:
