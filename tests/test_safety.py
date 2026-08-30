@@ -1,10 +1,26 @@
+from unittest.mock import patch
+
 import pytest
 
+from mcp_venus_os.config import SafetyConfig, ServerConfig
 from mcp_venus_os.safety import (
     ConfirmationRequiredError,
     SafetyCheckResult,
     SafetyValidator,
 )
+
+
+def _writable_validator() -> SafetyValidator:
+    """Validator with killswitch OFF for testing parameter/path logic.
+
+    Uses a patched get_config so the instance reads enable_writes=True.
+    """
+    cfg = ServerConfig(safety=SafetyConfig(enable_writes=True, require_confirmation=False))
+    with (
+        patch("mcp_venus_os.safety.get_config", return_value=cfg),
+        patch("mcp_venus_os.config.get_config", return_value=cfg),
+    ):
+        return SafetyValidator()
 
 
 def test_validate_charge_current() -> None:
@@ -38,7 +54,7 @@ def test_validate_mode() -> None:
 
 
 def test_validate_write_operation() -> None:
-    validator = SafetyValidator()
+    validator = _writable_validator()
     result = validator.validate_write_operation("test_op", {}, confirmed=True)
     assert result.allowed
 
@@ -196,7 +212,7 @@ def test_confirmation_manager() -> None:
 
 def test_validate_write_operation_with_charge_current() -> None:
     """Test write operation validation with charge current parameter."""
-    validator = SafetyValidator()
+    validator = _writable_validator()
 
     # Test with valid charge current
     result = validator.validate_write_operation(
@@ -216,7 +232,7 @@ def test_validate_write_operation_with_charge_current() -> None:
 
 def test_validate_write_operation_with_discharge_current() -> None:
     """Test write operation validation with discharge current parameter."""
-    validator = SafetyValidator()
+    validator = _writable_validator()
 
     # Test with valid discharge current
     result = validator.validate_write_operation(
@@ -236,7 +252,7 @@ def test_validate_write_operation_with_discharge_current() -> None:
 
 def test_validate_write_operation_with_soc_limit() -> None:
     """Test write operation validation with SoC limit parameter."""
-    validator = SafetyValidator()
+    validator = _writable_validator()
 
     # Test with valid SoC limit
     result = validator.validate_write_operation("set_soc_limit", {"soc_limit": 50}, confirmed=True)
@@ -263,7 +279,7 @@ def test_validate_write_operation_with_soc_limit() -> None:
 
 def test_validate_write_operation_with_mode() -> None:
     """Test write operation validation with mode parameter."""
-    validator = SafetyValidator()
+    validator = _writable_validator()
 
     # Test with valid mode
     result = validator.validate_write_operation("set_inverter_mode", {"mode": "on"}, confirmed=True)
@@ -281,20 +297,30 @@ def test_validate_write_operation_confirmation_required() -> None:
     """Test write operation validation when confirmation is required but not provided."""
     validator = SafetyValidator()
 
-    # Test with confirmed=False when require_confirmation is True (default)
-    result = validator.validate_write_operation(
-        "test_operation", {"some_param": "value"}, confirmed=False
-    )
-    assert not result.allowed
-    assert result.requires_confirmation is True
-    assert "Confirmation required" in (result.reason or "")
-    assert "test_operation" in (result.confirmation_message or "")
+    # Killswitch blocks first; confirmation step is unreachable when
+    # SAFETY_ENABLE_WRITES=false. Patch the config to bypass the
+    # killswitch so the confirmation gate can be exercised below.
+    cfg = ServerConfig(safety=SafetyConfig(enable_writes=True))
+    with (
+        patch("mcp_venus_os.safety.get_config", return_value=cfg),
+        patch("mcp_venus_os.config.get_config", return_value=cfg),
+    ):
+        validator = SafetyValidator()
 
-    # Test with confirmed=True when require_confirmation is True
-    result = validator.validate_write_operation(
-        "test_operation", {"some_param": "value"}, confirmed=True
-    )
-    assert result.allowed
+        # Test with confirmed=False when require_confirmation is True
+        result = validator.validate_write_operation(
+            "test_operation", {"some_param": "value"}, confirmed=False
+        )
+        assert not result.allowed
+        assert result.requires_confirmation is True
+        assert "Confirmation required" in (result.reason or "")
+        assert "test_operation" in (result.confirmation_message or "")
+
+        # Test with confirmed=True when require_confirmation is True
+        result = validator.validate_write_operation(
+            "test_operation", {"some_param": "value"}, confirmed=True
+        )
+        assert result.allowed
 
 
 def test_main() -> None:

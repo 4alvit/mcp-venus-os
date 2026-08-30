@@ -66,6 +66,7 @@ SAFETY_MAX_DISCHARGE_CURRENT=100
 SAFETY_MIN_SOC_LIMIT=10
 SAFETY_MAX_SOC_LIMIT=100
 SAFETY_ALLOWED_MODES=on,off,charger_only,inverter_only,eco
+SAFETY_ENABLE_WRITES=false       # MUST be true to enable any write/control tools
 
 # HTTP mode extras
 SERVER_HOST=127.0.0.1           # 0.0.0.0 inside containers

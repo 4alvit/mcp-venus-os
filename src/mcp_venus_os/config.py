@@ -81,10 +81,25 @@ class CerboRootConfig(BaseSettings):
 
 
 class SafetyConfig(BaseSettings):
-    """Safety constraints configuration."""
+    """Safety constraints configuration.
+
+    All write operations are deny-by-default: the killswitch
+    ``enable_writes`` must be set to ``True`` (via ``SAFETY_ENABLE_WRITES=true``)
+    before any tool will mutate device state, regardless of ``confirmed=True``
+    or ``require_confirmation=False``. This is the single point that decides
+    whether the control plane is live.
+    """
 
     model_config = SettingsConfigDict(env_prefix="SAFETY_")
 
+    enable_writes: bool = Field(
+        default=False,
+        description=(
+            "Global killswitch: every write/control tool refuses to act when "
+            "false, irrespective of the confirmed flag. Set true only on "
+            "installs that are allowed to mutate Venus OS state."
+        ),
+    )
     require_confirmation: bool = Field(
         default=True, description="Require confirmation for write operations"
     )
@@ -99,6 +114,40 @@ class SafetyConfig(BaseSettings):
     allowed_modes: list[str] = Field(
         default=["on", "off", "charger_only", "inverter_only", "eco"],
         description="Allowed inverter modes",
+    )
+    write_path_allowlist: dict[str, list[str]] = Field(
+        default={
+            # path-relative keys (device_type) → allowed W/… suffixes. A write
+            # to any device_type / path outside this set is rejected even
+            # when confirmed=True. Wildcards would invite target drift.
+            "vebus": ["Mode", "Dc/0/MaxChargeCurrent", "Ac/ActiveIn/CurrentLimit"],
+            "battery": ["SocLimit"],
+            "solarcharger": ["Mode", "Dc/0/MaxChargeCurrent"],
+        },
+        description=("Map of write tool → allowed MQTT paths. Anything else is denied."),
+    )
+    ssh_command_deny_patterns: list[str] = Field(
+        default=[
+            # Anything that pivots out of the Cerbo shell or rewrites the box.
+            # `rm -rf /` only (trailing whitespace/EOL) — `rm -rf /data/<pkg>`
+            # used by setuphelper_remove_package stays allowed.
+            r"\brm\s+-rf\s+/(?:\s|$)",
+            r"\bmkfs",
+            r"\bdd\s+if=",
+            r"\bcurl\b.*\|\s*(?:ba)?sh",
+            r"\bwget\b.*\|\s*(?:ba)?sh",
+            r"\bshutdown\b",
+            r"\breboot\b",
+            r"\bhalt\b",
+            r"\bpoweroff\b",
+            r"\bflash\.sh\b",
+            # firmware-update tools have their own gates; do not allow them
+            # to be invoked by an arbitrary shell escape either.
+        ],
+        description=(
+            "Regex patterns; if ANY matches the cerbo_ssh_exec command the "
+            "request is denied, even with confirmed=True."
+        ),
     )
 
 
