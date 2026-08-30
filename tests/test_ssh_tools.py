@@ -8,6 +8,7 @@ import pytest
 from mcp_venus_os import server
 from mcp_venus_os.config import MQTTConfig, ServerConfig
 from mcp_venus_os.mqtt_client import MQTTClient
+from mcp_venus_os.safety import SafetyCheckResult
 from mcp_venus_os.ssh_client import CerboSSHClient
 
 
@@ -148,14 +149,21 @@ async def test_ssh_tools_skipped_when_unconfigured() -> None:
 
 @pytest.mark.asyncio
 async def test_cerbo_ssh_exec_gated_without_confirmation() -> None:
-    with patch.object(server, "_safety_validator", None):
+    """Without confirmed=True, the confirmation gate blocks execution."""
+    mock_validator = Mock()
+    mock_validator.validate_write_operation.return_value = SafetyCheckResult(
+        allowed=False,
+        requires_confirmation=True,
+        confirmation_message="Confirm cerbo_ssh_exec?",
+    )
+    with patch("mcp_venus_os.server.get_safety_validator", return_value=mock_validator):
         result = await server.cerbo_ssh_exec(command="uname -a")
     assert result["success"] is False
     assert result["requires_confirmation"] is True
 
 
 @pytest.mark.asyncio
-async def test_cerbo_ssh_exec_runs_when_confirmed() -> None:
+async def test_cerbo_ssh_exec_runs_when_confirmed(enable_writes: None) -> None:  # noqa: ARG001
     fake = Mock()
     fake.configured = True
     fake.run = AsyncMock(return_value={"success": True, "stdout": "Linux cerbo", "exit_code": 0})

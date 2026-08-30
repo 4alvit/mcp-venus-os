@@ -130,7 +130,9 @@ def _seed_cache(client: MQTTClient, topic: str, value: Payload) -> None:
 
 
 @pytest.mark.asyncio
-async def test_set_inverter_mode_mqtt_publishes_and_verifies() -> None:
+async def test_set_inverter_mode_mqtt_publishes_and_verifies(
+    enable_writes: None,  # noqa: ARG001
+) -> None:
     client = _mqtt_client()
     paho = Mock()
     client.client = cast(Any, paho)
@@ -150,7 +152,9 @@ async def test_set_inverter_mode_mqtt_publishes_and_verifies() -> None:
 
 
 @pytest.mark.asyncio
-async def test_set_inverter_mode_unknown_enum_rejected_before_publish() -> None:
+async def test_set_inverter_mode_unknown_enum_rejected_before_publish(
+    enable_writes: None,  # noqa: ARG001
+) -> None:
     client = _mqtt_client()
     paho = Mock()
     client.client = cast(Any, paho)
@@ -165,7 +169,9 @@ async def test_set_inverter_mode_unknown_enum_rejected_before_publish() -> None:
 
 
 @pytest.mark.asyncio
-async def test_set_charge_current_limit_mqtt_publishes_and_verifies() -> None:
+async def test_set_charge_current_limit_mqtt_publishes_and_verifies(
+    enable_writes: None,  # noqa: ARG001
+) -> None:
     client = _mqtt_client()
     paho = Mock()
     client.client = cast(Any, paho)
@@ -183,7 +189,9 @@ async def test_set_charge_current_limit_mqtt_publishes_and_verifies() -> None:
 
 
 @pytest.mark.asyncio
-async def test_set_soc_limit_mqtt_publishes_to_battery_path() -> None:
+async def test_set_soc_limit_mqtt_publishes_to_battery_path(
+    enable_writes: None,  # noqa: ARG001
+) -> None:
     client = _mqtt_client()
     paho = Mock()
     client.client = cast(Any, paho)
@@ -199,7 +207,9 @@ async def test_set_soc_limit_mqtt_publishes_to_battery_path() -> None:
 
 
 @pytest.mark.asyncio
-async def test_write_readback_timeout_reports_error() -> None:
+async def test_write_readback_timeout_reports_error(
+    enable_writes: None,  # noqa: ARG001
+) -> None:
     client = _mqtt_client()
     paho = Mock()
     client.client = cast(Any, paho)

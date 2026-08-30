@@ -645,9 +645,22 @@ def _decode_vebus_enums(reading: dict[str, Any]) -> None:
         reading["state_name"] = VEBUS_STATES.get(reading["state"], f"code {reading['state']}")
 
 
-def _confirm_gate(operation: str, params: dict[str, Any], confirmed: bool) -> dict[str, Any] | None:
-    """Shared confirmation gate; returns an error payload or None to proceed."""
-    result = get_safety_validator().validate_write_operation(operation, params, confirmed)
+def _confirm_gate(
+    operation: str,
+    params: dict[str, Any],
+    confirmed: bool,
+    dbus_path: str | None = None,
+) -> dict[str, Any] | None:
+    """Shared safety + confirmation gate; returns an error payload or None.
+
+    The validator runs killswitch + write-path allowlist + parameter
+    bounds + confirmation checks in order. ``dbus_path`` is the MQTT
+    path the tool would publish to (``W/.../<path>``); for cerbo_ssh_exec
+    the command is checked against ssh_command_deny_patterns.
+    """
+    result = get_safety_validator().validate_write_operation(
+        operation, params, confirmed, dbus_path=dbus_path
+    )
     if not result.allowed and result.requires_confirmation:
         return {
             "success": False,
@@ -799,7 +812,12 @@ async def set_inverter_mode(
 
     Requires confirmation for write operations.
     """
-    gate = _confirm_gate("set_inverter_mode", {"mode": mode, "instance": instance}, confirmed)
+    gate = _confirm_gate(
+        "set_inverter_mode",
+        {"mode": mode, "instance": instance},
+        confirmed,
+        dbus_path="Mode",
+    )
     if gate is not None:
         return gate
 
@@ -825,7 +843,10 @@ async def set_charge_current_limit(
     Requires confirmation for write operations.
     """
     gate = _confirm_gate(
-        "set_charge_current_limit", {"charge_current": current, "instance": instance}, confirmed
+        "set_charge_current_limit",
+        {"charge_current": current, "instance": instance},
+        confirmed,
+        dbus_path="Dc/0/MaxChargeCurrent",
     )
     if gate is not None:
         return gate
@@ -847,7 +868,12 @@ async def set_soc_limit(
 
     Requires confirmation for write operations.
     """
-    gate = _confirm_gate("set_soc_limit", {"soc_limit": soc_limit, "instance": instance}, confirmed)
+    gate = _confirm_gate(
+        "set_soc_limit",
+        {"soc_limit": soc_limit, "instance": instance},
+        confirmed,
+        dbus_path="SocLimit",
+    )
     if gate is not None:
         return gate
 
