@@ -27,6 +27,10 @@ MQTT_PROTOCOL_KEEPALIVE_S = 30
 INBOX_MAXSIZE = 10_000
 # Minimum seconds between "inbox overflow" warnings.
 DROP_LOG_INTERVAL_S = 10.0
+# Short pause after each processed message; prevents busy-spinning during
+# retained-tree floods (2000+ messages on reconnect) without affecting
+# steady-state throughput (queue.get() already blocks when empty).
+INBOX_PROCESS_SLEEP_S = 0.001
 
 
 class MQTTError(Exception):
@@ -152,6 +156,7 @@ class MQTTClient:
             if msg is None:  # shutdown sentinel
                 return
             self._handle_message(msg)
+            time.sleep(INBOX_PROCESS_SLEEP_S)
 
     def _start_worker(self) -> None:
         if self._worker is None or not self._worker.is_alive():
@@ -162,6 +167,10 @@ class MQTTClient:
 
     def _handle_message(self, msg: mqtt.MQTTMessage) -> None:
         """Decode one message, update the cache, notify callbacks."""
+        # Venus expires a value by publishing an empty payload — silently
+        # drop it so the cache stays untouched until a real update arrives.
+        if not msg.payload:
+            return
         try:
             payload = json.loads(msg.payload.decode())
             # Venus gateway wraps item values as {"value": X}; unwrap so the
@@ -174,9 +183,7 @@ class MQTTClient:
                 self._cache[topic] = (payload, time.monotonic())
             self._notify_callbacks(topic, payload)
         except json.JSONDecodeError:
-            # Venus publishes empty payloads when a value expires; not worth a warning.
-            if msg.payload:
-                logger.warning("Invalid JSON on topic %s: %s", msg.topic, msg.payload)
+            logger.warning("Invalid JSON on topic %s: %s", msg.topic, msg.payload)
         except Exception:
             logger.exception("Error processing message")
 
