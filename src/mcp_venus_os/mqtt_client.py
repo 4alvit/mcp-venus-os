@@ -24,13 +24,13 @@ KEEPALIVE_INTERVAL_S = 50.0
 MQTT_PROTOCOL_KEEPALIVE_S = 30
 # Bound on queued inbound messages; when full, new messages are dropped (the
 # next publish of any topic refreshes the cache anyway).
-INBOX_MAXSIZE = 10_000
+INBOX_MAXSIZE = 50_000
 # Minimum seconds between "inbox overflow" warnings.
 DROP_LOG_INTERVAL_S = 10.0
 # Short pause after each processed message; prevents busy-spinning during
 # retained-tree floods (2000+ messages on reconnect) without affecting
 # steady-state throughput (queue.get() already blocks when empty).
-INBOX_PROCESS_SLEEP_S = 0.001
+INBOX_PROCESS_SLEEP_S = 0.0001
 
 
 class MQTTError(Exception):
