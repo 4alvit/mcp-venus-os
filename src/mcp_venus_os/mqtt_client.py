@@ -72,6 +72,7 @@ class MQTTClient:
         # connection every keepalive interval → full retained-tree re-flood.
         self._inbox: queue.Queue[mqtt.MQTTMessage | None] = queue.Queue(maxsize=INBOX_MAXSIZE)
         self._worker: threading.Thread | None = None
+        self._loop_thread: threading.Thread | None = None
         self._last_drop_log = 0.0
 
     @property
@@ -138,6 +139,16 @@ class MQTTClient:
             if now - self._last_drop_log >= DROP_LOG_INTERVAL_S:
                 logger.warning("MQTT inbox overflow, dropping messages")
                 self._last_drop_log = now
+
+    def _run_loop(self) -> None:
+        """Run paho's network loop with a 5s select timeout.
+
+        loop_start() uses a 1s timeout which on Synology's low-HZ kernel
+        (HZ=100) causes ~100 select() syscalls/s → ~25% CPU on a 2-core NAS.
+        A 5s timeout cuts wakeups 5x while staying well under the MQTT
+        protocol keepalive window.
+        """
+        self.client.loop_forever(timeout=5.0)
 
     def _drain_inbox(self) -> None:
         """Process all queued messages synchronously (tests, shutdown)."""
@@ -250,7 +261,13 @@ class MQTTClient:
         self.client.connect_async(
             self.config.host, self.config.port, keepalive=MQTT_PROTOCOL_KEEPALIVE_S
         )
-        self.client.loop_start()
+        # Bypass loop_start() and run loop_forever in our own thread with a
+        # 5s select() timeout: paho's default 1s wakes every kernel tick
+        # (HZ=100 on Synology) and burns ~25% of one core on idle. A 5s
+        # timeout cuts wakeups 5x; well under MQTT protocol keepalive so
+        # PINGREQs aren't missed.
+        self._loop_thread = threading.Thread(target=self._run_loop, name="mqtt-loop", daemon=True)
+        self._loop_thread.start()
         self._start_worker()
 
         # Wait for connection
@@ -274,6 +291,10 @@ class MQTTClient:
             self._inbox.put(None)
             self._worker.join(timeout=2)
         self._worker = None
+        # loop_forever exits when loop_stop() sets _thread_terminate; join it.
+        if self._loop_thread is not None and self._loop_thread.is_alive():
+            self._loop_thread.join(timeout=5)
+        self._loop_thread = None
 
     def publish(self, topic: str, payload: Payload, retain: bool = False) -> None:
         """Publish a message to an absolute MQTT topic."""
