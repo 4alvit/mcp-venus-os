@@ -2,6 +2,7 @@
 
 import asyncio
 import contextlib
+import threading
 from typing import cast
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -269,7 +270,8 @@ async def test_connect_success() -> None:
         )
         await client.connect()
         await client.connect()
-    mock_client_cls.return_value.loop_start.assert_called_once()
+        await client.disconnect()
+    mock_client_cls.return_value.loop_forever.assert_called_once_with(timeout=5.0)
     mock_client_cls.return_value.connect_async.assert_called_once_with(
         "localhost", 1883, keepalive=30
     )
@@ -285,7 +287,10 @@ async def test_connect_timeout() -> None:
         client = MQTTClient()
         with pytest.raises(ConnectionTimeoutError):
             await client.connect()
-    mock_client_cls.return_value.loop_start.assert_called_once()
+    mock_client_cls.return_value.loop_forever.assert_called_once_with(timeout=5.0)
+    mock_client_cls.return_value.disconnect.assert_called_once()
+    assert client._loop_thread is None
+    assert client._worker is None
 
 
 @pytest.mark.asyncio
@@ -309,6 +314,7 @@ async def test_connect_with_auth_and_tls() -> None:
             setattr(client, "_connected", True)
         )
         await client.connect()
+        await client.disconnect()
     mock_client_cls.return_value.username_pw_set.assert_called_once_with("u", "p")
     mock_client_cls.return_value.tls_set.assert_called_once()
     mock_client_cls.return_value.connect_async.assert_called_once_with("broker", 8883, keepalive=30)
@@ -321,7 +327,6 @@ async def test_disconnect() -> None:
     client.client = cast(mqtt.Client, paho_client)
     client._connected = True
     await client.disconnect()
-    paho_client.loop_stop.assert_called_once()
     paho_client.disconnect.assert_called_once()
     assert not client._connected
 
@@ -427,3 +432,38 @@ def test_empty_payload_not_logged_as_warning(
     warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
     # Empty payload (Venus value expiry) is silent; real garbage still warns.
     assert len(warnings) == 1
+
+
+@pytest.mark.asyncio
+async def test_disconnect_stops_network_worker_after_connection_loss() -> None:
+    client = _make_client()
+    entered = threading.Event()
+    stopped = threading.Event()
+
+    def network_loop(timeout: float) -> None:
+        entered.set()
+        stopped.wait(timeout=2)
+
+    with patch("mcp_venus_os.mqtt_client.mqtt.Client") as factory:
+        transport = factory.return_value
+        transport.connect_async.side_effect = lambda *_args, **_kwargs: setattr(
+            client, "_connected", True
+        )
+        transport.loop_forever.side_effect = network_loop
+        transport.disconnect.side_effect = stopped.set
+        await client.connect()
+        worker = client._loop_thread
+        assert entered.wait(timeout=1)
+        # A broker disconnect clears this flag before application shutdown.
+        client._connected = False
+        try:
+            await client.disconnect()
+            assert stopped.is_set()
+            assert worker is not None
+            assert not worker.is_alive()
+            assert client._loop_thread is None
+            assert client._worker is None
+        finally:
+            stopped.set()
+            if worker is not None:
+                worker.join(timeout=1)

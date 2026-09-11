@@ -140,7 +140,8 @@ class MQTTClient:
                 logger.warning("MQTT inbox overflow, dropping messages")
                 self._last_drop_log = now
 
-    def _run_loop(self) -> None:
+    @staticmethod
+    def _run_loop(client: mqtt.Client) -> None:
         """Run paho's network loop with a 5s select timeout.
 
         loop_start() uses a 1s timeout which on Synology's low-HZ kernel
@@ -148,7 +149,7 @@ class MQTTClient:
         A 5s timeout cuts wakeups 5x while staying well under the MQTT
         protocol keepalive window.
         """
-        self.client.loop_forever(timeout=5.0)
+        client.loop_forever(timeout=5.0)
 
     def _drain_inbox(self) -> None:
         """Process all queued messages synchronously (tests, shutdown)."""
@@ -266,7 +267,9 @@ class MQTTClient:
         # (HZ=100 on Synology) and burns ~25% of one core on idle. A 5s
         # timeout cuts wakeups 5x; well under MQTT protocol keepalive so
         # PINGREQs aren't missed.
-        self._loop_thread = threading.Thread(target=self._run_loop, name="mqtt-loop", daemon=True)
+        self._loop_thread = threading.Thread(
+            target=self._run_loop, args=(self.client,), name="mqtt-loop", daemon=True
+        )
         self._loop_thread.start()
         self._start_worker()
 
@@ -276,13 +279,13 @@ class MQTTClient:
                 break
             await asyncio.sleep(0.1)
         else:
+            await self.disconnect()
             raise ConnectionTimeoutError()
 
     async def disconnect(self) -> None:
         """Disconnect from MQTT broker."""
         self.cancel_keepalives()
-        if self.client and self._connected:
-            self.client.loop_stop()
+        if self.client is not None:
             self.client.disconnect()
             self._connected = False
             logger.info("Disconnected from MQTT broker")
@@ -291,7 +294,8 @@ class MQTTClient:
             self._inbox.put(None)
             self._worker.join(timeout=2)
         self._worker = None
-        # loop_forever exits when loop_stop() sets _thread_terminate; join it.
+        # disconnect() stops loop_forever, including after connection loss.
+        # loop_stop() only manages threads created by paho loop_start().
         if self._loop_thread is not None and self._loop_thread.is_alive():
             self._loop_thread.join(timeout=5)
         self._loop_thread = None

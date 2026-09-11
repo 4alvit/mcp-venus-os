@@ -7,16 +7,12 @@ on:
       - '**.md'
       - 'docs/**'
       - '**.json'
-      - '**.yaml'
-      - '**.yml'
   pull_request:
     branches: [main]
     paths-ignore:
       - '**.md'
       - 'docs/**'
       - '**.json'
-      - '**.yaml'
-      - '**.yml'
 
 permissions:
   contents: read
@@ -24,6 +20,6 @@ permissions:
 jobs:
   ci:
     name: CI
-    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/python-ci.yml@5b18667880c7a0154b7c7e6686042eff5f47cdb7
+    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/python-ci.yml@892eb9f882d8a67b2df1c9b63567f0d4845fcf20
     with:
       python-version: '3.11'
