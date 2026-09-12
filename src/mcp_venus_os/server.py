@@ -353,12 +353,7 @@ async def setuphelper_remove_package(package: str, confirmed: bool = False) -> d
     client = _ssh_client_or_error()
     if isinstance(client, dict):
         return client
-    script = (
-        f"if [ -f /data/{package}/setup ]; then "
-        f"/data/{package}/setup uninstall || /data/{package}/setup remove; "
-        f"else rm -rf /data/{package}; fi"
-    )
-    return await client.run(script, timeout_s=300)
+    return await client.setuphelper_remove_package(package)
 
 
 async def cerbo_ssh_exec(

@@ -1,5 +1,6 @@
 """Tests for the Cerbo SSH toolset."""
 
+from pathlib import Path
 from typing import Any, cast
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -193,7 +194,64 @@ async def test_setuphelper_install_uses_main_branch_and_no_stdin_hang() -> None:
     cmd = captured["cmd"]
     assert "archive/refs/heads/main.tar.gz" in cmd
     assert "/archive/latest.tar.gz" not in cmd
-    assert "mv /data/inverter-control-main /data/inverter-control" in cmd
+    assert 'cp -a "$stage/inverter-control-main/." /data/inverter-control/' in cmd
+    assert "rm -rf /data/inverter-control" not in cmd
+    assert 'wget -qO "$stage/release.tar.gz"' in cmd
+    assert "setup install </dev/null" in cmd
     assert "scriptAction=INSTALL" in cmd
     assert "packageName=inverter-control" in cmd
     assert "</dev/null" in cmd
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("package", ["../SetupHelper", "bad;reboot", "", "/", "-rf"])
+async def test_package_operations_reject_invalid_paths(package: str) -> None:
+    client = _client()
+    assert not (await client.setuphelper_install_package(package, "owner/repo"))["success"]
+    assert not (await client.setuphelper_remove_package(package))["success"]
+    cast(Any, client).run.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_remove_package_has_no_recursive_delete_fallback() -> None:
+    client = _client()
+    await client.setuphelper_remove_package("dbus-ev")
+    command = cast(Any, client).run.call_args.args[0]
+    assert "rm -rf" not in command
+    assert "setup uninstall </dev/null" in command
+
+
+@pytest.mark.asyncio
+async def test_install_shell_preserves_local_state_and_cleans_staging(tmp_path: Path) -> None:
+    """Run the emitted shell command against a fake GX filesystem."""
+    import os
+    import subprocess
+    import tarfile
+
+    data = tmp_path / "data"
+    package = data / "device-package"
+    package.mkdir(parents=True)
+    (package / "config.local").write_text("local settings")
+    (package / ".venv").mkdir()
+    (package / ".venv" / "sentinel").write_text("device dependencies")
+    source = tmp_path / "source-repository-main"
+    source.mkdir()
+    (source / "setup").write_text('#!/bin/sh\ntest "$1" = install\n')
+    archive = tmp_path / "release.tar.gz"
+    with tarfile.open(archive, "w:gz") as bundle:
+        bundle.add(source, arcname=source.name)
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    wget = bin_dir / "wget"
+    wget.write_text(f'#!/bin/sh\ncp "{archive}" "$2"\n')
+    wget.chmod(0o755)
+    client = _client()
+    await client.setuphelper_install_package("device-package", "owner/source-repository")
+    script = cast(Any, client).run.call_args.args[0].replace("/data/", f"{data}/")
+    subprocess.run(
+        ["sh", "-c", script], check=True,
+        env={**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}"},
+    )
+    assert (package / "config.local").read_text() == "local settings"
+    assert (package / ".venv" / "sentinel").read_text() == "device dependencies"
+    assert not list(data.glob(".mcp-package.*"))
