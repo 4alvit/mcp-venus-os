@@ -13,6 +13,12 @@
 
 MCP (Model Context Protocol) server for Victron Venus OS management. Primary transport is the **Venus OS MQTT gateway** (`N/<portalId>/…` reads, `W/<portalId>/…` writes) so the server can run off-device; direct D-Bus remains available for on-device installs.
 
+<!-- ci-release-process:start -->
+## Release process
+
+See the [release strategy](RELEASING.md) for validation, nightly, beta, RC and stable promotion rules, and the [operator runbook](docs/release-workflow.md) for local commands.
+<!-- ci-release-process:end -->
+
 ## Features
 
 - **MQTT read path**: subscribes `N/<portalId>/#` on the Cerbo GX gateway and serves tools from a stale-guarded cache (`stale`, `age_seconds` per reading)
@@ -154,20 +160,7 @@ DSM notes (deployed at `/volume1/docker/mcp-venus-os/`):
 
 ### Container Images
 
-Two registries, both multi-arch (`linux/amd64` + `linux/arm64`):
-
-| Registry | Image | Updated on |
-|----------|-------|------------|
-| GitHub Container Registry | `ghcr.io/4alvit/mcp-venus-os:latest` (+ `:<sha>`) | every push to `main` |
-| Docker Hub | `alvit/mcp-venus-os:vX.Y.Z` + `:latest` | every `v*` tag push |
-
-```bash
-docker pull alvit/mcp-venus-os:v0.2.0
-```
-
-The Docker Hub publish workflow ([`docker-hub-release.yml`](.github/workflows/docker-hub-release.yml))
-needs repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
-(Docker Hub → Account Settings → Security → New Access Token, Read & Write).
+The reviewed publication mapping is `ghcr.io/4alvit/mcp-venus-os`. Candidate builds produce an OCI archive; approved stable bytes are promoted separately to the registry without rebuilding. Follow the [operator runbook](docs/release-workflow.md) for the versioned tag and optional `latest` update. The former main/tag-triggered GHCR and Docker Hub publishers are retired.
 
 ## Available Tools
 
