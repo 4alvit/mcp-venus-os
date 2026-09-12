@@ -195,7 +195,7 @@ class CerboSSHClient:
         # A pipe hid wget failures, and rm -rf discarded all device-local state.
         script = (
             "set -eu; "
-            'stage=$(mktemp -d /data/.mcp-package.XXXXXX); '
+            "stage=$(mktemp -d /data/.mcp-package.XXXXXX); "
             "trap 'rm -rf \"$stage\"' EXIT HUP INT TERM; "
             f'wget -qO "$stage/release.tar.gz" {url}; '
             'tar -xzf "$stage/release.tar.gz" -C "$stage"; '
@@ -213,8 +213,7 @@ class CerboSSHClient:
         if not valid_package_name(package):
             return {"success": False, "error": "invalid SetupHelper package name"}
         return await self.run(
-            f"test -f /data/{package}/setup && "
-            f"bash /data/{package}/setup uninstall </dev/null",
+            f"test -f /data/{package}/setup && bash /data/{package}/setup uninstall </dev/null",
             timeout_s=300,
         )
 

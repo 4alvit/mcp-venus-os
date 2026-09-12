@@ -249,7 +249,8 @@ async def test_install_shell_preserves_local_state_and_cleans_staging(tmp_path: 
     await client.setuphelper_install_package("device-package", "owner/source-repository")
     script = cast(Any, client).run.call_args.args[0].replace("/data/", f"{data}/")
     subprocess.run(
-        ["sh", "-c", script], check=True,
+        ["sh", "-c", script],
+        check=True,
         env={**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}"},
     )
     assert (package / "config.local").read_text() == "local settings"
