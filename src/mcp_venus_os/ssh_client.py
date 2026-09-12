@@ -8,6 +8,7 @@ exceptions. Key auth (``SSH_KEY_PATH``) takes precedence over password.
 import asyncio
 import contextlib
 import logging
+import re
 import time
 from typing import Any
 
@@ -29,6 +30,11 @@ _SWUPDATE_CANDIDATES = (
 # SetupHelper layout on the GX (verified on v3.75)
 SETUPHELPER_DIR = "/data/SetupHelper"
 PACKAGE_MANAGER_DIR = "/data/packageManager"
+
+
+def valid_package_name(package: str) -> bool:
+    """Only accept one literal directory name under /data."""
+    return bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", package))
 
 
 def _truncate(text: str) -> str:
@@ -178,16 +184,38 @@ class CerboSSHClient:
           headless SSH channel. Set the env PackageManager would set and
           redirect stdin from /dev/null so any stray read gets EOF.
         """
+        if not valid_package_name(package):
+            return {"success": False, "error": "invalid SetupHelper package name"}
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
+            return {"success": False, "error": "repo must be owner/repository"}
+        repo_name = repo.split("/")[1]
         url = f"https://github.com/{repo}/archive/refs/heads/main.tar.gz"
+        # Download and validate before touching the installed package. Keep
+        # its virtualenv, configuration and live supervise directory inodes.
+        # A pipe hid wget failures, and rm -rf discarded all device-local state.
         script = (
-            f"wget -qO - {url} | tar -xzf - -C /data && "
-            f"rm -rf /data/{package} && "
-            f"mv /data/{package}-main /data/{package} && "
-            f"cd /data/{package} && "
+            "set -eu; "
+            "stage=$(mktemp -d /data/.mcp-package.XXXXXX); "
+            "trap 'rm -rf \"$stage\"' EXIT HUP INT TERM; "
+            f'wget -qO "$stage/release.tar.gz" {url}; '
+            'tar -xzf "$stage/release.tar.gz" -C "$stage"; '
+            f'test -f "$stage/{repo_name}-main/setup"; '
+            f"mkdir -p /data/{package}; "
+            f'cp -a "$stage/{repo_name}-main/." /data/{package}/; '
+            f"cd /data/{package}; "
             f"scriptAction=INSTALL packageName={package} scriptDir=/data/{package} "
-            f"/data/{package}/setup </dev/null"
+            f"bash /data/{package}/setup install </dev/null"
         )
         return await self.run(script, timeout_s=300)
+
+    async def setuphelper_remove_package(self, package: str) -> dict[str, Any]:
+        """Run package-owned uninstall; never delete arbitrary package data."""
+        if not valid_package_name(package):
+            return {"success": False, "error": "invalid SetupHelper package name"}
+        return await self.run(
+            f"test -f /data/{package}/setup && bash /data/{package}/setup uninstall </dev/null",
+            timeout_s=300,
+        )
 
     async def enable_root_password(self, password: str) -> dict[str, Any]:
         """Set the root password so ssh login works (Venus superuser).

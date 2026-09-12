@@ -1,5 +1,21 @@
 # MCP Venus OS
 
+## Venus OS deployment notes
+
+Prefer the MQTT backend on a NAS, server, or workstation. It keeps the MCP/HTTP
+runtime off a constrained GX while using the existing Venus MQTT gateway.
+The Cerbo audit on 2026-09-12 found no native `mcp-venus-os` service; the documented
+Synology deployment is a separate host and must be checked there.
+
+SSH package refresh downloads into a temporary `/data` staging directory and
+validates that `setup` exists before copying into the installed tree. It retains
+files absent from the release, including virtualenvs and local configuration,
+and calls `setup install` without interactive stdin. Package-owned uninstall
+handles service removal; there is no recursive-delete fallback. A release can
+still replace same-named tracked files, so keep local secrets in the package's
+documented external configuration files and retain a backup before upgrades.
+
+
 [![CodeQL](https://github.com/4alvit/mcp-venus-os/actions/workflows/codeql.yml/badge.svg)](https://github.com/4alvit/mcp-venus-os/actions/workflows/codeql.yml)
 [![Scorecards](https://github.com/4alvit/mcp-venus-os/actions/workflows/scorecards.yml/badge.svg)](https://github.com/4alvit/mcp-venus-os/actions/workflows/scorecards.yml)
 [![Dependency Review](https://github.com/4alvit/mcp-venus-os/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/4alvit/mcp-venus-os/actions/workflows/dependency-review.yml)
@@ -146,6 +162,11 @@ claude mcp add --scope user venus-os \
 ```
 
 DSM notes (deployed at `/volume1/docker/mcp-venus-os/`):
+
+The 2026-09-12 audit found this directory still present, but no MCP container
+in the NAS Docker inventory, including stopped containers. Treat the instructions
+below as the saved deployment layout, not evidence of a currently running
+endpoint. Verify the existing configuration and host before enabling it again.
 
 - Plain `docker compose` (full path `/usr/local/bin/docker`) works fine; Container Manager is not required.
 - Host port 8000 is taken by Portainer on typical DSM installs — remap in the compose `ports:` (e.g. `"8080:8000"`).

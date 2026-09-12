@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-09-12
+
+### Fixed
+
+- Validate SetupHelper package names, check downloads before installation, and
+  overlay package sources without deleting local configuration, environments or
+  live supervisor directories.
+- Delegate removal to the package-owned uninstaller and refuse to delete a
+  package directory when no supported uninstaller is available.
+- Document offline dependencies, persistent paths and companion-host deployment.
+- Align package and runtime version metadata with this release.
+
+The existing MQTT keepalive, discovery and SSH features below were already
+included in preceding tags; they remain documented here from the earlier
+unreleased changelog. Docker images target Linux amd64 and arm64, not ARMv7 GX
+devices. Updating an existing companion host requires its own saved configuration.
+
+## Historical notes for releases after 0.2.0 and before 0.2.4
+
 ### Fixed
 
 - MQTT keepalive-timeout reconnect loop (drop every ~7 min → full retained-tree
@@ -83,4 +102,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`try:` after `;` → SyntaxError → container permanently unhealthy despite a
   working server); now a literal block.
 
-[Unreleased]: https://github.com/4alvit/mcp-venus-os/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/4alvit/mcp-venus-os/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/4alvit/mcp-venus-os/compare/v0.2.3...v0.2.4
