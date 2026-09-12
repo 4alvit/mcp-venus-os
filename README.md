@@ -163,6 +163,11 @@ claude mcp add --scope user venus-os \
 
 DSM notes (deployed at `/volume1/docker/mcp-venus-os/`):
 
+The 2026-09-12 audit found this directory still present, but no MCP container
+in the NAS Docker inventory, including stopped containers. Treat the instructions
+below as the saved deployment layout, not evidence of a currently running
+endpoint. Verify the existing configuration and host before enabling it again.
+
 - Plain `docker compose` (full path `/usr/local/bin/docker`) works fine; Container Manager is not required.
 - Host port 8000 is taken by Portainer on typical DSM installs — remap in the compose `ports:` (e.g. `"8080:8000"`).
 - SFTP/scp may be disabled; copy files via `ssh ... 'cat > file'`.
