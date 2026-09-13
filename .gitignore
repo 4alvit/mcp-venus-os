@@ -18,3 +18,8 @@ logs
 htmlcov/
 *.bak
 *.backup
+
+# Local validation and candidate packaging
+.venv-ci/
+release-dist/
+bandit-results.json

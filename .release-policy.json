@@ -1,0 +1,25 @@
+{
+  "validation_workflows": [
+    "ci.yml",
+    "docker-build.yml",
+    "release-security.yml",
+    "codeql.yml"
+  ],
+  "artifact_pattern": "release-assets*",
+  "local_checks": [
+    "bash scripts/ci.sh",
+    "bash scripts/ci.sh security"
+  ],
+  "notes": [
+    "Hardware-free checks do not validate a live Venus OS device, D-Bus firmware ABI, physical sensors or in-place device upgrades.",
+    "Candidate packaging preserves committed runtime version metadata. Nightly/beta/RC identity is recorded by the release manifest.",
+    "OCI container assets are verified and promoted with the GitHub release. Registry and PyPI deployment must use a separately reviewed promotion adapter; CI does not update latest."
+  ],
+  "version_file": "pyproject.toml",
+  "container_assets": {
+    "mcp-venus-os-container.oci.tar": "ghcr.io/4alvit/mcp-venus-os"
+  },
+  "mode": "release",
+  "repository": "4alvit/mcp-venus-os",
+  "visibility": "public"
+}
