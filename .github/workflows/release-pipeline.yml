@@ -98,7 +98,6 @@ jobs:
     uses: ./.github/workflows/release-build.yml
     permissions:
       contents: read
-    secrets: inherit
     with:
       version: ${{ needs.prepare.outputs.version }}
       channel: ${{ needs.prepare.outputs.channel }}

@@ -5,6 +5,8 @@ from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from .hardware_contracts import HardwareWriteContract
+
 
 class MissingPortalIdError(ValueError):
     """Raised when MQTT_PORTAL_ID is required but not configured."""
@@ -102,6 +104,10 @@ class SafetyConfig(BaseSettings):
     )
     require_confirmation: bool = Field(
         default=True, description="Require confirmation for write operations"
+    )
+    hardware_write_contracts: list[HardwareWriteContract] = Field(
+        default_factory=list,
+        description="Reviewed per-device firmware/BMS contracts; no target is qualified by default",
     )
     max_charge_current: float = Field(
         default=100.0, description="Maximum allowed charge current (A)"
