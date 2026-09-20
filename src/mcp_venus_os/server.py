@@ -20,6 +20,7 @@ from .dbus_client import (
     InverterData,
     PVData,
 )
+from .hardware_contracts import validate_hardware_write
 from .mqtt_client import MQTTClient, MQTTError, Payload
 from .safety import ConfirmationManager, SafetyValidator
 from .ssh_client import CerboSSHClient, close_ssh_client, get_ssh_client
@@ -541,29 +542,67 @@ async def _mqtt_write_and_verify(
     instance: int,
     path: str,
     value: Payload,
+    semantic_mode: str | None = None,
 ) -> dict[str, Any]:
     """Publish a value to ``W/…`` and confirm it appears on the matching N topic.
 
     Venus MQTT gateway only accepts values wrapped as ``{"value": …}`` (same
     shape it publishes on N topics); a bare scalar is silently ignored.
     """
+    contract, error = validate_hardware_write(
+        get_safety_validator().config.hardware_write_contracts,
+        client.config.portal_id,
+        device_type,
+        instance,
+        path,
+        value,
+        semantic_mode,
+        client.read_path,
+        client.config.stale_after_seconds,
+    )
+    if error is not None or contract is None:
+        return {"success": False, "error": error, "hardware_contract_validated": False}
+
+    def still_qualified() -> bool:
+        """Do not renew a command after target drift, expiry or killswitch changes."""
+        safety = get_safety_validator().config
+        current, problem = validate_hardware_write(
+            safety.hardware_write_contracts,
+            client.config.portal_id,
+            device_type,
+            instance,
+            path,
+            value,
+            semantic_mode,
+            client.read_path,
+            client.config.stale_after_seconds,
+        )
+        return safety.enable_writes and problem is None and current == contract
+
     item_topic = f"{client.write_prefix}/{device_type}/{instance}/{path}"
+    client.cancel_keepalive(item_topic)
+    written_at = time.monotonic()
     try:
         client.publish(item_topic, {"value": value})
-        client.start_keepalive(item_topic)
     except MQTTError as exc:
         return {"success": False, "error": f"publish failed: {exc}"}
 
     deadline = time.monotonic() + WRITE_VERIFY_TIMEOUT_S
     while time.monotonic() < deadline:
-        result = client.read_first(device_type, instance, [path])
+        result = client.read_path_since(device_type, instance, path, written_at)
         if result is not None and _values_match(result[0], value):
+            if not still_qualified():
+                return {"success": False, "error": "Hardware qualification changed during write"}
+            client.start_keepalive(item_topic, is_allowed=still_qualified)
             elapsed = round(WRITE_VERIFY_TIMEOUT_S - (deadline - time.monotonic()), 1)
             return {
                 "success": True,
                 "value": value,
                 "topic": item_topic,
                 "verified_after_s": elapsed,
+                "hardware_contract": contract.contract_id,
+                "contract_evidence_sha256": contract.evidence_sha256,
+                "verification": "fresh_read_back",
             }
         await asyncio.sleep(0.2)
     return {
@@ -824,7 +863,9 @@ async def set_inverter_mode(
                 "success": False,
                 "error": f"mode '{mode}' has no known enum code for vebus devices",
             }
-        return await _mqtt_write_and_verify(client, "vebus", instance, "Mode", code)
+        return await _mqtt_write_and_verify(
+            client, "vebus", instance, "Mode", code, semantic_mode=mode
+        )
 
     return {"success": False, "error": "dbus writes not implemented"}
 
@@ -874,8 +915,7 @@ async def set_soc_limit(
 
     if _use_mqtt():
         client = await _mqtt_ready()
-        # ponytail: /SocLimit assumed for target battery; confirm exact BMS
-        # path on real hardware (TODO §4) before trusting read-back success.
+        # The contract gate requires qualified semantics on this exact firmware/BMS.
         return await _mqtt_write_and_verify(client, "battery", instance, "SocLimit", soc_limit)
 
     return {"success": False, "error": "dbus writes not implemented"}

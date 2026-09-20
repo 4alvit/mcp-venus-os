@@ -308,7 +308,15 @@ class MQTTClient:
         data = json.dumps(payload) if not isinstance(payload, str) else payload
         self.client.publish(topic, data, retain=retain)
 
-    def start_keepalive(self, item_topic: str) -> None:
+    def cancel_keepalive(self, item_topic: str) -> None:
+        """Stop renewing one command without affecting unrelated devices."""
+        task = self._keepalives.pop(f"{item_topic}/Keepalive", None)
+        if task is not None:
+            task.cancel()
+
+    def start_keepalive(
+        self, item_topic: str, is_allowed: Callable[[], bool] | None = None
+    ) -> None:
         """Keep a written value active with periodic empty keepalive publishes.
 
         Venus OS expires values written to ``W/…`` unless ``<item>/Keepalive``
@@ -322,6 +330,8 @@ class MQTTClient:
         async def _keepalive_loop() -> None:
             while True:
                 await asyncio.sleep(KEEPALIVE_INTERVAL_S)
+                if is_allowed is not None and not is_allowed():
+                    return
                 try:
                     self.publish(keepalive_topic, "")
                 except MQTTError:
@@ -355,6 +365,15 @@ class MQTTClient:
             if result is not None:
                 return result
         return None
+
+    def read_path_since(
+        self, device_type: str, instance: int, path: str, since: float
+    ) -> tuple[Payload, float] | None:
+        """Only accept cache updates at or after an operation's monotonic start."""
+        entry = self._cache.get(f"{self.prefix}/{device_type}/{instance}/{path}")
+        if entry is None or entry[1] < since:
+            return None
+        return entry[0], time.monotonic() - entry[1]
 
     def list_devices(self) -> list[dict[str, Any]]:
         """List devices discovered from cached ``N/<portalId>/<type>/<instance>`` topics."""
