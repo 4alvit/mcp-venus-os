@@ -3,7 +3,8 @@
     "ci.yml",
     "docker-build.yml",
     "release-security.yml",
-    "codeql.yml"
+    "codeql.yml",
+    "dependency-review.yml"
   ],
   "artifact_pattern": "release-assets*",
   "local_checks": [
@@ -21,5 +22,6 @@
   },
   "mode": "release",
   "repository": "4alvit/mcp-venus-os",
-  "visibility": "public"
+  "visibility": "public",
+  "single_entry_ci": true
 }
