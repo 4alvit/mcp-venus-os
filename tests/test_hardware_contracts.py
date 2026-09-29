@@ -119,7 +119,6 @@ async def test_unqualified_target_never_publishes_or_starts_keepalive(enable_wri
     result = await _mqtt_write_and_verify(client, "vebus", 256, "Mode", 1, "on")
     assert not result["success"]
     client.publish.assert_not_called()
-    client.start_keepalive.assert_not_called()
 
 
 @pytest.mark.asyncio

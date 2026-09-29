@@ -135,8 +135,8 @@ async def _startup_warmup() -> None:
 async def _mqtt_ready() -> MQTTClient:
     """Get the MQTT client once the gateway finished its initial full publish.
 
-    After a fresh connect the Venus MQTT gateway waits ~2-3s, then floods the
-    entire item tree, ending with ``N/<portalId>/full_publish_completed``.
+    After connect the client requests the gateway's entire item tree, ending
+    with ``N/<portalId>/full_publish_completed``.
     Wait for that marker so instance auto-discovery sees the complete tree;
     proceed after the timeout on gateways that never send it.
     """
@@ -196,7 +196,7 @@ async def get_tank_level(instance: int = 0) -> dict[str, Any]:
     client = await _mqtt_ready()
     instances = sorted(
         int(topic.split("/")[1])
-        for topic in client._cache
+        for topic in client._cache.copy()
         if topic.startswith("tank/") and topic.endswith("/Level")
     )
     targets = [instance] if instance > 0 else instances
@@ -394,7 +394,7 @@ def _apply_capability_tools(client: MQTTClient) -> list[str]:
     warm-ups (every read-tool call) stay cheap. Returns newly registered
     capability names.
     """
-    new = detect_capabilities(client._cache) - _registered_capabilities
+    new = detect_capabilities(client._cache.copy()) - _registered_capabilities
     for cap in sorted(new):
         for fn in CAPABILITY_TOOLS.get(cap, ()):
             mcp.add_tool(fn)
@@ -421,7 +421,8 @@ def capabilities_resource() -> str:
         "`total_power`); explicit instance=N returns a single device dict.\n"
         f"- Active tool groups: {group_note}.\n"
         "- Writes are confirmation-gated, hard-limited, enum-checked, then verified "
-        "by read-back; written values expire ~60s after keepalives stop.\n"
+        "by read-back against the reviewed hardware contract. No automatic rollback "
+        "is provided; persistence depends on the target device.\n"
         "- Full map incl. MQTT topics and SSH tools: docs/CAPABILITIES.md in the repo."
     )
 
@@ -564,7 +565,7 @@ async def _mqtt_write_and_verify(
         return {"success": False, "error": error, "hardware_contract_validated": False}
 
     def still_qualified() -> bool:
-        """Do not renew a command after target drift, expiry or killswitch changes."""
+        """Reject acknowledgement after target drift, expiry or killswitch changes."""
         safety = get_safety_validator().config
         current, problem = validate_hardware_write(
             safety.hardware_write_contracts,
@@ -580,7 +581,6 @@ async def _mqtt_write_and_verify(
         return safety.enable_writes and problem is None and current == contract
 
     item_topic = f"{client.write_prefix}/{device_type}/{instance}/{path}"
-    client.cancel_keepalive(item_topic)
     written_at = time.monotonic()
     try:
         client.publish(item_topic, {"value": value})
@@ -593,7 +593,6 @@ async def _mqtt_write_and_verify(
         if result is not None and _values_match(result[0], value):
             if not still_qualified():
                 return {"success": False, "error": "Hardware qualification changed during write"}
-            client.start_keepalive(item_topic, is_allowed=still_qualified)
             elapsed = round(WRITE_VERIFY_TIMEOUT_S - (deadline - time.monotonic()), 1)
             return {
                 "success": True,
@@ -603,6 +602,7 @@ async def _mqtt_write_and_verify(
                 "hardware_contract": contract.contract_id,
                 "contract_evidence_sha256": contract.evidence_sha256,
                 "verification": "fresh_read_back",
+                "automatic_rollback": False,
             }
         await asyncio.sleep(0.2)
     return {

@@ -28,10 +28,23 @@ the server does not certify the external physical experiment or fetch evidence.
 Never produce a contract merely because an MQTT value echoed successfully.
 
 Successful calls report `verification: fresh_read_back`, the contract ID and the
-evidence digest. A cached value received before the write cannot acknowledge it.
+evidence digest. A cached value received before the write cannot acknowledge it,
+even if the decoder processes it after publication: freshness uses the network
+receive timestamp, including time spent waiting in the inbox. Empty device-removal
+notifications invalidate the cached value and identity.
 Even a fresh echo only proves the reported value: it does not prove the physical
-meaning of the operation. Command keepalives begin only after that acknowledgement
-and stop if identity/qualification expires, changes, or writes are disabled.
+meaning of the operation. The server publishes only to the exact qualified path,
+without periodic writes to an additional `/Keepalive` path.
+
+There is no automatic rollback. A command may persist after disconnect, shutdown
+or a read-back timeout; the qualified device owns that behavior. A timeout does
+not prove the device rejected the write. Successful calls explicitly report
+`automatic_rollback: false`. Any required watchdog or expiry must be qualified
+for the actual target; this server does not create that mechanism.
+
+The gateway's [MQTT keep-alive](https://github.com/victronenergy/dbus-flashmq#keep-alive)
+at `R/<portalId>/keepalive` controls telemetry publication. Its 60-second timer
+does not establish an expiry guarantee for arbitrary `W/` control values.
 
 The unit suite uses explicitly synthetic records. No production target or BMS is
 approved by the repository, and the existing mode table is not expanded here.

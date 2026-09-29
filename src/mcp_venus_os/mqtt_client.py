@@ -17,8 +17,6 @@ from .config import MissingPortalIdError, get_config
 
 logger = logging.getLogger(__name__)
 
-# Venus expires written values after 60s without keepalive; stay under it.
-KEEPALIVE_INTERVAL_S = 50.0
 # MQTT protocol keepalive (s): short enough that a broker drop is noticed fast,
 # long enough to ride out brief load spikes between PINGREQs.
 MQTT_PROTOCOL_KEEPALIVE_S = 30
@@ -27,9 +25,10 @@ MQTT_PROTOCOL_KEEPALIVE_S = 30
 INBOX_MAXSIZE = 50_000
 # Minimum seconds between "inbox overflow" warnings.
 DROP_LOG_INTERVAL_S = 10.0
-# Short pause after each processed message; prevents busy-spinning during
-# retained-tree floods (2000+ messages on reconnect) without affecting
-# steady-state throughput (queue.get() already blocks when empty).
+# Yield after a bounded batch during full-tree refreshes. Sleeping after every
+# message adds a scheduler delay to every cached value and makes bursts stale.
+# queue.get() already blocks when empty, so idle connections do not spin.
+INBOX_PROCESS_BATCH_SIZE = 64
 INBOX_PROCESS_SLEEP_S = 0.0001
 
 
@@ -65,12 +64,12 @@ class MQTTClient:
         self._callbacks: dict[str, list[Callable[[Payload], None]]] = {}
         # Last value per topic, with monotonic receive time (read cache)
         self._cache: dict[str, tuple[Payload, float]] = {}
-        # Active write keepalives: item topic -> periodic publisher task
-        self._keepalives: dict[str, asyncio.Task[None]] = {}
         # Inbound messages are decoded off paho's network thread: heavy work
         # inline in _loop starves _check_keepalive → broker drops the
         # connection every keepalive interval → full retained-tree re-flood.
-        self._inbox: queue.Queue[mqtt.MQTTMessage | None] = queue.Queue(maxsize=INBOX_MAXSIZE)
+        self._inbox: queue.Queue[tuple[mqtt.MQTTMessage, float] | None] = queue.Queue(
+            maxsize=INBOX_MAXSIZE
+        )
         self._worker: threading.Thread | None = None
         self._loop_thread: threading.Thread | None = None
         self._last_drop_log = 0.0
@@ -106,6 +105,9 @@ class MQTTClient:
             for pattern in capability_subscriptions():
                 client.subscribe(pattern)
                 logger.debug("Subscribed to %s", pattern)
+            # FlashMQ has no retained item tree. Request it after subscriptions
+            # on each connection; this is a read, not a control-value watchdog.
+            client.publish(f"R/{self.config.portal_id}/keepalive", "", retain=False)
         else:
             logger.error("Failed to connect to MQTT broker: %s", reason_code)
 
@@ -133,7 +135,9 @@ class MQTTClient:
         starve paho's keepalive check.
         """
         try:
-            self._inbox.put_nowait(msg)
+            # Capture receipt before queueing: decoder delay is part of the age
+            # and cannot turn a pre-command message into a fresh write response.
+            self._inbox.put_nowait((msg, time.monotonic()))
         except queue.Full:
             now = time.monotonic()
             if now - self._last_drop_log >= DROP_LOG_INTERVAL_S:
@@ -155,20 +159,24 @@ class MQTTClient:
         """Process all queued messages synchronously (tests, shutdown)."""
         while True:
             try:
-                msg = self._inbox.get_nowait()
+                entry = self._inbox.get_nowait()
             except queue.Empty:
                 return
-            if msg is not None:  # skip stale shutdown sentinels
-                self._handle_message(msg)
+            if entry is not None:  # skip stale shutdown sentinels
+                self._handle_message(*entry)
 
     def _process_inbox(self) -> None:
         """Worker thread: decode messages and update the cache/callbacks."""
+        processed = 0
         while True:
-            msg = self._inbox.get()
-            if msg is None:  # shutdown sentinel
+            entry = self._inbox.get()
+            if entry is None:  # shutdown sentinel
                 return
-            self._handle_message(msg)
-            time.sleep(INBOX_PROCESS_SLEEP_S)
+            self._handle_message(*entry)
+            processed += 1
+            if processed >= INBOX_PROCESS_BATCH_SIZE:
+                time.sleep(INBOX_PROCESS_SLEEP_S)
+                processed = 0
 
     def _start_worker(self) -> None:
         if self._worker is None or not self._worker.is_alive():
@@ -177,13 +185,14 @@ class MQTTClient:
             )
             self._worker.start()
 
-    def _handle_message(self, msg: mqtt.MQTTMessage) -> None:
+    def _handle_message(self, msg: mqtt.MQTTMessage, received_at: float) -> None:
         """Decode one message, update the cache, notify callbacks."""
-        # Venus expires a value by publishing an empty payload — silently
-        # drop it so the cache stays untouched until a real update arrives.
-        if not msg.payload:
-            return
         try:
+            # An empty notification means the D-Bus item disappeared. Its former
+            # identity/value must no longer authorize writes or appear in discovery.
+            if not msg.payload:
+                self._cache.pop(msg.topic, None)
+                return
             payload = json.loads(msg.payload.decode())
             # Venus gateway wraps item values as {"value": X}; unwrap so the
             # cache (and every reader) sees plain scalars.
@@ -192,7 +201,7 @@ class MQTTClient:
             topic = msg.topic
             logger.debug("Received message on %s: %s", topic, payload)
             if topic.startswith(self.prefix + "/") or is_capability_topic(topic):
-                self._cache[topic] = (payload, time.monotonic())
+                self._cache[topic] = (payload, received_at)
             self._notify_callbacks(topic, payload)
         except json.JSONDecodeError:
             logger.warning("Invalid JSON on topic %s: %s", msg.topic, msg.payload)
@@ -284,7 +293,6 @@ class MQTTClient:
 
     async def disconnect(self) -> None:
         """Disconnect from MQTT broker."""
-        self.cancel_keepalives()
         if self.client is not None:
             self.client.disconnect()
             self._connected = False
@@ -307,44 +315,6 @@ class MQTTClient:
 
         data = json.dumps(payload) if not isinstance(payload, str) else payload
         self.client.publish(topic, data, retain=retain)
-
-    def cancel_keepalive(self, item_topic: str) -> None:
-        """Stop renewing one command without affecting unrelated devices."""
-        task = self._keepalives.pop(f"{item_topic}/Keepalive", None)
-        if task is not None:
-            task.cancel()
-
-    def start_keepalive(
-        self, item_topic: str, is_allowed: Callable[[], bool] | None = None
-    ) -> None:
-        """Keep a written value active with periodic empty keepalive publishes.
-
-        Venus OS expires values written to ``W/…`` unless ``<item>/Keepalive``
-        receives an empty payload at least every 60s.
-        """
-        keepalive_topic = f"{item_topic}/Keepalive"
-        existing = self._keepalives.get(keepalive_topic)
-        if existing is not None:
-            existing.cancel()
-
-        async def _keepalive_loop() -> None:
-            while True:
-                await asyncio.sleep(KEEPALIVE_INTERVAL_S)
-                if is_allowed is not None and not is_allowed():
-                    return
-                try:
-                    self.publish(keepalive_topic, "")
-                except MQTTError:
-                    return  # disconnected; disconnect() cancels the rest
-
-        task = asyncio.create_task(_keepalive_loop())
-        self._keepalives[keepalive_topic] = task
-
-    def cancel_keepalives(self) -> None:
-        """Cancel all active write keepalive tasks."""
-        for task in self._keepalives.values():
-            task.cancel()
-        self._keepalives.clear()
 
     def read_path(self, device_type: str, instance: int, path: str) -> tuple[Payload, float] | None:
         """Read a cached value from ``N/<portalId>/<type>/<instance>/<path>``.
@@ -379,7 +349,10 @@ class MQTTClient:
         """List devices discovered from cached ``N/<portalId>/<type>/<instance>`` topics."""
         seen: set[tuple[str, str]] = set()
         devices: list[dict[str, Any]] = []
-        for topic in self._cache:
+        # The decoder can add/remove entries while the caller enumerates them.
+        for topic in self._cache.copy():
+            if not topic.startswith(self.prefix + "/"):
+                continue
             rest = topic[len(self.prefix) + 1 :].split("/")
             if len(rest) >= 2 and (rest[0], rest[1]) not in seen:
                 seen.add((rest[0], rest[1]))

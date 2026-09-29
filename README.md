@@ -38,7 +38,7 @@ See the [release strategy](RELEASING.md) for validation, nightly, beta, RC and s
 ## Features
 
 - **MQTT read path**: subscribes `N/<portalId>/#` on the Cerbo GX gateway and serves tools from a stale-guarded cache (`stale`, `age_seconds` per reading)
-- **Write tools over `W/` topics**: inverter mode, charge-current limit, SoC limit — each write is kept alive (≤60s expiry) and verified by read-back before reporting success
+- **Write tools over `W/` topics**: inverter mode, charge-current limit, SoC limit — exact hardware contracts and fresh read-back are required; no automatic rollback is provided
 - **Safety constraints**: confirmation gate + hard limits enforced before any publish
 - **Two server transports**: stdio (Claude Code launches the process) or streamable HTTP with optional bearer-token auth (Synology Docker / shared use)
 - **Optional D-Bus backend**: unchanged behavior for installs running directly on the Cerbo
@@ -208,7 +208,7 @@ The reviewed publication mapping is `ghcr.io/4alvit/mcp-venus-os`. Candidate bui
 | Tool | Description |
 |------|-------------|
 | `mqtt_connect` | Connect to the Cerbo gateway and prime the read cache |
-| `mqtt_disconnect` | Disconnect; cancels all write keepalives |
+| `mqtt_disconnect` | Disconnect; previously accepted control values are not automatically undone |
 | `mqtt_subscribe` | Stub — reports "not yet implemented" rather than pretending success |
 
 ### Conditional Tool Groups (context-friendly)
@@ -274,8 +274,7 @@ The server speaks the Venus OS **MQTT-Gateway** protocol:
 ```
 N/<portalId>/<type>/<instance>/<Path>          reads   (published by Venus)
 W/<portalId>/<type>/<instance>/<Path>          writes  (published by us)
-W/<portalId>/<type>/<instance>/<Path>/Keepalive  empty payload every 50s while a written value must stay active
-R/<portalId>                                   request full re-publish
+R/<portalId>/keepalive                         request full telemetry re-publish
 inverter/state                                 inverter-control aggregate
 tank/<n>/Level                                 dbus-pump tank level
 ```
@@ -283,11 +282,14 @@ tank/<n>/Level                                 dbus-pump tank level
 - Reads: on connect we subscribe `N/<portalId>/#` and cache the last value per
   topic with its receive time; tool output carries `stale` + `age_seconds`
   (threshold `MQTT_STALE_AFTER_SECONDS`, default 60).
-- Writes: value published as JSON to `W/…`; Venus expires writes unless
-  `<Path>/Keepalive` receives an empty payload at least every 60s — we send
-  every 50s and cancel all keepalives on disconnect/shutdown.
+- Writes: a value is published as JSON only to its hardware-qualified `W/…`
+  path. There are no periodic writes to additional paths and no automatic
+  rollback on disconnect/shutdown. Persistence is device-specific.
 - Verification: after each write the matching `N/…` topic is polled for up to
   5s (`WRITE_VERIFY_TIMEOUT_S`); timeout → explicit error, never silent success.
+  A timeout does not prove rejection or undo a command that reached the device.
+  The [gateway keep-alive](https://github.com/victronenergy/dbus-flashmq#keep-alive)
+  controls notification publication, not the lifetime of arbitrary control values.
 
 ## Safety Model
 
@@ -300,7 +302,9 @@ Defense runs in order, before any publish:
    restricted to `SAFETY_ALLOWED_MODES`.
 3. **Mode enum mapping**: only modes with a known device-type enum code reach
    the wire; anything else is rejected pre-publish.
-4. **Read-back verification** closes the loop — an unacknowledged write is
+4. **Reviewed hardware contract** binds the exact path and allowed semantics to
+   fresh firmware, target and BMS identities; missing contracts deny writes.
+5. **Read-back verification** closes the loop — an unacknowledged write is
    reported as failed.
 
 Known caveats: vebus/inverter/solarcharger Mode enum tables come from Victron's
@@ -310,7 +314,7 @@ BMS. Also note that *acceptance ≠ persistence*: when another service owns a
 path (e.g. a BMS driver continuously asserting `/Dc/0/MaxChargeCurrent`), Venus
 acknowledges and echoes the written value but re-applies its own within seconds —
 verified live, where a 45 A write to a BMS-owned 52 A limit echoed successfully
-and snapped back ~3 s later despite keepalives. The tool reports acceptance;
+and snapped back ~3 s later. The tool reports acceptance;
 whether the value sticks depends on which service owns the item.
 
 Configuration options:
