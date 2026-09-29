@@ -27,7 +27,7 @@ from release_control import (
     MANIFEST,
     GitHub,
     ReleaseError,
-    digest,
+    download_asset,
     positive,
     repository_info,
     require,
@@ -95,14 +95,13 @@ def verified_assets(gh, tag, directory):
         if asset["name"] == MANIFEST:
             continue
         item = expected[asset["name"]]
-        content = gh.binary(f"releases/assets/{positive(asset['id'], 'asset ID')}")
+        identity = download_asset(gh, asset["id"], directory / asset["name"])
         require(
             asset.get("state") == "uploaded"
-            and len(content) == item["size"]
-            and digest(content) == item["sha256"],
+            and identity["size"] == item["size"]
+            and identity["sha256"] == item["sha256"],
             f"Stable payload changed: {asset['name']}",
         )
-        (directory / asset["name"]).write_bytes(content)
     return manifest
 
 
