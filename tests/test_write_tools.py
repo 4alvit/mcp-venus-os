@@ -158,15 +158,21 @@ async def test_set_inverter_mode_mqtt_publishes_and_verifies(
     client._connected = True
     _echo_writes(client, paho)
 
-    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
+    with (
+        patch("mcp_venus_os.server.get_mqtt_client", return_value=client),
+        patch("mcp_venus_os.mqtt_client.asyncio.create_task") as background,
+    ):
         result = await set_inverter_mode(mode="on", instance=256, confirmed=True)
 
     assert result["success"] is True
     assert result["value"] == 1
     assert result["topic"] == "W/testportal/vebus/256/Mode"
     paho.publish.assert_any_call("W/testportal/vebus/256/Mode", '{"value": 1}', retain=False)
-    assert any(t.endswith("/Keepalive") for t in client._keepalives), "keepalive must be armed"
-    client.cancel_keepalives()
+    assert result["automatic_rollback"] is False
+    paho.publish.assert_called_once_with(
+        "W/testportal/vebus/256/Mode", '{"value": 1}', retain=False
+    )
+    background.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -203,7 +209,6 @@ async def test_set_charge_current_limit_mqtt_publishes_and_verifies(
     paho.publish.assert_any_call(
         "W/testportal/vebus/256/Dc/0/MaxChargeCurrent", '{"value": 50.0}', retain=False
     )
-    client.cancel_keepalives()
 
 
 @pytest.mark.asyncio
@@ -221,7 +226,6 @@ async def test_set_soc_limit_mqtt_publishes_to_battery_path(
 
     assert result["success"] is True
     paho.publish.assert_any_call("W/testportal/battery/512/SocLimit", '{"value": 80}', retain=False)
-    client.cancel_keepalives()
 
 
 @pytest.mark.asyncio
@@ -244,7 +248,6 @@ async def test_write_readback_timeout_reports_error(
 
     assert result["success"] is False
     assert "did not reflect it" in result["error"]
-    client.cancel_keepalives()
 
 
 def test_values_match_unwraps_gateway_value_dict() -> None:
@@ -268,22 +271,24 @@ def test_cache_since_rejects_matching_values_received_before_a_write() -> None:
 
 
 @pytest.mark.asyncio
-async def test_keepalive_guard_stops_before_renewing_unqualified_hardware() -> None:
-    """Identity expiry or firmware changes must stop active command renewal too."""
-    import asyncio
+async def test_queued_prewrite_message_cannot_acknowledge_a_new_write(enable_writes: None) -> None:
+    """Reproduce a matching old message decoded only after command publication."""
+    import paho.mqtt.client as mqtt
 
     client = _mqtt_client()
     paho = Mock()
     client.client = cast(Any, paho)
     client._connected = True
-    checked = asyncio.Event()
-
-    def denied() -> bool:
-        checked.set()
-        return False
-
-    with patch("mcp_venus_os.mqtt_client.KEEPALIVE_INTERVAL_S", 0.001):
-        client.start_keepalive("W/testportal/vebus/256/Mode", is_allowed=denied)
-        await asyncio.wait_for(checked.wait(), timeout=1)
-    paho.publish.assert_not_called()
-    client.cancel_keepalives()
+    msg = mqtt.MQTTMessage()
+    msg._topic = b"N/testportal/vebus/256/Mode"
+    msg.payload = b'{"value": 1}'
+    with patch("mcp_venus_os.mqtt_client.time.monotonic", return_value=_time.monotonic() - 10):
+        client._on_message(cast(Any, paho), None, msg)
+    paho.publish.side_effect = lambda *_args, **_kwargs: client._drain_inbox()
+    with (
+        patch("mcp_venus_os.server.get_mqtt_client", return_value=client),
+        patch("mcp_venus_os.server.WRITE_VERIFY_TIMEOUT_S", 0.01),
+    ):
+        result = await set_inverter_mode(mode="on", instance=256, confirmed=True)
+    assert result["success"] is False
+    assert "did not reflect" in result["error"]

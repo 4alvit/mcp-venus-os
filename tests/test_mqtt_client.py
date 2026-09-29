@@ -1,7 +1,5 @@
 """Tests for the MQTT client."""
 
-import asyncio
-import contextlib
 import threading
 from typing import cast
 from unittest.mock import AsyncMock, Mock, patch
@@ -85,18 +83,40 @@ def test_on_connect_success_subscribes_portal_wildcard() -> None:
     # companion-service subscriptions ride along (inverter-control, dbus-pump)
     assert "inverter/state" in subs
     assert "tank/#" in subs
+    paho_client.publish.assert_called_once_with(f"R/{PORTAL}/keepalive", "", retain=False)
+
+
+def test_reconnect_refreshes_telemetry_only_after_subscribing() -> None:
+    client = _make_client()
+    transport = Mock()
+    for _ in range(2):
+        transport.reset_mock()
+        client._on_connect(
+            cast(mqtt.Client, transport),
+            None,
+            None,
+            cast(ReasonCode, FakeReasonCode(0)),
+            cast(Properties, Mock()),
+        )
+        calls = transport.method_calls
+        assert calls[0][0] == "subscribe"
+        assert calls[-1][0] == "publish"
+        transport.publish.assert_called_once_with(f"R/{PORTAL}/keepalive", "", retain=False)
 
 
 def test_on_connect_failure() -> None:
     client = _make_client()
+    transport = Mock()
     client._on_connect(
-        cast(mqtt.Client, Mock()),
+        cast(mqtt.Client, transport),
         None,
         None,
         cast(ReasonCode, FakeReasonCode(1)),
         cast(Properties, Mock()),
     )
     assert not client._connected
+    # No read refresh is sent when the broker rejects the connection.
+    transport.publish.assert_not_called()
 
 
 def test_on_disconnect() -> None:
@@ -342,42 +362,6 @@ def test_write_prefix() -> None:
     assert client.write_prefix == f"W/{PORTAL}"
 
 
-@pytest.mark.asyncio
-async def test_start_keepalive_publishes_periodically() -> None:
-    client = _make_client()
-    paho_client = Mock()
-    client.client = cast(mqtt.Client, paho_client)
-    client._connected = True
-    with patch("mcp_venus_os.mqtt_client.KEEPALIVE_INTERVAL_S", 0.01):
-        client.start_keepalive(f"W/{PORTAL}/battery/512/Soc")
-        await asyncio.sleep(0.05)
-        client.cancel_keepalives()
-    keepalive_calls = [
-        c for c in paho_client.publish.call_args_list if c.args[0].endswith("/Keepalive")
-    ]
-    assert len(keepalive_calls) >= 1
-    assert keepalive_calls[0].args[1] == ""
-
-
-@pytest.mark.asyncio
-async def test_disconnect_cancels_keepalives() -> None:
-    client = _make_client()
-    paho_client = Mock()
-    client.client = cast(mqtt.Client, paho_client)
-    client._connected = True
-
-    async def _spin() -> None:
-        await asyncio.sleep(10)
-
-    task = asyncio.create_task(_spin())
-    client._keepalives["W/x"] = task
-    await client.disconnect()
-    with contextlib.suppress(asyncio.CancelledError):
-        await task
-    assert client._keepalives == {}
-    assert task.cancelled()
-
-
 def _raw_msg(topic: str, payload: bytes) -> mqtt.MQTTMessage:
     msg = mqtt.MQTTMessage()
     msg._topic = topic.encode()
@@ -430,8 +414,49 @@ def test_empty_payload_not_logged_as_warning(
         _feed(client, f"{PREFIX}/acload/71/ProductName", b"")
         _feed(client, f"{PREFIX}/acload/71/ProductName", b"not json")
     warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
-    # Empty payload (Venus value expiry) is silent; real garbage still warns.
+    # Empty payload (device removal) is silent; real garbage still warns.
     assert len(warnings) == 1
+
+
+def test_queued_telemetry_keeps_its_receive_age() -> None:
+    """A slow decoder must not turn old identity data into a fresh observation."""
+    client = _make_client()
+    with patch("mcp_venus_os.mqtt_client.time.monotonic", return_value=10.0):
+        client._on_message(
+            cast(mqtt.Client, Mock()), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"55.5")
+        )
+    with patch("mcp_venus_os.mqtt_client.time.monotonic", return_value=70.0):
+        client._drain_inbox()
+        assert client.read_path("battery", 0, "Soc") == (55.5, 60.0)
+        assert client.read_path_since("battery", 0, "Soc", 11.0) is None
+
+
+def test_device_removal_invalidates_cached_identity_and_discovery() -> None:
+    client = _make_client()
+    topic = f"{PREFIX}/battery/256/ProductId"
+    _feed(client, topic, b'{"value": 123}')
+    assert client.discover_instance("battery") == 256
+    _feed(client, topic, b"")
+    assert client.read_path("battery", 256, "ProductId") is None
+    assert client.discover_instance("battery") is None
+
+
+def test_worker_drains_burst_in_order_without_one_sleep_per_message() -> None:
+    """Full-tree bursts should not pay a scheduler wake-up for every value."""
+    client = _make_client()
+    received: list[Payload] = []
+    client.subscribe(f"{PREFIX}/#", received.append)
+    for number in range(256):
+        client._on_message(
+            cast(mqtt.Client, Mock()),
+            None,
+            _raw_msg(f"{PREFIX}/battery/0/Soc", str(number).encode()),
+        )
+    client._inbox.put(None)
+    with patch("mcp_venus_os.mqtt_client.time.sleep") as pause:
+        client._process_inbox()
+    assert received == list(range(256))
+    assert 0 < pause.call_count <= 32
 
 
 @pytest.mark.asyncio

@@ -111,10 +111,7 @@ async def test_read_and_write_roundtrip_over_real_broker(broker_port: object) ->
     def _noop(_payload: Payload) -> None:
         """Callback that does nothing."""
 
-    with (
-        patch.object(mqtt_module, "get_config", return_value=cfg),
-        patch.object(mqtt_module, "KEEPALIVE_INTERVAL_S", 3600),
-    ):
+    with patch.object(mqtt_module, "get_config", return_value=cfg):
         client = mqtt_module.MQTTClient()
         await client.connect()
 

@@ -61,9 +61,10 @@ Registered only when `SSH_PASSWORD` or `SSH_KEY_PATH` is configured
 | 🔒 `set_charge_current_limit(current, instance, confirmed)` | `W/…/vebus/<inst>/Dc/0/MaxChargeCurrent` | Amps |
 | 🔒 `set_soc_limit(soc_limit, instance, confirmed)` | `W/…/battery/<inst>/SocLimit` | verify exact BMS path on your battery |
 
-Safety order: confirmation gate → hard limits → enum mapping → publish →
-read-back verification (5 s) → keepalive every 50 s (write expires ~60 s after
-the server stops refreshing). **Acceptance ≠ persistence**: items owned by an
+Safety order: confirmation gate → hard limits → enum mapping → exact reviewed
+hardware contract → publish → fresh read-back verification (5 s).
+No automatic rollback is provided. The gateway's telemetry keep-alive is not a
+write-expiry mechanism. **Acceptance ≠ persistence**: items owned by an
 active service (e.g. a BMS driver asserting `MaxChargeCurrent`) get re-applied
 within seconds of any external write.
 
@@ -72,8 +73,7 @@ within seconds of any external write.
 ```
 N/<portalId>/<type>/<instance>/<Path>            reads (gateway publishes)
 W/<portalId>/<type>/<instance>/<Path>            writes ({\"value\": X} JSON!)
-W/<portalId>/<type>/<instance>/<Path>/Keepalive  empty payload ≤60s while active
-R/<portalId>                                     request a full re-publish
+R/<portalId>/keepalive                           request a full telemetry re-publish
 inverter/state                                   inverter-control aggregate (retained)
 tank/<n>/Level                                   dbus-pump tank level
 battery*/sensor|status|binary_sensor             dbus-mqtt-battery HA-style topics
