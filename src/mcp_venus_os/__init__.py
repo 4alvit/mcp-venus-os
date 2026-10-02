@@ -12,7 +12,7 @@ from .mqtt_client import MQTTClient
 from .safety import ConfirmationManager, SafetyValidator
 from .server import mcp
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 __author__ = "4alvit"
 __license__ = "MIT"
 
