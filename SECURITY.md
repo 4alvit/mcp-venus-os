@@ -36,7 +36,15 @@ and pipe-to-shell downloads even when all other gates pass.
 - CVE research, malicious firmware, or physical access to the Cerbo.
 - Rate-limiting or DoS protection on the Cerbo MQTT gateway.
 
-## Reporting a Security Issue
+## Reporting a Vulnerability
 
-Please do not file public GitHub issues for security concerns. Contact the
-maintainers directly with details.
+Private vulnerability reporting is enabled for this repository. Use
+[Report a vulnerability](https://github.com/4alvit/mcp-venus-os/security/advisories/new)
+to send a confidential report to the maintainers. Follow
+[GitHub's private reporting instructions](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability)
+if you need help submitting the report.
+
+Include the affected version or commit, steps to reproduce, expected and actual
+behavior, and potential impact. Remove access tokens, credentials and personal
+data from examples. Do not disclose exploit details in public issues before
+coordinating with the maintainers.
