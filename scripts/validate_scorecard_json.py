@@ -67,7 +67,6 @@ def validate(result, repository: str, commit: str) -> None:
         if (
             name == "Packaging"
             and isinstance(score, int)
-            and not isinstance(score, bool)
             and score == -1
             and check.get("reason") == PACKAGING_ABSENT
             and check.get("error") is None
