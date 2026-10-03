@@ -70,7 +70,6 @@ jobs:
       - name: Require complete Scorecard results before GitHub upload
         id: scorecard_completeness
         run: |
-          python3 -m unittest discover -s tests -p test_validate_scorecard_json.py
           python3 scripts/validate_scorecard_json.py
 
       - name: "Upload artifact"

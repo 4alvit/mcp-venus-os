@@ -8,6 +8,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 SPEC = importlib.util.spec_from_file_location(
     "validate_scorecard_json",
     Path(__file__).resolve().parents[1] / "scripts/validate_scorecard_json.py",
@@ -19,6 +21,7 @@ SHA = "a" * 40
 
 
 def complete():
+    """Build a complete result, including upstream disabled checks."""
     return {
         "repo": {"name": f"github.com/{REPO}", "commit": SHA},
         "scorecard": guard.VERSION.copy(),
@@ -30,6 +33,8 @@ def complete():
 
 
 class ScorecardJSONTests(unittest.TestCase):
+    """Preserve findings while rejecting incomplete or unrelated scans."""
+
     def test_complete_clean_and_failing_checks_pass(self):
         for score in (0, 4, 10):
             result = complete()
@@ -41,7 +46,7 @@ class ScorecardJSONTests(unittest.TestCase):
             with self.subTest(score=score):
                 result = complete()
                 result["checks"][0]["score"] = score
-                with self.assertRaises((TypeError, ValueError)):
+                with pytest.raises((TypeError, ValueError)):
                     guard.validate(result, REPO, SHA)
 
     def test_missing_duplicate_unknown_and_malformed_checks_fail(self):
@@ -59,7 +64,7 @@ class ScorecardJSONTests(unittest.TestCase):
             with self.subTest(checks=checks):
                 result = copy.deepcopy(original)
                 result["checks"] = checks
-                with self.assertRaises((TypeError, ValueError)):
+                with pytest.raises((TypeError, ValueError)):
                     guard.validate(result, REPO, SHA)
 
     def test_repository_commit_and_version_are_bound_to_the_run(self):
@@ -71,7 +76,7 @@ class ScorecardJSONTests(unittest.TestCase):
             with self.subTest(field=field, value=value):
                 result = complete()
                 result[field] = value
-                with self.assertRaises((TypeError, ValueError)):
+                with pytest.raises((TypeError, ValueError)):
                     guard.validate(result, REPO, SHA)
 
     def test_missing_run_identity_and_invalid_root_fail(self):
@@ -80,7 +85,7 @@ class ScorecardJSONTests(unittest.TestCase):
             (complete(), REPO, ""),
             ([], REPO, SHA),
         ):
-            with self.assertRaises((TypeError, ValueError)):
+            with pytest.raises((TypeError, ValueError)):
                 guard.validate(result, repo, sha)
 
     def test_failed_guard_removes_stale_sarif(self):
@@ -95,13 +100,11 @@ class ScorecardJSONTests(unittest.TestCase):
                 (root / "results.sarif").write_text("stale")
                 with (
                     patch.object(guard, "ROOT", root),
-                    patch.dict(
-                        "os.environ", {"GITHUB_REPOSITORY": REPO, "GITHUB_SHA": SHA}
-                    ),
-                    self.assertRaises((OSError, TypeError, ValueError)),
+                    patch.dict("os.environ", {"GITHUB_REPOSITORY": REPO, "GITHUB_SHA": SHA}),
+                    pytest.raises((OSError, TypeError, ValueError)),
                 ):
                     guard.main()
-                self.assertFalse((root / "results.sarif").exists())
+                assert not (root / "results.sarif").exists()
 
     def test_successful_guard_preserves_original_sarif(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -110,12 +113,10 @@ class ScorecardJSONTests(unittest.TestCase):
             (root / "results.sarif").write_text("original report")
             with (
                 patch.object(guard, "ROOT", root),
-                patch.dict(
-                    "os.environ", {"GITHUB_REPOSITORY": REPO, "GITHUB_SHA": SHA}
-                ),
+                patch.dict("os.environ", {"GITHUB_REPOSITORY": REPO, "GITHUB_SHA": SHA}),
             ):
                 guard.main()
-            self.assertEqual((root / "results.sarif").read_text(), "original report")
+            assert (root / "results.sarif").read_text() == "original report"
 
 
 if __name__ == "__main__":
