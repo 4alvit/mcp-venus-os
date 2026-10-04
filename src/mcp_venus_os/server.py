@@ -840,7 +840,7 @@ async def list_devices() -> list[dict[str, Any]]:
 async def set_inverter_mode(
     mode: str, instance: int = 0, confirmed: bool = False
 ) -> dict[str, Any]:
-    """Set inverter mode (on, off, charger_only, inverter_only, eco).
+    """Set VE.Bus inverter mode (on, off, charger_only, inverter_only).
 
     Requires confirmation for write operations.
     """
