@@ -1,6 +1,7 @@
 """MQTT client for the Venus OS MQTT gateway (read path)."""
 
 import asyncio
+import contextlib
 import json
 import logging
 import queue
@@ -31,6 +32,10 @@ DROP_LOG_INTERVAL_S = 10.0
 # queue.get() already blocks when empty, so idle connections do not spin.
 INBOX_PROCESS_BATCH_SIZE = 64
 INBOX_PROCESS_SLEEP_S = 0.0001
+CONNECT_WAIT_STEPS = 50
+CONNECT_POLL_S = 0.1
+WORKER_JOIN_TIMEOUT_S = 2.0
+NETWORK_JOIN_TIMEOUT_S = 5.0
 
 
 class MQTTError(Exception):
@@ -62,6 +67,10 @@ class MQTTClient:
         self.config = get_config().mqtt
         self.client: mqtt.Client | None = None
         self._connected = False
+        self._lifecycle_lock = asyncio.Lock()
+        self._state_lock = threading.Lock()
+        self._stopping = False
+        self._worker_stop = threading.Event()
         self._callbacks: dict[str, list[Callable[[Payload], None]]] = {}
         # Paho's matcher has no type annotations in the pinned 2.1 release.
         self._callback_index = MQTTMatcher()  # type: ignore[no-untyped-call]
@@ -71,7 +80,7 @@ class MQTTClient:
         # Inbound messages are decoded off paho's network thread: heavy work
         # inline in _loop starves _check_keepalive → broker drops the
         # connection every keepalive interval → full retained-tree re-flood.
-        self._inbox: queue.Queue[tuple[mqtt.MQTTMessage, float] | None] = queue.Queue(
+        self._inbox: queue.Queue[tuple[mqtt.Client, mqtt.MQTTMessage, float] | None] = queue.Queue(
             maxsize=INBOX_MAXSIZE
         )
         self._worker: threading.Thread | None = None
@@ -99,8 +108,11 @@ class MQTTClient:
         properties: mqtt.Properties,  # type: ignore[name-defined]
     ) -> None:
         """MQTT on_connect callback."""
+        with self._state_lock:
+            if client is not self.client or self._stopping:
+                return
+            self._connected = reason_code == 0
         if reason_code == 0:
-            self._connected = True
             logger.info("Connected to MQTT broker at %s:%d", self.config.host, self.config.port)
             base = f"{self.prefix}/#"
             client.subscribe(base)
@@ -124,7 +136,10 @@ class MQTTClient:
         properties: mqtt.Properties,  # type: ignore[name-defined]
     ) -> None:
         """MQTT on_disconnect callback."""
-        self._connected = False
+        with self._state_lock:
+            if client is not self.client or self._stopping:
+                return
+            self._connected = False
         logger.warning("Disconnected from MQTT broker: %s", reason_code)
 
     def _on_message(
@@ -141,23 +156,29 @@ class MQTTClient:
         try:
             # Capture receipt before queueing: decoder delay is part of the age
             # and cannot turn a pre-command message into a fresh write response.
-            self._inbox.put_nowait((msg, time.monotonic()))
+            with self._state_lock:
+                if client is not self.client or self._stopping:
+                    return
+                self._inbox.put_nowait((client, msg, time.monotonic()))
         except queue.Full:
             now = time.monotonic()
             if now - self._last_drop_log >= DROP_LOG_INTERVAL_S:
                 logger.warning("MQTT inbox overflow, dropping messages")
                 self._last_drop_log = now
 
-    @staticmethod
-    def _run_loop(client: mqtt.Client) -> None:
-        """Run paho's network loop with a 5s select timeout.
+    def _run_loop(self, client: mqtt.Client) -> None:
+        """Own initial connection retries and reconnects in one network loop.
 
-        loop_start() uses a 1s timeout which on Synology's low-HZ kernel
-        (HZ=100) causes ~100 select() syscalls/s → ~25% CPU on a 2-core NAS.
-        A 5s timeout cuts wakeups 5x while staying well under the MQTT
-        protocol keepalive window.
+        The existing 5s select timeout remains below the protocol keepalive.
         """
-        client.loop_forever(timeout=5.0)
+        try:
+            client.loop_forever(timeout=5.0, retry_first_connection=True)
+        except Exception:
+            logger.exception("MQTT network loop stopped")
+        finally:
+            with self._state_lock:
+                if client is self.client:
+                    self._connected = False
 
     def _drain_inbox(self) -> None:
         """Process all queued messages synchronously (tests, shutdown)."""
@@ -172,8 +193,11 @@ class MQTTClient:
     def _process_inbox(self) -> None:
         """Worker thread: decode messages and update the cache/callbacks."""
         processed = 0
-        while True:
-            entry = self._inbox.get()
+        while not self._worker_stop.is_set():
+            try:
+                entry = self._inbox.get(timeout=0.25)
+            except queue.Empty:
+                continue
             if entry is None:  # shutdown sentinel
                 return
             self._handle_message(*entry)
@@ -184,18 +208,23 @@ class MQTTClient:
 
     def _start_worker(self) -> None:
         if self._worker is None or not self._worker.is_alive():
+            self._worker_stop.clear()
             self._worker = threading.Thread(
                 target=self._process_inbox, name="mqtt-message-worker", daemon=True
             )
             self._worker.start()
 
-    def _handle_message(self, msg: mqtt.MQTTMessage, received_at: float) -> None:
+    def _handle_message(
+        self, client: mqtt.Client, msg: mqtt.MQTTMessage, received_at: float
+    ) -> None:
         """Decode one message, update the cache, notify callbacks."""
         try:
             # An empty notification means the D-Bus item disappeared. Its former
             # identity/value must no longer authorize writes or appear in discovery.
             if not msg.payload:
-                self._cache.pop(msg.topic, None)
+                with self._state_lock:
+                    if client is self.client and not self._stopping:
+                        self._cache.pop(msg.topic, None)
                 return
             payload = json.loads(msg.payload.decode())
             # Venus gateway wraps item values as {"value": X}; unwrap so the
@@ -204,8 +233,11 @@ class MQTTClient:
                 payload = payload["value"]
             topic = msg.topic
             logger.debug("Received message on %s: %s", topic, payload)
-            if topic.startswith(self.prefix + "/") or is_capability_topic(topic):
-                self._cache[topic] = (payload, received_at)
+            with self._state_lock:
+                if client is not self.client or self._stopping:
+                    return
+                if topic.startswith(self.prefix + "/") or is_capability_topic(topic):
+                    self._cache[topic] = (payload, received_at)
             self._notify_callbacks(topic, payload)
         except json.JSONDecodeError:
             logger.warning("Invalid JSON on topic %s: %s", msg.topic, msg.payload)
@@ -255,64 +287,96 @@ class MQTTClient:
                 self._callbacks[topic_pattern].remove(callback)
 
     async def connect(self) -> None:
-        """Connect to MQTT broker."""
-        if self._connected:
-            return
+        """Wait for the one owned transport, including its automatic reconnects."""
+        # Only creation/retirement is serialized. Concurrent readers wait for the
+        # same transport outside this lock, each with its own bounded deadline.
+        async with self._lifecycle_lock:
+            if self._stopping or (
+                self.client is not None
+                and (self._loop_thread is None or not self._loop_thread.is_alive())
+            ):
+                await self._stop_transport()
+                if self.client is not None:
+                    raise NotConnectedError()
+            if self.client is None:
+                self._start_transport()
+            transport = self.client
 
-        self.client = mqtt.Client(
+        for _ in range(CONNECT_WAIT_STEPS):
+            if self.client is not transport or self._stopping:
+                raise NotConnectedError()
+            if self._connected:
+                return
+            await asyncio.sleep(CONNECT_POLL_S)
+        # A slow reconnect remains owned. A later tool read must not replace it
+        # with another connection using the same broker client ID.
+        raise ConnectionTimeoutError()
+
+    def _start_transport(self) -> None:
+        """Create one transport while holding the lifecycle lock."""
+        transport = mqtt.Client(
             callback_api_version=CallbackAPIVersion.VERSION2,
             client_id=self.config.client_id,
         )
-
         if self.config.username and self.config.password:
-            self.client.username_pw_set(self.config.username, self.config.password)
-
+            transport.username_pw_set(self.config.username, self.config.password)
         if self.config.tls:
-            self.client.tls_set()
-
-        self.client.on_connect = self._on_connect
-        self.client.on_disconnect = self._on_disconnect
-        self.client.on_message = self._on_message
-
-        self.client.connect_async(
+            transport.tls_set()
+        transport.on_connect = self._on_connect
+        transport.on_disconnect = self._on_disconnect
+        transport.on_message = self._on_message
+        transport.connect_async(
             self.config.host, self.config.port, keepalive=MQTT_PROTOCOL_KEEPALIVE_S
         )
-        # Bypass loop_start() and run loop_forever in our own thread with a
-        # 5s select() timeout: paho's default 1s wakes every kernel tick
-        # (HZ=100 on Synology) and burns ~25% of one core on idle. A 5s
-        # timeout cuts wakeups 5x; well under MQTT protocol keepalive so
-        # PINGREQs aren't missed.
+        with self._state_lock:
+            self.client = transport
+            self._stopping = False
+            self._connected = False
+        self._start_worker()
         self._loop_thread = threading.Thread(
-            target=self._run_loop, args=(self.client,), name="mqtt-loop", daemon=True
+            target=self._run_loop, args=(transport,), name="mqtt-loop", daemon=True
         )
         self._loop_thread.start()
-        self._start_worker()
 
-        # Wait for connection
-        for _ in range(50):
-            if self._connected:
-                break
-            await asyncio.sleep(0.1)
-        else:
-            await self.disconnect()
-            raise ConnectionTimeoutError()
-
-    async def disconnect(self) -> None:
-        """Disconnect from MQTT broker."""
+    async def _stop_transport(self) -> None:
+        """Bound shutdown without losing ownership of a still-alive worker."""
+        with self._state_lock:
+            self._stopping = True
+            self._connected = False
         if self.client is not None:
             self.client.disconnect()
-            self._connected = False
-            logger.info("Disconnected from MQTT broker")
-        # Stop the decode worker (None sentinel; daemon thread never blocks exit).
-        if self._worker is not None and self._worker.is_alive():
-            self._inbox.put(None)
-            self._worker.join(timeout=2)
-        self._worker = None
-        # disconnect() stops loop_forever, including after connection loss.
-        # loop_stop() only manages threads created by paho loop_start().
-        if self._loop_thread is not None and self._loop_thread.is_alive():
-            self._loop_thread.join(timeout=5)
-        self._loop_thread = None
+        self._worker_stop.set()
+        # The event also stops a decoder when a full queue cannot take a sentinel.
+        with contextlib.suppress(queue.Full):
+            self._inbox.put_nowait(None)
+        joins = []
+        for worker, timeout in (
+            (self._worker, WORKER_JOIN_TIMEOUT_S),
+            (self._loop_thread, NETWORK_JOIN_TIMEOUT_S),
+        ):
+            if worker is not None and worker.is_alive():
+                joins.append(asyncio.to_thread(worker.join, timeout))
+        if joins:
+            await asyncio.gather(*joins)
+        if self._worker is not None and not self._worker.is_alive():
+            self._worker = None
+        if self._loop_thread is not None and not self._loop_thread.is_alive():
+            self._loop_thread = None
+        if self._worker is None and self._loop_thread is None:
+            with self._state_lock:
+                self.client = None
+            # Discard retired telemetry/sentinels; preserve receive timestamps
+            # in the existing cache, so its normal freshness checks still apply.
+            self._inbox = queue.Queue(maxsize=INBOX_MAXSIZE)
+            self._stopping = False
+        else:
+            logger.warning("MQTT shutdown timed out; workers remain owned")
+
+    async def disconnect(self) -> None:
+        """Stop the owned transport; concurrent readers cannot replace it early."""
+        async with self._lifecycle_lock:
+            await self._stop_transport()
+        logger.info("Disconnected from MQTT broker")
 
     def publish(self, topic: str, payload: Payload, retain: bool = False) -> None:
         """Publish a message to an absolute MQTT topic."""
