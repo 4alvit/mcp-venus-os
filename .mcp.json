@@ -6,7 +6,7 @@
     },
     "venus-os": {
       "type": "http",
-      "url": "http://192.168.167.25:8080/mcp",
+      "url": "https://venus-os.k3s.2560801.xyz/mcp",
       "headers": {
         "Authorization": "Bearer ${VENUS_MCP_TOKEN}"
       }

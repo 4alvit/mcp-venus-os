@@ -68,7 +68,11 @@ def hardware_contracts() -> list[HardwareWriteContract]:
                     "evidence_sha256": "a" * 64,
                     "semantics": "Synthetic fixture, not a hardware qualification.",
                     "unit": unit,
-                    "mode_codes": {"on": 1, "eco": 3, "off": 4} if unit == "mode" else {},
+                    "mode_codes": (
+                        {"charger_only": 1, "inverter_only": 2, "on": 3, "off": 4}
+                        if unit == "mode"
+                        else {}
+                    ),
                     "minimum": None if unit == "mode" else 0,
                     "maximum": None if unit == "mode" else 100,
                 }

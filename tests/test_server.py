@@ -522,13 +522,29 @@ async def test_startup_warmup_failure_is_not_fatal(monkeypatch: pytest.MonkeyPat
 
 
 @pytest.mark.asyncio
-async def test_get_inverter_status_decodes_enums() -> None:
+@pytest.mark.parametrize(
+    ("mode_code", "mode_name"),
+    [(1, "charger_only"), (2, "inverter_only"), (3, "on"), (4, "off")],
+)
+async def test_get_inverter_status_decodes_enums(mode_code: int, mode_name: str) -> None:
     """Raw vebus codes come back with mode_name/state_name alongside."""
-    client = _mqtt_read_client({"N/<portal>/vebus/290/Mode": 3, "N/<portal>/vebus/290/State": 3})
+    client = _mqtt_read_client(
+        {"N/<portal>/vebus/290/Mode": mode_code, "N/<portal>/vebus/290/State": 3}
+    )
     with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
         result = await server.get_inverter_status(instance=290)
-    assert result["mode_name"] == "eco"
+    assert result["mode"] == mode_code
+    assert result["mode_name"] == mode_name
     assert result["state_name"] == "bulk"
+
+
+def test_mode_codes_are_specific_to_the_device_service() -> None:
+    """An inverter's Eco mode and a solar charger's On mode are not VE.Bus mode codes."""
+    assert server._mode_code("vebus", "eco") is None
+    assert server._mode_code("inverter", "eco") == 5
+    assert server._mode_code("inverter", "on") == 3
+    assert server._mode_code("inverter", "off") == 4
+    assert server._mode_code("solarcharger", "on") == 1
 
 
 @pytest.mark.asyncio

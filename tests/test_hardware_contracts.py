@@ -21,7 +21,7 @@ def validate(
         "device_type": "vebus",
         "instance": 256,
         "path": "Mode",
-        "value": 1,
+        "value": 3,
         "semantic_mode": "on",
         "read": lambda dtype, instance, path: values.get((dtype, instance, path)),
         "max_age": 60.0,
@@ -68,7 +68,7 @@ def test_mode_semantics_and_numeric_values_fail_closed(
     hardware_contracts: list[HardwareWriteContract],
 ) -> None:
     for changes in (
-        {"value": 3},
+        {"value": 1},
         {"semantic_mode": "charger_only"},
         {"value": True},
         {"value": float("nan")},
@@ -77,7 +77,7 @@ def test_mode_semantics_and_numeric_values_fail_closed(
         assert validate(hardware_contracts, **changes)[0] is None
     assert validate(hardware_contracts + [hardware_contracts[0]])[0] is None
     assert (
-        validate_hardware_write([], "testportal", "vebus", 256, "Mode", 1, "on", Mock(), 60)[0]
+        validate_hardware_write([], "testportal", "vebus", 256, "Mode", 3, "on", Mock(), 60)[0]
         is None
     )
 
@@ -116,7 +116,7 @@ async def test_unqualified_target_never_publishes_or_starts_keepalive(enable_wri
     client = Mock()
     client.config.portal_id = "new-target"
     client.config.stale_after_seconds = 60.0
-    result = await _mqtt_write_and_verify(client, "vebus", 256, "Mode", 1, "on")
+    result = await _mqtt_write_and_verify(client, "vebus", 256, "Mode", 3, "on")
     assert not result["success"]
     client.publish.assert_not_called()
 
@@ -136,6 +136,6 @@ async def test_old_matching_readback_is_not_a_fresh_ack(
     client.read_path.side_effect = lambda d, i, p: values.get((d, i, p))
     client.read_path_since.return_value = None
     with patch("mcp_venus_os.server.WRITE_VERIFY_TIMEOUT_S", 0.01):
-        result = await _mqtt_write_and_verify(client, "vebus", 256, "Mode", 1, "on")
+        result = await _mqtt_write_and_verify(client, "vebus", 256, "Mode", 3, "on")
     assert not result["success"]
     assert "did not reflect" in result["error"]
