@@ -7,6 +7,14 @@ runtime off a constrained GX while using the existing Venus MQTT gateway.
 The Cerbo audit on 2026-09-12 found no native `mcp-venus-os` service; the documented
 Synology deployment is a separate host and must be checked there.
 
+The shared deployment now runs on Kubernetes node `mp` at
+`https://venus-os.k3s.2560801.xyz/mcp`, with TLS and bearer authentication.
+Device writes are disabled and Cerbo SSH credentials are not installed.
+The project `.mcp.json` points to this endpoint and reads `VENUS_MCP_TOKEN` from
+the client environment. See the
+[MP deployment runbook](https://github.com/4alvit/k3s-self-healing/tree/main/deployments/11-mcp-venus-os)
+for pinned image, deployment, verification and rollback details.
+
 SSH package refresh downloads into a temporary `/data` staging directory and
 validates that `setup` exists before copying into the installed tree. It retains
 files absent from the release, including virtualenvs and local configuration,
@@ -107,7 +115,8 @@ uv run mcp-venus-os --transport http  # or SERVER_TRANSPORT=http
 
 | Target | Transport backend | Server transport | Notes |
 |--------|-------------------|------------------|-------|
-| **Synology Docker (primary)** | `mqtt` → Cerbo LAN | `http` :8080 | shared endpoint for all machines on the LAN |
+| **MP Kubernetes (shared)** | `mqtt` → Cerbo LAN | HTTPS `/mcp` | `venus-os.k3s.2560801.xyz`, bearer token, device writes disabled |
+| Synology Docker (alternative) | `mqtt` → Cerbo LAN | `http` :8080 | saved deployment layout; verify host availability |
 | macOS (fallback) | `mqtt` → Cerbo LAN | `stdio` | local process via `claude mcp add`, no NAS dependency |
 | On-device (Cerbo) | `dbus` | `stdio` | legacy mode, no gateway needed |
 
@@ -136,7 +145,7 @@ wrong-token requests get `401`. For Claude Code:
 
 ```bash
 claude mcp add --scope user --transport http venus-os \
-  http://<synology-ip>:8080/mcp \
+  https://venus-os.k3s.2560801.xyz/mcp \
   --header "Authorization: Bearer <token>"
 ```
 
@@ -149,7 +158,7 @@ Claude Code):
   "mcpServers": {
     "venus-os": {
       "type": "http",
-      "url": "http://192.168.167.25:8080/mcp",
+      "url": "https://venus-os.k3s.2560801.xyz/mcp",
       "headers": { "Authorization": "Bearer ${VENUS_MCP_TOKEN}" }
     }
   }
@@ -158,7 +167,7 @@ Claude Code):
 
 ### Claude Code Registration
 
-Primary (shared Synology HTTP endpoint — see above). Fallback: launch the server locally
+Primary (shared MP HTTPS endpoint — see above). Fallback: launch the server locally
 so it works even when the NAS is down:
 
 ```bash
