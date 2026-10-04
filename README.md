@@ -307,9 +307,14 @@ Defense runs in order, before any publish:
 5. **Read-back verification** closes the loop — an unacknowledged write is
    reported as failed.
 
-Known caveats: vebus/inverter/solarcharger Mode enum tables come from Victron's
-documented enums but should be sanity-checked against your firmware before
-relying on non-default modes; the exact SoC-limit path depends on the battery
+VE.Bus `/Mode` uses **1 = charger only, 2 = inverter only, 3 = on, 4 = off**;
+3 is not Eco. The separate `inverter` service uses 5 for Low Power/Eco, while
+`solarcharger` uses 1 for on and 4 for off. These mappings follow
+[Victron's D-Bus specification](https://github.com/victronenergy/venus/wiki/dbus).
+Existing hardware contracts with conflicting codes fail closed and require
+review; the server does not rewrite them automatically.
+
+Known caveats: the exact SoC-limit path depends on the battery
 BMS. Also note that *acceptance ≠ persistence*: when another service owns a
 path (e.g. a BMS driver continuously asserting `/Dc/0/MaxChargeCurrent`), Venus
 acknowledges and echoes the written value but re-applies its own within seconds —

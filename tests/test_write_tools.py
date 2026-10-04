@@ -149,8 +149,14 @@ def _echo_writes(client: MQTTClient, paho: Mock) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("mode", "code"),
+    [("charger_only", 1), ("inverter_only", 2), ("on", 3), ("off", 4)],
+)
 async def test_set_inverter_mode_mqtt_publishes_and_verifies(
     enable_writes: None,  # noqa: ARG001
+    mode: str,
+    code: int,
 ) -> None:
     client = _mqtt_client()
     paho = Mock()
@@ -162,15 +168,14 @@ async def test_set_inverter_mode_mqtt_publishes_and_verifies(
         patch("mcp_venus_os.server.get_mqtt_client", return_value=client),
         patch("mcp_venus_os.mqtt_client.asyncio.create_task") as background,
     ):
-        result = await set_inverter_mode(mode="on", instance=256, confirmed=True)
+        result = await set_inverter_mode(mode=mode, instance=256, confirmed=True)
 
     assert result["success"] is True
-    assert result["value"] == 1
+    assert result["value"] == code
     assert result["topic"] == "W/testportal/vebus/256/Mode"
-    paho.publish.assert_any_call("W/testportal/vebus/256/Mode", '{"value": 1}', retain=False)
     assert result["automatic_rollback"] is False
     paho.publish.assert_called_once_with(
-        "W/testportal/vebus/256/Mode", '{"value": 1}', retain=False
+        "W/testportal/vebus/256/Mode", json.dumps({"value": code}), retain=False
     )
     background.assert_not_called()
 
@@ -185,7 +190,7 @@ async def test_set_inverter_mode_unknown_enum_rejected_before_publish(
     client._connected = True
 
     with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
-        result = await set_inverter_mode(mode="charger_only", instance=0, confirmed=True)
+        result = await set_inverter_mode(mode="eco", instance=0, confirmed=True)
 
     assert result["success"] is False
     assert "no known enum code" in result["error"]
@@ -281,7 +286,7 @@ async def test_queued_prewrite_message_cannot_acknowledge_a_new_write(enable_wri
     client._connected = True
     msg = mqtt.MQTTMessage()
     msg._topic = b"N/testportal/vebus/256/Mode"
-    msg.payload = b'{"value": 1}'
+    msg.payload = b'{"value": 3}'
     with patch("mcp_venus_os.mqtt_client.time.monotonic", return_value=_time.monotonic() - 10):
         client._on_message(cast(Any, paho), None, msg)
     paho.publish.side_effect = lambda *_args, **_kwargs: client._drain_inbox()

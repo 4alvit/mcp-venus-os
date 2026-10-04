@@ -634,8 +634,7 @@ def _values_match(received: Payload, expected: Payload) -> bool:
 def _mode_code(device_type: str, mode: str) -> int | None:
     """Map a safety-validated mode name to its device-type enum code.
 
-    ponytail: per-device enums from Victron docs; verify against target
-    firmware before trusting charger_only/inverter_only entries.
+    Device-specific mode codes do not replace the reviewed hardware contract.
     """
     codes = MODE_CODES.get(device_type, {})
     code = codes.get(mode)
@@ -643,11 +642,10 @@ def _mode_code(device_type: str, mode: str) -> int | None:
 
 
 MODE_CODES: dict[str, dict[str, int]] = {
-    # MultiPlus/Quattro vebus Mode enum (On/Eco/Off); eco verified live on
-    # v3.75 where the running unit reports Mode=3
-    "vebus": {"on": 1, "eco": 3, "off": 4},
-    # Phoenix-style inverter Mode enum
-    "inverter": {"on": 1, "off": 2, "eco": 4},
+    # https://github.com/victronenergy/venus/wiki/dbus#vebus-systems-multis-quattros-inverters
+    "vebus": {"charger_only": 1, "inverter_only": 2, "on": 3, "off": 4},
+    # https://github.com/victronenergy/venus/wiki/dbus#inverter
+    "inverter": {"charger_only": 1, "inverter_only": 2, "on": 3, "off": 4, "eco": 5},
     # Solar charger Mode enum
     "solarcharger": {"on": 1, "off": 4},
 }
