@@ -7,6 +7,7 @@ import logging
 import queue
 import threading
 import time
+from collections import deque
 from collections.abc import Callable
 from typing import Any
 
@@ -16,6 +17,7 @@ from paho.mqtt.matcher import MQTTMatcher
 
 from .capabilities import capability_subscriptions, is_capability_topic
 from .config import MissingPortalIdError, get_config
+from .telemetry import refresh_topics, subscriptions
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,12 @@ CONNECT_WAIT_STEPS = 50
 CONNECT_POLL_S = 0.1
 WORKER_JOIN_TIMEOUT_S = 2.0
 NETWORK_JOIN_TIMEOUT_S = 5.0
+APPLICATION_KEEPALIVE_S = 30.0
+REFRESH_INTERVAL_S = 30.0
+REFRESH_BATCH_INTERVAL_S = 0.25
+REFRESH_BATCH_SIZE = 8
+MAX_REFRESH_TOPICS = 512
+SUPPRESS_REPUBLISH = '{"keepalive-options":["suppress-republish"]}'
 
 
 class MQTTError(Exception):
@@ -64,7 +72,9 @@ class MQTTClient:
     """MQTT client for Venus OS data streaming."""
 
     def __init__(self) -> None:
-        self.config = get_config().mqtt
+        config = get_config()
+        self.config = config.mqtt
+        self._contracts = config.safety.hardware_write_contracts
         self.client: mqtt.Client | None = None
         self._connected = False
         self._lifecycle_lock = asyncio.Lock()
@@ -72,20 +82,31 @@ class MQTTClient:
         self._stopping = False
         self._worker_stop = threading.Event()
         self._callbacks: dict[str, list[Callable[[Payload], None]]] = {}
+        self._callback_sequence = 0
         # Paho's matcher has no type annotations in the pinned 2.1 release.
         self._callback_index = MQTTMatcher()  # type: ignore[no-untyped-call]
         self._callback_lock = threading.Lock()
         # Last value per topic, with monotonic receive time (read cache)
         self._cache: dict[str, tuple[Payload, float]] = {}
+        # FlashMQ retains Serial only. Its retained replay proves existence,
+        # not freshness; a live notification must provide fresh evidence first.
+        self._retained_serial_seen = False
         # Inbound messages are decoded off paho's network thread: heavy work
         # inline in _loop starves _check_keepalive → broker drops the
-        # connection every keepalive interval → full retained-tree re-flood.
+        # connection every keepalive interval → full-tree re-flood.
         self._inbox: queue.Queue[tuple[mqtt.Client, mqtt.MQTTMessage, float] | None] = queue.Queue(
             maxsize=INBOX_MAXSIZE
         )
         self._worker: threading.Thread | None = None
         self._loop_thread: threading.Thread | None = None
         self._last_drop_log = 0.0
+        self._connection_epoch = 0
+        self._maintenance_epoch = -1
+        self._next_keepalive = 0.0
+        self._next_refresh = 0.0
+        self._next_refresh_batch = 0.0
+        self._refresh_cursor = 0
+        self._pending_refresh: deque[str] = deque()
 
     @property
     def prefix(self) -> str:
@@ -112,13 +133,14 @@ class MQTTClient:
             if client is not self.client or self._stopping:
                 return
             self._connected = reason_code == 0
+            if self._connected:
+                self._connection_epoch += 1
         if reason_code == 0:
             logger.info("Connected to MQTT broker at %s:%d", self.config.host, self.config.port)
-            base = f"{self.prefix}/#"
-            client.subscribe(base)
-            logger.debug("Subscribed to %s", base)
-            # Companion-service topics (inverter-control, dbus-pump, …)
-            for pattern in capability_subscriptions():
+            with self._callback_lock:
+                explicit = {pattern for pattern, callbacks in self._callbacks.items() if callbacks}
+            additional = {pattern for pattern in explicit if not self._covered_by_base(pattern)}
+            for pattern in sorted(self._base_subscriptions() | additional):
                 client.subscribe(pattern)
                 logger.debug("Subscribed to %s", pattern)
             # FlashMQ has no retained item tree. Request it after subscriptions
@@ -194,9 +216,12 @@ class MQTTClient:
         """Worker thread: decode messages and update the cache/callbacks."""
         processed = 0
         while not self._worker_stop.is_set():
+            if processed == 0:
+                self._maintain_read_feed()
             try:
                 entry = self._inbox.get(timeout=0.25)
             except queue.Empty:
+                self._maintain_read_feed()
                 continue
             if entry is None:  # shutdown sentinel
                 return
@@ -205,6 +230,111 @@ class MQTTClient:
             if processed >= INBOX_PROCESS_BATCH_SIZE:
                 time.sleep(INBOX_PROCESS_SLEEP_S)
                 processed = 0
+
+    def _base_subscriptions(self) -> set[str]:
+        """Broker filters keep unused nested settings/history out of the socket."""
+        return subscriptions(self.prefix, self._contracts) | set(capability_subscriptions())
+
+    def _covered_by_base(self, pattern: str) -> bool:
+        """An exact caller subscription need not duplicate an owned broker filter."""
+        base = self._base_subscriptions()
+        return pattern in base or (
+            "+" not in pattern
+            and "#" not in pattern
+            and any(mqtt.topic_matches_sub(owned, pattern) for owned in base)
+        )
+
+    def _refresh_candidates(self) -> list[str]:
+        with self._callback_lock:
+            explicit = [pattern for pattern, callbacks in self._callbacks.items() if callbacks]
+        observed = set(self._cache.copy())
+        if self._retained_serial_seen:
+            observed.add(f"{self.prefix}/system/0/Serial")
+        return refresh_topics(self.prefix, observed, self._contracts, explicit)
+
+    def _maintain_read_feed(self, now: float | None = None) -> None:
+        """Renew Venus streaming and pace exact reads on the owned decoder worker.
+
+        A successful request never updates receipt timestamps; only actual
+        replies can make a cached value fresh. No control (W/) topics are used.
+        """
+        now = time.monotonic() if now is None else now
+        with self._state_lock:
+            if (
+                self._stopping
+                or self._worker_stop.is_set()
+                or not self._connected
+                or self.client is None
+            ):
+                return
+            transport = self.client
+            epoch = self._connection_epoch
+        if self._maintenance_epoch != epoch:
+            self._maintenance_epoch = epoch
+            self._pending_refresh.clear()
+            self._next_keepalive = now + APPLICATION_KEEPALIVE_S
+            self._next_refresh = now + REFRESH_INTERVAL_S
+            self._next_refresh_batch = now
+            return
+        if now >= self._next_keepalive:
+            accepted = self._publish_read(
+                transport,
+                epoch,
+                f"R/{self.config.portal_id}/keepalive",
+                SUPPRESS_REPUBLISH,
+            )
+            delay = APPLICATION_KEEPALIVE_S if accepted else 1.0
+            self._next_keepalive = now + delay
+        if now < self._next_refresh_batch:
+            return
+        if now < self._next_refresh and not self._pending_refresh:
+            return
+        candidates = self._refresh_candidates()
+        if now >= self._next_refresh and not self._pending_refresh:
+            if candidates:
+                start = self._refresh_cursor % len(candidates)
+                rotated = candidates[start:] + candidates[:start]
+                selected = rotated[:MAX_REFRESH_TOPICS]
+                self._pending_refresh.extend(selected)
+                self._refresh_cursor = (start + len(selected)) % len(candidates)
+            self._next_refresh = now + REFRESH_INTERVAL_S
+        self._next_refresh_batch = now + REFRESH_BATCH_INTERVAL_S
+        eligible = set(candidates)
+        for _ in range(REFRESH_BATCH_SIZE):
+            with self._state_lock:
+                if (
+                    self._stopping
+                    or transport is not self.client
+                    or epoch != self._connection_epoch
+                ):
+                    return
+            if not self._pending_refresh:
+                break
+            topic = self._pending_refresh.popleft()
+            if topic not in eligible:
+                continue  # deleted values and removed explicit subscriptions stay removed
+            # FlashMQ also treats system/0/Serial as a keepalive. Suppress its
+            # full-tree side effect while still requesting the exact value.
+            payload = SUPPRESS_REPUBLISH if topic == f"{self.prefix}/system/0/Serial" else ""
+            if not self._publish_read(transport, epoch, "R/" + topic[2:], payload):
+                self._pending_refresh.appendleft(topic)
+                break
+
+    def _publish_read(self, transport: mqtt.Client, epoch: int, topic: str, payload: str) -> bool:
+        with self._state_lock:
+            if (
+                self._stopping
+                or self._worker_stop.is_set()
+                or not self._connected
+                or transport is not self.client
+                or epoch != self._connection_epoch
+            ):
+                return False
+        try:
+            return transport.publish(topic, payload, retain=False).rc == mqtt.MQTT_ERR_SUCCESS
+        except Exception:
+            logger.warning("MQTT read-feed maintenance publish failed")
+            return False
 
     def _start_worker(self) -> None:
         if self._worker is None or not self._worker.is_alive():
@@ -225,6 +355,8 @@ class MQTTClient:
                 with self._state_lock:
                     if client is self.client and not self._stopping:
                         self._cache.pop(msg.topic, None)
+                        if msg.topic == f"{self.prefix}/system/0/Serial":
+                            self._retained_serial_seen = False
                 return
             payload = json.loads(msg.payload.decode())
             # Venus gateway wraps item values as {"value": X}; unwrap so the
@@ -235,6 +367,9 @@ class MQTTClient:
             logger.debug("Received message on %s: %s", topic, payload)
             with self._state_lock:
                 if client is not self.client or self._stopping:
+                    return
+                if topic == f"{self.prefix}/system/0/Serial" and msg.retain:
+                    self._retained_serial_seen = True
                     return
                 if topic.startswith(self.prefix + "/") or is_capability_topic(topic):
                     self._cache[topic] = (payload, received_at)
@@ -273,18 +408,26 @@ class MQTTClient:
             if topic_pattern not in self._callbacks:
                 self._callbacks[topic_pattern] = []
                 self._callback_index[topic_pattern] = (
-                    len(self._callbacks),
+                    self._callback_sequence,
                     self._callbacks[topic_pattern],
                 )
+                self._callback_sequence += 1
             self._callbacks[topic_pattern].append(callback)
-        if self.client and self._connected:
+        if self.client and self._connected and not self._covered_by_base(topic_pattern):
             self.client.subscribe(topic_pattern)
 
     def unsubscribe(self, topic_pattern: str, callback: Callable[[Payload], None]) -> None:
         """Unsubscribe callback from topic pattern."""
+        removed = False
         with self._callback_lock:
             if topic_pattern in self._callbacks:
                 self._callbacks[topic_pattern].remove(callback)
+                if not self._callbacks[topic_pattern]:
+                    del self._callbacks[topic_pattern]
+                    del self._callback_index[topic_pattern]  # type: ignore[no-untyped-call]
+                    removed = True
+        if removed and self.client and self._connected and not self._covered_by_base(topic_pattern):
+            self.client.unsubscribe(topic_pattern)
 
     async def connect(self) -> None:
         """Wait for the one owned transport, including its automatic reconnects."""

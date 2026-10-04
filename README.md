@@ -45,7 +45,7 @@ See the [release strategy](RELEASING.md) for validation, nightly, beta, RC and s
 
 ## Features
 
-- **MQTT read path**: subscribes `N/<portalId>/#` on the Cerbo GX gateway and serves tools from a stale-guarded cache (`stale`, `age_seconds` per reading)
+- **MQTT read path**: subscribes to discovery markers and the exact telemetry paths consumed by tools and configured hardware contracts, then serves a stale-guarded cache (`stale`, `age_seconds` per reading)
 - **Write tools over `W/` topics**: inverter mode, charge-current limit, SoC limit — exact hardware contracts and fresh read-back are required; no automatic rollback is provided
 - **Safety constraints**: confirmation gate + hard limits enforced before any publish
 - **Two server transports**: stdio (Claude Code launches the process) or streamable HTTP with optional bearer-token auth (Synology Docker / shared use)
@@ -283,14 +283,35 @@ The server speaks the Venus OS **MQTT-Gateway** protocol:
 ```
 N/<portalId>/<type>/<instance>/<Path>          reads   (published by Venus)
 W/<portalId>/<type>/<instance>/<Path>          writes  (published by us)
-R/<portalId>/keepalive                         request full telemetry re-publish
+R/<portalId>/<type>/<instance>/<Path>          request one current value
+R/<portalId>/keepalive                         maintain notification publication
 inverter/state                                 inverter-control aggregate
 tank/<n>/Level                                 dbus-pump tank level
 ```
 
-- Reads: on connect we subscribe `N/<portalId>/#` and cache the last value per
-  topic with its receive time; tool output carries `stale` + `age_seconds`
-  (threshold `MQTT_STALE_AFTER_SECONDS`, default 60).
+- Reads: broker subscriptions include shallow service items and `Mgmt` metadata,
+  small discovery markers for internal services, and all telemetry fallback paths
+  consumed by tools. Configured hardware contract targets and identity paths,
+  companion capability topics, and explicit caller subscriptions are preserved.
+  Unused nested settings and history stay off the receive socket. Explicit broad
+  caller subscriptions can opt back into that additional traffic.
+- Freshness: cache entries use actual notification receipt times; tool output
+  carries `stale` + `age_seconds` (threshold `MQTT_STALE_AFTER_SECONDS`, default 60).
+  Each connection requests the initial tree once, then renews Venus publication
+  every 30 seconds with `{"keepalive-options":["suppress-republish"]}`. The owned
+  decoder worker also requests exact observed tool/contract values every 30 seconds,
+  at most eight reads per 250 ms and 512 per cycle, rotating larger catalogs.
+  Discovery-only metadata is not periodically republished. Missing replies remain
+  stale; sending a read or keepalive never changes an item's age. No wildcard read
+  requests or automatic control writes are used.
+- FlashMQ Serial identity: `system/0/Serial` is also a legacy keepalive alias. When
+  a contract or explicit subscriber requires it, the exact read uses the same
+  suppression payload, avoiding a full-tree republish. A retained Serial replay
+  only establishes that the item exists; a live notification is required before it can
+  provide fresh identity evidence. This follows the
+  [FlashMQ gateway protocol](https://github.com/victronenergy/dbus-flashmq#keep-alive).
+  The suppression behavior is for FlashMQ; compatibility with the retired Python
+  `dbus-mqtt` gateway is not claimed.
 - Reconnects: concurrent reads share one MQTT connection and its background
   recovery loop. A connection wait times out after five seconds without creating
   a competing client or refreshing cached timestamps. Shutdown waits are bounded;
