@@ -11,6 +11,7 @@ from typing import Any
 
 import paho.mqtt.client as mqtt
 from paho.mqtt.enums import CallbackAPIVersion
+from paho.mqtt.matcher import MQTTMatcher
 
 from .capabilities import capability_subscriptions, is_capability_topic
 from .config import MissingPortalIdError, get_config
@@ -62,6 +63,9 @@ class MQTTClient:
         self.client: mqtt.Client | None = None
         self._connected = False
         self._callbacks: dict[str, list[Callable[[Payload], None]]] = {}
+        # Paho's matcher has no type annotations in the pinned 2.1 release.
+        self._callback_index = MQTTMatcher()  # type: ignore[no-untyped-call]
+        self._callback_lock = threading.Lock()
         # Last value per topic, with monotonic receive time (read cache)
         self._cache: dict[str, tuple[Payload, float]] = {}
         # Inbound messages are decoded off paho's network thread: heavy work
@@ -209,44 +213,46 @@ class MQTTClient:
             logger.exception("Error processing message")
 
     def _notify_callbacks(self, topic: str, payload: Payload) -> None:
-        """Notify registered callbacks for a topic."""
-        for pattern, callbacks in self._callbacks.items():
-            if self._topic_matches(pattern, topic):
-                for callback in callbacks:
-                    try:
-                        callback(payload)
-                    except Exception:
-                        logger.exception("Callback error")
+        """Deliver a registration-ordered snapshot without holding a user-code lock."""
+        with self._callback_lock:
+            if not self._callbacks:
+                return
+            matches = self._callback_index.iter_match(topic)  # type: ignore[no-untyped-call]
+            groups: list[tuple[int, list[Callable[[Payload], None]]]] = sorted(
+                matches, key=lambda item: item[0]
+            )
+            callbacks = tuple(callback for _, group in groups for callback in group)
+        # Subscription changes, including those made by callbacks themselves,
+        # apply to the next message. The index splits the topic only once and
+        # visits matching prefixes instead of scanning all registered filters.
+        for callback in callbacks:
+            try:
+                callback(payload)
+            except Exception:
+                logger.exception("Callback error")
 
     def _topic_matches(self, pattern: str, topic: str) -> bool:
-        """Check if topic matches pattern (supports wildcards)."""
-        pattern_parts = pattern.split("/")
-        topic_parts = topic.split("/")
-        if pattern_parts[-1] == "#":
-            # Trailing '#' matches the parent level plus any number of sublevels
-            prefix_parts = pattern_parts[:-1]
-            if topic_parts[: len(prefix_parts)] != prefix_parts:
-                return False
-            pattern_parts, topic_parts = [], []
-        elif len(pattern_parts) != len(topic_parts):
-            return False
-        for p, t in zip(pattern_parts, topic_parts, strict=False):
-            if p != "+" and p != "#" and p != t:
-                return False
-        return True
+        """Match MQTT wildcards, including combined +/# and $-topic rules."""
+        return mqtt.topic_matches_sub(pattern, topic)
 
     def subscribe(self, topic_pattern: str, callback: Callable[[Payload], None]) -> None:
         """Subscribe to a topic pattern with callback."""
-        if topic_pattern not in self._callbacks:
-            self._callbacks[topic_pattern] = []
-        self._callbacks[topic_pattern].append(callback)
+        with self._callback_lock:
+            if topic_pattern not in self._callbacks:
+                self._callbacks[topic_pattern] = []
+                self._callback_index[topic_pattern] = (
+                    len(self._callbacks),
+                    self._callbacks[topic_pattern],
+                )
+            self._callbacks[topic_pattern].append(callback)
         if self.client and self._connected:
             self.client.subscribe(topic_pattern)
 
     def unsubscribe(self, topic_pattern: str, callback: Callable[[Payload], None]) -> None:
         """Unsubscribe callback from topic pattern."""
-        if topic_pattern in self._callbacks:
-            self._callbacks[topic_pattern].remove(callback)
+        with self._callback_lock:
+            if topic_pattern in self._callbacks:
+                self._callbacks[topic_pattern].remove(callback)
 
     async def connect(self) -> None:
         """Connect to MQTT broker."""

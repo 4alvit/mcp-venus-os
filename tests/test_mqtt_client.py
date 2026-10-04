@@ -67,6 +67,95 @@ def test_topic_matches() -> None:
     assert not client._topic_matches("a/b/c", "a/b/c/d")
 
 
+@pytest.mark.parametrize(
+    ("pattern", "topic", "matches"),
+    [
+        ("N/+/battery/+/#", "N/testportal/battery/0/Soc", True),
+        ("a/+/#", "a/b", True),
+        ("a/+/#", "a//c", True),
+        ("a/+/#", "a", False),
+        ("#", "$SYS/status", False),
+        ("+/status", "$SYS/status", False),
+        ("$SYS/#", "$SYS/status", True),
+        ("a/+/#", "a/$device/state", True),
+    ],
+)
+def test_callback_filter_semantics(pattern: str, topic: str, matches: bool) -> None:
+    client = _make_client()
+    received: list[Payload] = []
+    client.subscribe(pattern, received.append)
+    client._notify_callbacks(topic, 42)
+    assert received == ([42] if matches else [])
+    assert client._topic_matches(pattern, topic) is matches
+
+
+def test_callback_dispatch_preserves_filter_and_callback_registration_order() -> None:
+    client = _make_client()
+    calls: list[str] = []
+    client.subscribe("#", lambda _: calls.append("first"))
+    client.subscribe("a/b", lambda _: calls.append("exact"))
+    client.subscribe("a/+", lambda _: calls.append("single"))
+    client.subscribe("#", lambda _: calls.append("duplicate filter"))
+    client._notify_callbacks("a/b", None)
+    assert calls == ["first", "duplicate filter", "exact", "single"]
+
+
+def test_callback_subscription_changes_apply_to_next_message() -> None:
+    client = _make_client()
+    calls: list[str] = []
+
+    def removed(payload: Payload) -> None:
+        calls.append("removed")
+
+    def added(payload: Payload) -> None:
+        calls.append("added")
+
+    def mutate(payload: Payload) -> None:
+        calls.append("mutate")
+        if payload == 1:
+            client.unsubscribe("a/#", removed)
+            client.subscribe("a/b", added)
+            client.subscribe("a/#", added)
+
+    client.subscribe("a/#", mutate)
+    client.subscribe("a/#", removed)
+    client._notify_callbacks("a/b", 1)
+    assert calls == ["mutate", "removed"]
+    calls.clear()
+    client._notify_callbacks("a/b", 2)
+    assert calls == ["mutate", "added", "added"]
+
+
+def test_subscription_from_another_thread_does_not_block_running_callback() -> None:
+    client = _make_client()
+    entered = threading.Event()
+    registered = threading.Event()
+    calls: list[str] = []
+
+    def callback(payload: Payload) -> None:
+        entered.set()
+        assert registered.wait(2), "callback must not hold the subscription lock"
+        calls.append("original")
+
+    def register() -> None:
+        if entered.wait(2):
+            client.subscribe("a/b", lambda _: calls.append("new"))
+            registered.set()
+
+    client.subscribe("a/#", callback)
+    worker = threading.Thread(target=register)
+    worker.start()
+    try:
+        client._notify_callbacks("a/b", None)
+    finally:
+        worker.join(timeout=3)
+    assert not worker.is_alive()
+    assert registered.is_set()
+    assert calls == ["original"]
+    client._notify_callbacks("a/b", None)
+    assert calls == ["original", "original", "new"]
+
+
 def test_on_connect_success_subscribes_portal_wildcard() -> None:
     client = _make_client()
     paho_client = Mock()
