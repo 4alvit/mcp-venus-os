@@ -291,6 +291,10 @@ tank/<n>/Level                                 dbus-pump tank level
 - Reads: on connect we subscribe `N/<portalId>/#` and cache the last value per
   topic with its receive time; tool output carries `stale` + `age_seconds`
   (threshold `MQTT_STALE_AFTER_SECONDS`, default 60).
+- Reconnects: concurrent reads share one MQTT connection and its background
+  recovery loop. A connection wait times out after five seconds without creating
+  a competing client or refreshing cached timestamps. Shutdown waits are bounded;
+  a worker still stopping prevents a replacement from using the same client ID.
 - Writes: a value is published as JSON only to its hardware-qualified `W/…`
   path. There are no periodic writes to additional paths and no automatic
   rollback on disconnect/shutdown. Persistence is device-specific.

@@ -229,7 +229,9 @@ def _feed(client: MQTTClient, topic: str, payload: bytes) -> None:
     msg = paho.MQTTMessage()
     msg._topic = topic.encode()
     msg.payload = payload
-    client._on_message(cast(paho.Client, Mock()), None, msg)
+    if client.client is None:
+        client.client = cast(paho.Client, Mock())
+    client._on_message(client.client, None, msg)
     client._drain_inbox()
 
 

@@ -1,5 +1,6 @@
 """Tests for the MQTT client."""
 
+import asyncio
 import threading
 from typing import cast
 from unittest.mock import AsyncMock, Mock, patch
@@ -33,6 +34,28 @@ def _make_client(**config_overrides: object) -> MQTTClient:
         return MQTTClient()
 
 
+def _callback_transport(client: MQTTClient) -> mqtt.Client:
+    if client.client is None:
+        client.client = cast(mqtt.Client, Mock())
+    return client.client
+
+
+def _mock_transport(*, auto_connect: bool = True) -> Mock:
+    transport = Mock()
+    transport.stopped = threading.Event()
+    transport.entered = threading.Event()
+
+    def network_loop(timeout: float, retry_first_connection: bool = False) -> None:
+        transport.entered.set()
+        if auto_connect:
+            transport.on_connect(transport, None, None, FakeReasonCode(0), None)
+        transport.stopped.wait(timeout=10)
+
+    transport.loop_forever.side_effect = network_loop
+    transport.disconnect.side_effect = transport.stopped.set
+    return transport
+
+
 def _noop(payload: Payload) -> None:
     """Callback that does nothing."""
 
@@ -52,7 +75,7 @@ def _feed(client: MQTTClient, topic: str, payload: bytes) -> None:
     msg = mqtt.MQTTMessage()
     msg._topic = topic.encode()
     msg.payload = payload
-    client._on_message(cast(mqtt.Client, Mock()), None, msg)
+    client._on_message(_callback_transport(client), None, msg)
     client._drain_inbox()
 
 
@@ -159,6 +182,7 @@ def test_subscription_from_another_thread_does_not_block_running_callback() -> N
 def test_on_connect_success_subscribes_portal_wildcard() -> None:
     client = _make_client()
     paho_client = Mock()
+    client.client = cast(mqtt.Client, paho_client)
     client._on_connect(
         cast(mqtt.Client, paho_client),
         None,
@@ -178,6 +202,7 @@ def test_on_connect_success_subscribes_portal_wildcard() -> None:
 def test_reconnect_refreshes_telemetry_only_after_subscribing() -> None:
     client = _make_client()
     transport = Mock()
+    client.client = cast(mqtt.Client, transport)
     for _ in range(2):
         transport.reset_mock()
         client._on_connect(
@@ -196,6 +221,7 @@ def test_reconnect_refreshes_telemetry_only_after_subscribing() -> None:
 def test_on_connect_failure() -> None:
     client = _make_client()
     transport = Mock()
+    client.client = cast(mqtt.Client, transport)
     client._on_connect(
         cast(mqtt.Client, transport),
         None,
@@ -212,7 +238,7 @@ def test_on_disconnect() -> None:
     client = _make_client()
     client._connected = True
     client._on_disconnect(
-        cast(mqtt.Client, Mock()),
+        _callback_transport(client),
         None,
         None,
         cast(ReasonCode, FakeReasonCode(1)),
@@ -372,18 +398,15 @@ def test_topic_prefix_requires_portal_id() -> None:
 
 @pytest.mark.asyncio
 async def test_connect_success() -> None:
-    with patch("mcp_venus_os.mqtt_client.mqtt.Client") as mock_client_cls:
+    transport = _mock_transport()
+    with patch("mcp_venus_os.mqtt_client.mqtt.Client", return_value=transport) as factory:
         client = _make_client()
-        mock_client_cls.return_value.connect_async.side_effect = lambda _host, _port, **_kw: (
-            setattr(client, "_connected", True)
-        )
         await client.connect()
         await client.connect()
         await client.disconnect()
-    mock_client_cls.return_value.loop_forever.assert_called_once_with(timeout=5.0)
-    mock_client_cls.return_value.connect_async.assert_called_once_with(
-        "localhost", 1883, keepalive=30
-    )
+    factory.assert_called_once()
+    transport.loop_forever.assert_called_once_with(timeout=5.0, retry_first_connection=True)
+    transport.connect_async.assert_called_once_with("localhost", 1883, keepalive=30)
 
 
 @pytest.mark.asyncio
@@ -396,7 +419,10 @@ async def test_connect_timeout() -> None:
         client = MQTTClient()
         with pytest.raises(ConnectionTimeoutError):
             await client.connect()
-    mock_client_cls.return_value.loop_forever.assert_called_once_with(timeout=5.0)
+        await client.disconnect()
+    mock_client_cls.return_value.loop_forever.assert_called_once_with(
+        timeout=5.0, retry_first_connection=True
+    )
     mock_client_cls.return_value.disconnect.assert_called_once()
     assert client._loop_thread is None
     assert client._worker is None
@@ -416,12 +442,11 @@ async def test_connect_with_auth_and_tls() -> None:
     )
     with (
         patch("mcp_venus_os.mqtt_client.get_config", return_value=config),
-        patch("mcp_venus_os.mqtt_client.mqtt.Client") as mock_client_cls,
+        patch(
+            "mcp_venus_os.mqtt_client.mqtt.Client", return_value=_mock_transport()
+        ) as mock_client_cls,
     ):
         client = MQTTClient()
-        mock_client_cls.return_value.connect_async.side_effect = lambda _host, _port, **_kw: (
-            setattr(client, "_connected", True)
-        )
         await client.connect()
         await client.disconnect()
     mock_client_cls.return_value.username_pw_set.assert_called_once_with("u", "p")
@@ -467,7 +492,7 @@ def test_worker_thread_processes_enqueued_messages() -> None:
     client._start_worker()
     try:
         client._on_message(
-            cast(mqtt.Client, Mock()), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"55.5")
+            _callback_transport(client), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"55.5")
         )
         deadline = time_mod.monotonic() + 2.0
         while not received and time_mod.monotonic() < deadline:
@@ -485,8 +510,8 @@ def test_inbox_overflow_drops_without_raising(monkeypatch: pytest.MonkeyPatch) -
     client = _make_client()
     # Fill the queue (maxsize=1) without draining; the next message must be
     # dropped silently instead of raising inside paho's network thread.
-    client._on_message(cast(mqtt.Client, Mock()), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"1"))
-    client._on_message(cast(mqtt.Client, Mock()), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"2"))
+    client._on_message(_callback_transport(client), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"1"))
+    client._on_message(_callback_transport(client), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"2"))
     client._drain_inbox()
     cached = client.read_path("battery", 0, "Soc")
     assert cached is not None
@@ -512,7 +537,7 @@ def test_queued_telemetry_keeps_its_receive_age() -> None:
     client = _make_client()
     with patch("mcp_venus_os.mqtt_client.time.monotonic", return_value=10.0):
         client._on_message(
-            cast(mqtt.Client, Mock()), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"55.5")
+            _callback_transport(client), None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"55.5")
         )
     with patch("mcp_venus_os.mqtt_client.time.monotonic", return_value=70.0):
         client._drain_inbox()
@@ -537,7 +562,7 @@ def test_worker_drains_burst_in_order_without_one_sleep_per_message() -> None:
     client.subscribe(f"{PREFIX}/#", received.append)
     for number in range(256):
         client._on_message(
-            cast(mqtt.Client, Mock()),
+            _callback_transport(client),
             None,
             _raw_msg(f"{PREFIX}/battery/0/Soc", str(number).encode()),
         )
@@ -554,15 +579,13 @@ async def test_disconnect_stops_network_worker_after_connection_loss() -> None:
     entered = threading.Event()
     stopped = threading.Event()
 
-    def network_loop(timeout: float) -> None:
+    def network_loop(timeout: float, retry_first_connection: bool) -> None:
+        client._connected = True
         entered.set()
         stopped.wait(timeout=2)
 
     with patch("mcp_venus_os.mqtt_client.mqtt.Client") as factory:
         transport = factory.return_value
-        transport.connect_async.side_effect = lambda *_args, **_kwargs: setattr(
-            client, "_connected", True
-        )
         transport.loop_forever.side_effect = network_loop
         transport.disconnect.side_effect = stopped.set
         await client.connect()
@@ -581,3 +604,241 @@ async def test_disconnect_stops_network_worker_after_connection_loss() -> None:
             stopped.set()
             if worker is not None:
                 worker.join(timeout=1)
+
+
+@pytest.mark.asyncio
+async def test_concurrent_startup_and_reconnect_readers_share_one_transport() -> None:
+    client = _make_client()
+    transport = _mock_transport(auto_connect=False)
+    with patch("mcp_venus_os.mqtt_client.mqtt.Client", return_value=transport) as factory:
+        try:
+            readers = [asyncio.create_task(client.connect()) for _ in range(4)]
+            assert await asyncio.to_thread(transport.entered.wait, 1)
+            worker = client._loop_thread
+            factory.assert_called_once()
+            transport.on_connect(transport, None, None, FakeReasonCode(0), None)
+            await asyncio.gather(*readers)
+            transport.on_disconnect(transport, None, None, FakeReasonCode(1), None)
+            readers = [asyncio.create_task(client.connect()) for _ in range(4)]
+            await asyncio.sleep(0.02)
+            factory.assert_called_once()
+            assert client._loop_thread is worker
+            assert worker is not None
+            assert worker.is_alive()
+            transport.on_connect(transport, None, None, FakeReasonCode(0), None)
+            await asyncio.gather(*readers)
+        finally:
+            await client.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_repeated_timeouts_keep_the_reconnecting_transport(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _make_client()
+    transport = _mock_transport()
+    with patch("mcp_venus_os.mqtt_client.mqtt.Client", return_value=transport) as factory:
+        await client.connect()
+        worker = client._loop_thread
+        transport.on_disconnect(transport, None, None, FakeReasonCode(1), None)
+        monkeypatch.setattr("mcp_venus_os.mqtt_client.CONNECT_WAIT_STEPS", 2)
+        monkeypatch.setattr("mcp_venus_os.mqtt_client.CONNECT_POLL_S", 0.001)
+        try:
+            for _ in range(2):
+                results = await asyncio.gather(
+                    *(client.connect() for _ in range(3)), return_exceptions=True
+                )
+                assert all(isinstance(result, ConnectionTimeoutError) for result in results)
+            factory.assert_called_once()
+            transport.disconnect.assert_not_called()
+            assert client._loop_thread is worker
+            transport.on_connect(transport, None, None, FakeReasonCode(0), None)
+            await client.connect()
+        finally:
+            await client.disconnect()
+
+
+def test_retired_callbacks_and_queued_messages_cannot_change_current_state() -> None:
+    client = _make_client()
+    retired = _callback_transport(client)
+    topic = f"{PREFIX}/battery/0/Soc"
+    client._on_message(retired, None, _raw_msg(topic, b"11"))
+    current = Mock()
+    client.client = cast(mqtt.Client, current)
+    client._connected = True
+    client._on_disconnect(retired, None, None, cast(ReasonCode, FakeReasonCode(1)), None)
+    assert client._connected
+    client._on_connect(retired, None, None, cast(ReasonCode, FakeReasonCode(0)), None)
+    client._on_message(retired, None, _raw_msg(topic, b"22"))
+    client._drain_inbox()
+    assert client.read_path("battery", 0, "Soc") is None
+    cast(Mock, retired).publish.assert_not_called()
+    current.publish.assert_not_called()
+    _feed(client, topic, b"33")
+    client._on_message(retired, None, _raw_msg(topic, b""))
+    client._drain_inbox()
+    cached = client.read_path("battery", 0, "Soc")
+    assert cached is not None
+    assert cached[0] == 33
+    client.client = None
+    client._connected = False
+    client._on_connect(current, None, None, cast(ReasonCode, FakeReasonCode(0)), None)
+    client._on_message(current, None, _raw_msg(topic, b"44"))
+    client._drain_inbox()
+    assert not client._connected
+    cached = client.read_path("battery", 0, "Soc")
+    assert cached is not None
+    assert cached[0] == 33
+
+
+@pytest.mark.asyncio
+async def test_dead_network_loop_is_retired_before_retry() -> None:
+    client = _make_client()
+    first, second = _mock_transport(), _mock_transport()
+    with patch("mcp_venus_os.mqtt_client.mqtt.Client", side_effect=[first, second]) as factory:
+        try:
+            await client.connect()
+            old_loop, old_worker = client._loop_thread, client._worker
+            first.stopped.set()
+            assert old_loop is not None
+            await asyncio.to_thread(old_loop.join, 1)
+            assert not client._connected
+            await client.connect()
+            assert factory.call_count == 2
+            assert client.client is second
+            assert old_worker is not None
+            assert not old_worker.is_alive()
+            assert not old_loop.is_alive()
+        finally:
+            await client.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_initial_network_failure_can_retry_without_orphan_workers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("mcp_venus_os.mqtt_client.CONNECT_WAIT_STEPS", 5)
+    monkeypatch.setattr("mcp_venus_os.mqtt_client.CONNECT_POLL_S", 0.01)
+    client = _make_client()
+    first, second = _mock_transport(), _mock_transport()
+    first.loop_forever.side_effect = OSError("synthetic connection failure")
+    with patch("mcp_venus_os.mqtt_client.mqtt.Client", side_effect=[first, second]) as factory:
+        try:
+            with pytest.raises(ConnectionTimeoutError):
+                await client.connect()
+            old_worker = client._worker
+            await client.connect()
+            assert factory.call_count == 2
+            assert old_worker is not None
+            assert not old_worker.is_alive()
+            first.disconnect.assert_called_once()
+        finally:
+            await client.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_disconnect_full_inbox_is_bounded_and_keeps_live_worker_owned(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("mcp_venus_os.mqtt_client.INBOX_MAXSIZE", 1)
+    monkeypatch.setattr("mcp_venus_os.mqtt_client.WORKER_JOIN_TIMEOUT_S", 0.02)
+    monkeypatch.setattr("mcp_venus_os.mqtt_client.NETWORK_JOIN_TIMEOUT_S", 0.02)
+    client = _make_client()
+    first, second = _mock_transport(), _mock_transport()
+    entered, release = threading.Event(), threading.Event()
+
+    def slow_callback(payload: Payload) -> None:
+        entered.set()
+        release.wait(timeout=2)
+
+    client.subscribe(f"{PREFIX}/#", slow_callback)
+    with patch("mcp_venus_os.mqtt_client.mqtt.Client", side_effect=[first, second]) as factory:
+        try:
+            await client.connect()
+            client._on_message(first, None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"1"))
+            assert await asyncio.to_thread(entered.wait, 1)
+            client._on_message(first, None, _raw_msg(f"{PREFIX}/battery/0/Soc", b"2"))
+            assert client._inbox.full()
+            worker = client._worker
+            await asyncio.wait_for(client.disconnect(), timeout=0.5)
+            assert worker is not None
+            assert worker.is_alive()
+            assert client._worker is worker
+            assert client.client is first
+            with pytest.raises(NotConnectedError):
+                await asyncio.wait_for(client.connect(), timeout=0.5)
+            factory.assert_called_once()
+            release.set()
+            await asyncio.to_thread(worker.join, 1)
+            await client.disconnect()
+            assert client.client is None
+            assert client._worker is None
+            assert client._loop_thread is None
+            await client.connect()
+            assert factory.call_count == 2
+            cached = client.read_path("battery", 0, "Soc")
+            assert cached is not None
+            assert cached[0] == 1
+        finally:
+            release.set()
+            await client.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_disconnect_retires_pending_connection_without_replacement() -> None:
+    client = _make_client()
+    transport = _mock_transport(auto_connect=False)
+    with patch("mcp_venus_os.mqtt_client.mqtt.Client", return_value=transport) as factory:
+        reader = asyncio.create_task(client.connect())
+        assert await asyncio.to_thread(transport.entered.wait, 1)
+        await client.disconnect()
+        with pytest.raises(NotConnectedError):
+            await reader
+        factory.assert_called_once()
+        assert client.client is None
+        assert client._loop_thread is None
+
+
+@pytest.mark.asyncio
+async def test_cancelled_reader_leaves_one_owned_reconnect_loop() -> None:
+    client = _make_client()
+    transport = _mock_transport(auto_connect=False)
+    with patch("mcp_venus_os.mqtt_client.mqtt.Client", return_value=transport) as factory:
+        try:
+            reader = asyncio.create_task(client.connect())
+            assert await asyncio.to_thread(transport.entered.wait, 1)
+            reader.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await reader
+            transport.on_connect(transport, None, None, FakeReasonCode(0), None)
+            await client.connect()
+            factory.assert_called_once()
+        finally:
+            await client.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_slow_network_shutdown_cannot_spawn_same_id_replacement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("mcp_venus_os.mqtt_client.NETWORK_JOIN_TIMEOUT_S", 0.01)
+    client = _make_client()
+    transport = _mock_transport()
+    transport.disconnect.side_effect = None
+    with patch("mcp_venus_os.mqtt_client.mqtt.Client", return_value=transport) as factory:
+        try:
+            await client.connect()
+            network = client._loop_thread
+            await asyncio.wait_for(client.disconnect(), timeout=0.5)
+            assert network is not None
+            assert network.is_alive()
+            assert client._loop_thread is network
+            assert client.client is transport
+            with pytest.raises(NotConnectedError):
+                await asyncio.wait_for(client.connect(), timeout=0.5)
+            factory.assert_called_once()
+        finally:
+            transport.stopped.set()
+            await client.disconnect()
+        assert client.client is None
+        assert client._loop_thread is None
