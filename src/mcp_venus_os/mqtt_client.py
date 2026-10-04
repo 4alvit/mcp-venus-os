@@ -188,20 +188,6 @@ class MQTTClient:
                 logger.warning("MQTT inbox overflow, dropping messages")
                 self._last_drop_log = now
 
-    def _run_loop(self, client: mqtt.Client) -> None:
-        """Own initial connection retries and reconnects in one network loop.
-
-        The existing 5s select timeout remains below the protocol keepalive.
-        """
-        try:
-            client.loop_forever(timeout=5.0, retry_first_connection=True)
-        except Exception:
-            logger.exception("MQTT network loop stopped")
-        finally:
-            with self._state_lock:
-                if client is self.client:
-                    self._connected = False
-
     def _drain_inbox(self) -> None:
         """Process all queued messages synchronously (tests, shutdown)."""
         while True:
@@ -476,10 +462,19 @@ class MQTTClient:
             self._stopping = False
             self._connected = False
         self._start_worker()
-        self._loop_thread = threading.Thread(
-            target=self._run_loop, args=(transport,), name="mqtt-loop", daemon=True
-        )
-        self._loop_thread.start()
+        # Paho must own the thread and its socketpair. Calling loop_forever in
+        # our own thread leaves Paho in single-threaded mode: publish/subscribe
+        # from the decoder or an MCP caller can then write the socket directly,
+        # interleaving packets with a partial write in the network loop.
+        result = transport.loop_start()
+        if result != mqtt.MQTT_ERR_SUCCESS:
+            self._worker_stop.set()
+            logger.error("Could not start the MQTT network loop: %s", result)
+            raise MQTTError()
+        # Paho 2.1 has no public bounded join/liveness API. Only observe its
+        # native thread; never replace it or alter its threading state. Retain
+        # this reference even when Paho clears its own on thread exit.
+        self._loop_thread = transport._thread
 
     async def _stop_transport(self) -> None:
         """Bound shutdown without losing ownership of a still-alive worker."""

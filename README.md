@@ -316,6 +316,9 @@ tank/<n>/Level                                 dbus-pump tank level
   recovery loop. A connection wait times out after five seconds without creating
   a competing client or refreshing cached timestamps. Shutdown waits are bounded;
   a worker still stopping prevents a replacement from using the same client ID.
+  Paho owns the network thread and wake-up socket so publications from other
+  threads are queued; only the network thread writes MQTT packets. This prevents
+  maintenance requests from interleaving with a partially sent packet.
 - Writes: a value is published as JSON only to its hardware-qualified `W/…`
   path. There are no periodic writes to additional paths and no automatic
   rollback on disconnect/shutdown. Persistence is device-specific.
