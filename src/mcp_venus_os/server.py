@@ -24,6 +24,7 @@ from .hardware_contracts import validate_hardware_write
 from .mqtt_client import MQTTClient, MQTTError, Payload
 from .safety import ConfirmationManager, SafetyValidator
 from .ssh_client import CerboSSHClient, close_ssh_client, get_ssh_client
+from .telemetry import BATTERY_PATHS, GRID_PATHS, INVERTER_PATHS, PV_PATHS
 
 logger = logging.getLogger(__name__)
 
@@ -425,41 +426,6 @@ def capabilities_resource() -> str:
         "is provided; persistence depends on the target device.\n"
         "- Full map incl. MQTT topics and SSH tools: docs/CAPABILITIES.md in the repo."
     )
-
-
-# MQTT item paths per tool field; first available candidate wins. Paths follow
-# the Venus OS MQTT gateway layout (verified against live gateway topics).
-BATTERY_PATHS: dict[str, list[str]] = {
-    "soc": ["Soc"],
-    "voltage": ["Dc/0/Voltage", "Voltage"],
-    "current": ["Dc/0/Current", "Current"],
-    "power": ["Dc/0/Power", "Power"],
-    "temperature": ["Dc/0/Temperature", "Temperature"],
-    "status": ["Status"],
-    "time_to_go": ["TimeToGo"],
-}
-PV_PATHS: dict[str, list[str]] = {  # pvinverter layout first, solarcharger second
-    "power": ["Ac/Power", "Yield/Power"],
-    "voltage": ["Ac/L1/Voltage", "Ac/L2/Voltage", "Ac/L3/Voltage", "Pv/V"],
-    "current": ["Ac/L1/Current", "Ac/L2/Current", "Ac/L3/Current", "Pv/I"],
-    "yield_today": ["Ac/Energy/Daily", "Yield/Today"],
-    "yield_total": ["Ac/Energy/Forward", "Yield/Pv", "Yield/User"],
-}
-GRID_PATHS: dict[str, list[str]] = {  # grid meter service (grid/<instance>)
-    "power": ["Ac/Power", "Ac/L1/Power", "Ac/L2/Power", "Ac/L3/Power"],
-    "voltage": ["Ac/L1/Voltage", "Ac/L2/Voltage", "Ac/L3/Voltage"],
-    "current": ["Ac/L1/Current", "Ac/L2/Current", "Ac/L3/Current"],
-    "frequency": ["Ac/Frequency", "Ac/L1/Frequency"],
-    "status": ["Connected"],
-}
-INVERTER_PATHS: dict[str, list[str]] = {
-    "mode": ["Mode"],
-    "state": ["State"],
-    "ac_power_out": ["Ac/Out/P"],
-    "ac_power_in": ["Ac/ActiveIn/P"],
-    "dc_power": ["Dc/0/Power", "Dc/Pv/Power"],
-    "temperature": ["Dc/0/Temperature", "Temperature"],
-}
 
 
 def _collect_mqtt(

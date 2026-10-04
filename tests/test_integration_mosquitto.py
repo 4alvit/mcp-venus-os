@@ -115,6 +115,10 @@ async def test_read_and_write_roundtrip_over_real_broker(broker_port: object) ->
         client = mqtt_module.MQTTClient()
         await client.connect()
 
+    # This synthetic system item is outside the tool catalog. Library callers
+    # opt into additional nested paths explicitly instead of receiving N/…/#.
+    client.subscribe(f"N/{PORTAL}/system/0/Ac/Grid/Power", _noop)
+
     # Simulate Venus publishing telemetry on N/…
     telemetry = {
         f"N/{PORTAL}/battery/256/Soc": "55.5",

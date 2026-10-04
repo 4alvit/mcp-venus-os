@@ -1,6 +1,7 @@
 """Tests for the MQTT client."""
 
 import asyncio
+import json
 import threading
 from typing import cast
 from unittest.mock import AsyncMock, Mock, patch
@@ -11,6 +12,7 @@ from paho.mqtt.properties import Properties
 from paho.mqtt.reasoncodes import ReasonCode
 
 from mcp_venus_os.config import MQTTConfig, ServerConfig
+from mcp_venus_os.hardware_contracts import HardwareWriteContract
 from mcp_venus_os.mqtt_client import (
     ConnectionTimeoutError,
     MQTTClient,
@@ -179,7 +181,7 @@ def test_subscription_from_another_thread_does_not_block_running_callback() -> N
     assert calls == ["original", "original", "new"]
 
 
-def test_on_connect_success_subscribes_portal_wildcard() -> None:
+def test_on_connect_success_subscribes_bounded_telemetry() -> None:
     client = _make_client()
     paho_client = Mock()
     client.client = cast(mqtt.Client, paho_client)
@@ -192,7 +194,10 @@ def test_on_connect_success_subscribes_portal_wildcard() -> None:
     )
     assert client._connected
     subs = [c.args[0] for c in paho_client.subscribe.call_args_list]
-    assert subs[0] == f"{PREFIX}/#"
+    assert f"{PREFIX}/#" not in subs
+    assert f"{PREFIX}/+/+/+" in subs
+    assert f"{PREFIX}/+/+/Mgmt/+" in subs
+    assert f"{PREFIX}/full_publish_completed" in subs
     # companion-service subscriptions ride along (inverter-control, dbus-pump)
     assert "inverter/state" in subs
     assert "tank/#" in subs
@@ -312,7 +317,7 @@ def test_unsubscribe() -> None:
     client = _make_client()
     client.subscribe("z", _noop)
     client.unsubscribe("z", _noop)
-    assert client._callbacks["z"] == []
+    assert "z" not in client._callbacks
     client.unsubscribe("missing", _noop)
 
 
@@ -842,3 +847,318 @@ async def test_slow_network_shutdown_cannot_spawn_same_id_replacement(
             await client.disconnect()
         assert client.client is None
         assert client._loop_thread is None
+
+
+def _connected_feed_client() -> tuple[MQTTClient, Mock]:
+    client = _make_client()
+    transport = Mock()
+    transport.publish.return_value.rc = mqtt.MQTT_ERR_SUCCESS
+    client.client = cast(mqtt.Client, transport)
+    client._on_connect(
+        client.client, None, None, cast(ReasonCode, FakeReasonCode(0)), cast(Properties, Mock())
+    )
+    return client, transport
+
+
+def test_broker_filters_preserve_47_services_without_nested_noise() -> None:
+    """A full publish must not fill the receiver with unused deep settings."""
+    from mcp_venus_os.telemetry import DISCOVERY_PATHS
+
+    client, transport = _connected_feed_client()
+    filters = [call.args[0] for call in transport.subscribe.call_args_list]
+    internal = (
+        "adc",
+        "digitalinputs",
+        "ev",
+        "evcharger",
+        "fronius",
+        "hub4",
+        "logger",
+        "modbusclient",
+        "modbustcp",
+        "packageManager",
+        "platform",
+        "settings",
+        "shelly",
+        "system",
+        "pump",
+        "tank",
+        "battery",
+        "solarcharger",
+        "pvinverter",
+        "grid",
+        "vebus",
+    )
+    devices = [(name, 0) for name in internal] + [("acload", n) for n in range(26)]
+    topics = [
+        f"{PREFIX}/{name}/{instance}/"
+        + DISCOVERY_PATHS.get(name, "Mgmt/ProcessName").replace("+", "1")
+        for name, instance in devices
+    ]
+    topics += [f"{PREFIX}/settings/0/Settings/History/Entries/{n}" for n in range(10_000)]
+    delivered = [
+        topic for topic in topics if any(mqtt.topic_matches_sub(f, topic) for f in filters)
+    ]
+    assert len(delivered) == 47
+    assert sum(len(topic) + 100 for topic in delivered) < 16_384
+    for topic in delivered:
+        _feed(client, topic, b'{"value":"synthetic-service"}')
+    assert {(d["device_type"], d["instance"]) for d in client.list_devices()} == set(devices)
+    _feed(client, delivered[0], b"")
+    assert len(client.list_devices()) == 46
+
+
+def test_filters_cover_all_consumed_fallbacks_and_deep_contracts(
+    hardware_contracts: list[HardwareWriteContract],
+) -> None:
+    from mcp_venus_os.telemetry import READ_PATHS, contract_topics
+
+    client = _make_client()
+    for contract in hardware_contracts:
+        contract.identity[0].path = "Firmware/Installed/Version"
+    client._contracts = hardware_contracts
+    filters = client._base_subscriptions()
+    topics = contract_topics(PREFIX, hardware_contracts)
+    for family, fields in READ_PATHS.items():
+        topics.update(
+            f"{PREFIX}/{family}/789/{path}" for paths in fields.values() for path in paths
+        )
+    assert all(any(mqtt.topic_matches_sub(f, topic) for f in filters) for topic in topics)
+    assert any("/platform/0/Firmware/Installed/Version" in f for f in filters)
+    assert not any(
+        mqtt.topic_matches_sub(f, f"{PREFIX}/settings/0/Settings/History/X") for f in filters
+    )
+    assert not any(
+        mqtt.topic_matches_sub(f, "N/other/vebus/256/Dc/0/MaxChargeCurrent") for f in filters
+    )
+
+
+def test_exact_subscriptions_do_not_duplicate_owned_broker_filters(
+    hardware_contracts: list[HardwareWriteContract],
+) -> None:
+    client, transport = _connected_feed_client()
+    probe = hardware_contracts[0].identity[0]
+    probe.device_type, probe.instance, probe.path = "battery", 512, "Dc/0/Voltage"
+    client._contracts = hardware_contracts[:1]
+    topic = f"{PREFIX}/battery/512/Dc/0/Voltage"
+    assert sum(mqtt.topic_matches_sub(f, topic) for f in client._base_subscriptions()) == 1
+    transport.subscribe.reset_mock()
+    callback = Mock()
+    client.subscribe(topic, callback)
+    transport.subscribe.assert_not_called()
+    _feed(client, topic, b'{"value":52}')
+    callback.assert_called_once_with(52)
+    client._on_connect(
+        cast(mqtt.Client, transport),
+        None,
+        None,
+        cast(ReasonCode, FakeReasonCode(0)),
+        cast(Properties, Mock()),
+    )
+    assert (
+        sum(
+            mqtt.topic_matches_sub(call.args[0], topic)
+            for call in transport.subscribe.call_args_list
+        )
+        == 1
+    )
+    client.unsubscribe(topic, callback)
+    transport.unsubscribe.assert_not_called()
+
+
+def test_maintenance_keeps_constant_values_fresh_without_full_reflood() -> None:
+    client, transport = _connected_feed_client()
+    topics = [f"{PREFIX}/battery/512/Soc", f"{PREFIX}/battery/512/Dc/0/Power"]
+    with patch("mcp_venus_os.mqtt_client.time.monotonic", return_value=0.0):
+        for topic in topics:
+            _feed(client, topic, b'{"value":55}')
+    client._maintain_read_feed(0.0)
+    transport.publish.reset_mock()
+    for now in (30.0, 60.0, 90.0):
+
+        def reply(topic: str, payload: str, *, retain: bool) -> Mock:
+            assert topic.startswith("R/")
+            assert not retain
+            if topic.endswith("/keepalive"):
+                assert payload == '{"keepalive-options":["suppress-republish"]}'
+            else:
+                assert payload == ""
+                _feed(client, "N/" + topic[2:], b'{"value":55}')
+            return Mock(rc=mqtt.MQTT_ERR_SUCCESS)
+
+        transport.publish.side_effect = reply
+        with patch("mcp_venus_os.mqtt_client.time.monotonic", return_value=now):
+            client._maintain_read_feed(now)
+            assert client.read_path("battery", 512, "Soc") == (55, 0.0)
+    assert transport.publish.call_count == 9
+    assert all(
+        call.args[0] != f"R/{PORTAL}/system/0/Serial" for call in transport.publish.call_args_list
+    )
+
+
+def test_no_reply_does_not_forge_freshness_and_serial_never_refloods() -> None:
+    client, transport = _connected_feed_client()
+    serial = f"{PREFIX}/system/0/Serial"
+    client.subscribe(serial, _noop)
+    with patch("mcp_venus_os.mqtt_client.time.monotonic", return_value=0.0):
+        _feed(client, serial, b'{"value":"synthetic-portal"}')
+        _feed(client, f"{PREFIX}/battery/512/Soc", b'{"value":55}')
+    client._maintain_read_feed(0.0)
+    transport.publish.reset_mock()
+    for now in (30.0, 60.0, 90.0):
+        client._maintain_read_feed(now)
+    with patch("mcp_venus_os.mqtt_client.time.monotonic", return_value=90.0):
+        assert client.read_path("battery", 512, "Soc") == (55, 90.0)
+    serial_calls = [
+        call for call in transport.publish.call_args_list if call.args[0] == "R/" + serial[2:]
+    ]
+    assert len(serial_calls) == 3
+    assert all(
+        call.args[1] == '{"keepalive-options":["suppress-republish"]}' for call in serial_calls
+    )
+    assert all(
+        "+" not in call.args[0] and "#" not in call.args[0]
+        for call in transport.publish.call_args_list
+    )
+
+
+def test_contract_serial_requires_live_suppressed_read_after_retained_replay(
+    hardware_contracts: list[HardwareWriteContract],
+) -> None:
+    client, transport = _connected_feed_client()
+    probe = hardware_contracts[0].identity[0]
+    probe.device_type, probe.instance, probe.path = "system", 0, "Serial"
+    client._contracts = hardware_contracts[:1]
+    serial = f"{PREFIX}/system/0/Serial"
+    retained = _raw_msg(serial, b'{"value":"synthetic-portal"}')
+    retained.retain = True
+    client._on_message(cast(mqtt.Client, transport), None, retained)
+    client._drain_inbox()
+    assert client.read_path("system", 0, "Serial") is None
+    assert client.read_path_since("system", 0, "Serial", 0.0) is None
+    assert serial in client._refresh_candidates()
+    client._maintain_read_feed(0.0)
+    transport.publish.reset_mock()
+
+    def flashmq_reply(topic: str, payload: str, *, retain: bool) -> Mock:
+        assert not retain
+        # Both the keepalive and legacy Serial alias suppress publish_all.
+        assert json.loads(payload) == {"keepalive-options": ["suppress-republish"]}
+        if topic == "R/" + serial[2:]:
+            _feed(client, serial, b'{"value":"synthetic-portal"}')
+        return Mock(rc=mqtt.MQTT_ERR_SUCCESS)
+
+    transport.publish.side_effect = flashmq_reply
+    with patch("mcp_venus_os.mqtt_client.time.monotonic", return_value=30.0):
+        client._maintain_read_feed(30.0)
+        assert client.read_path_since("system", 0, "Serial", 30.0) == ("synthetic-portal", 0.0)
+    assert transport.publish.call_count == 2
+    # A later retained replay cannot refresh the live reply's receipt time.
+    with patch("mcp_venus_os.mqtt_client.time.monotonic", return_value=60.0):
+        client._on_message(cast(mqtt.Client, transport), None, retained)
+        client._drain_inbox()
+        assert client.read_path("system", 0, "Serial") == ("synthetic-portal", 30.0)
+    _feed(client, serial, b"")
+    assert client.read_path("system", 0, "Serial") is None
+    assert serial not in client._refresh_candidates()
+
+
+def test_refresh_rotates_large_catalog_without_discovery_only_reads() -> None:
+    from mcp_venus_os.mqtt_client import MAX_REFRESH_TOPICS
+
+    client, transport = _connected_feed_client()
+    topics = {f"{PREFIX}/battery/{instance}/Soc" for instance in range(MAX_REFRESH_TOPICS + 20)}
+    for topic in topics:
+        _feed(client, topic, b'{"value":55}')
+    _feed(client, f"{PREFIX}/settings/0/Settings/Vrmlogger/LogInterval", b'{"value":60}')
+    client._maintain_read_feed(0.0)
+    transport.publish.reset_mock()
+    for cycle in (30.0, 60.0):
+        for batch in range(64):
+            client._maintain_read_feed(cycle + batch * 0.25)
+    read_topics = {
+        "N/" + call.args[0][2:]
+        for call in transport.publish.call_args_list
+        if not call.args[0].endswith("/keepalive")
+    }
+    assert read_topics == topics
+
+
+def test_refresh_batches_are_bounded_and_dynamic_removal_stops_reads() -> None:
+    from mcp_venus_os.mqtt_client import MAX_REFRESH_TOPICS, REFRESH_BATCH_SIZE
+
+    client, transport = _connected_feed_client()
+    for instance in range(MAX_REFRESH_TOPICS + 20):
+        _feed(client, f"{PREFIX}/battery/{instance}/Soc", b'{"value":55}')
+    custom = f"{PREFIX}/custom/0/Deep/Value"
+    client.subscribe(custom, _noop)
+    _feed(client, custom, b'{"value":1}')
+    client._maintain_read_feed(0.0)
+    transport.publish.reset_mock()
+    client._maintain_read_feed(30.0)
+    assert transport.publish.call_count == REFRESH_BATCH_SIZE + 1
+    assert len(client._pending_refresh) == MAX_REFRESH_TOPICS - REFRESH_BATCH_SIZE
+    client._pending_refresh.appendleft(custom)
+    client.unsubscribe(custom, _noop)
+    transport.unsubscribe.assert_called_once_with(custom)
+    client._maintain_read_feed(30.25)
+    assert not any(call.args[0] == "R/" + custom[2:] for call in transport.publish.call_args_list)
+    # Deleted data must not be resurrected by a queued refresh request.
+    deleted = client._pending_refresh[0]
+    _feed(client, deleted, b"")
+    transport.publish.reset_mock()
+    client._maintain_read_feed(30.5)
+    assert not any(call.args[0] == "R/" + deleted[2:] for call in transport.publish.call_args_list)
+
+
+def test_maintenance_retries_failures_and_stops_with_owned_worker() -> None:
+    client, transport = _connected_feed_client()
+    _feed(client, f"{PREFIX}/battery/512/Soc", b'{"value":55}')
+    client._maintain_read_feed(0.0)
+    transport.publish.reset_mock()
+    transport.publish.return_value.rc = mqtt.MQTT_ERR_NO_CONN
+    client._maintain_read_feed(30.0)
+    assert len(client._pending_refresh) == 1
+    transport.publish.side_effect = RuntimeError("synthetic transport failure")
+    client._maintain_read_feed(31.0)
+    assert len(client._pending_refresh) == 1
+    transport.publish.side_effect = None
+    transport.publish.return_value.rc = mqtt.MQTT_ERR_SUCCESS
+    client._maintain_read_feed(32.0)
+    assert not client._pending_refresh
+    transport.publish.reset_mock()
+    client._worker_stop.set()
+    client._maintain_read_feed(100.0)
+    transport.publish.assert_not_called()
+
+
+def test_reconnect_resubscribes_explicit_filters_and_resets_read_schedule() -> None:
+    client, transport = _connected_feed_client()
+    explicit = f"{PREFIX}/custom/0/Deep/Value"
+    client.subscribe(explicit, _noop)
+    client._maintain_read_feed(0.0)
+    client._pending_refresh.append(explicit)
+    transport.reset_mock()
+    client._on_connect(
+        cast(mqtt.Client, transport),
+        None,
+        None,
+        cast(ReasonCode, FakeReasonCode(0)),
+        cast(Properties, Mock()),
+    )
+    assert explicit in [call.args[0] for call in transport.subscribe.call_args_list]
+    client._maintain_read_feed(29.0)
+    assert not client._pending_refresh
+    transport.publish.reset_mock()
+    client._maintain_read_feed(30.0)
+    transport.publish.assert_not_called()
+    client.unsubscribe(explicit, _noop)
+    transport.reset_mock()
+    client._on_connect(
+        cast(mqtt.Client, transport),
+        None,
+        None,
+        cast(ReasonCode, FakeReasonCode(0)),
+        cast(Properties, Mock()),
+    )
+    assert explicit not in [call.args[0] for call in transport.subscribe.call_args_list]
