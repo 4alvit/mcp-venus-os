@@ -1,6 +1,7 @@
 """Tests for the MQTT client."""
 
 import asyncio
+import contextlib
 import json
 import threading
 from typing import cast
@@ -8,6 +9,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import paho.mqtt.client as mqtt
 import pytest
+from paho.mqtt.enums import CallbackAPIVersion, MQTTErrorCode
 from paho.mqtt.properties import Properties
 from paho.mqtt.reasoncodes import ReasonCode
 
@@ -47,13 +49,24 @@ def _mock_transport(*, auto_connect: bool = True) -> Mock:
     transport.stopped = threading.Event()
     transport.entered = threading.Event()
 
-    def network_loop(timeout: float, retry_first_connection: bool = False) -> None:
+    def network_loop(retry_first_connection: bool = False) -> None:
         transport.entered.set()
         if auto_connect:
             transport.on_connect(transport, None, None, FakeReasonCode(0), None)
         transport.stopped.wait(timeout=10)
 
     transport.loop_forever.side_effect = network_loop
+
+    def run() -> None:
+        with contextlib.suppress(OSError):
+            transport.loop_forever(retry_first_connection=True)
+
+    def start() -> MQTTErrorCode:
+        transport._thread = threading.Thread(target=run, daemon=True)
+        transport._thread.start()
+        return mqtt.MQTT_ERR_SUCCESS
+
+    transport.loop_start.side_effect = start
     transport.disconnect.side_effect = transport.stopped.set
     return transport
 
@@ -410,7 +423,7 @@ async def test_connect_success() -> None:
         await client.connect()
         await client.disconnect()
     factory.assert_called_once()
-    transport.loop_forever.assert_called_once_with(timeout=5.0, retry_first_connection=True)
+    transport.loop_start.assert_called_once_with()
     transport.connect_async.assert_called_once_with("localhost", 1883, keepalive=30)
 
 
@@ -418,16 +431,16 @@ async def test_connect_success() -> None:
 async def test_connect_timeout() -> None:
     with (
         patch("mcp_venus_os.mqtt_client.get_config", return_value=_config()),
-        patch("mcp_venus_os.mqtt_client.mqtt.Client") as mock_client_cls,
+        patch(
+            "mcp_venus_os.mqtt_client.mqtt.Client", return_value=_mock_transport(auto_connect=False)
+        ) as mock_client_cls,
         patch("mcp_venus_os.mqtt_client.asyncio.sleep", new=AsyncMock()),
     ):
         client = MQTTClient()
         with pytest.raises(ConnectionTimeoutError):
             await client.connect()
         await client.disconnect()
-    mock_client_cls.return_value.loop_forever.assert_called_once_with(
-        timeout=5.0, retry_first_connection=True
-    )
+    mock_client_cls.return_value.loop_start.assert_called_once_with()
     mock_client_cls.return_value.disconnect.assert_called_once()
     assert client._loop_thread is None
     assert client._worker is None
@@ -584,12 +597,12 @@ async def test_disconnect_stops_network_worker_after_connection_loss() -> None:
     entered = threading.Event()
     stopped = threading.Event()
 
-    def network_loop(timeout: float, retry_first_connection: bool) -> None:
+    def network_loop(retry_first_connection: bool) -> None:
         client._connected = True
         entered.set()
         stopped.wait(timeout=2)
 
-    with patch("mcp_venus_os.mqtt_client.mqtt.Client") as factory:
+    with patch("mcp_venus_os.mqtt_client.mqtt.Client", return_value=_mock_transport()) as factory:
         transport = factory.return_value
         transport.loop_forever.side_effect = network_loop
         transport.disconnect.side_effect = stopped.set
@@ -707,7 +720,6 @@ async def test_dead_network_loop_is_retired_before_retry() -> None:
             first.stopped.set()
             assert old_loop is not None
             await asyncio.to_thread(old_loop.join, 1)
-            assert not client._connected
             await client.connect()
             assert factory.call_count == 2
             assert client.client is second
@@ -1162,3 +1174,84 @@ def test_reconnect_resubscribes_explicit_filters_and_resets_read_schedule() -> N
         cast(Properties, Mock()),
     )
     assert explicit not in [call.args[0] for call in transport.subscribe.call_args_list]
+
+
+@pytest.mark.asyncio
+async def test_native_loop_serializes_partial_writes_from_other_threads() -> None:
+    """Real Paho queueing must not put a second packet inside a partial write."""
+    client = _make_client()
+    transport = mqtt.Client(CallbackAPIVersion.VERSION2, client_id="partial-write-test")
+    flush, partial, release, written = (threading.Event() for _ in range(4))
+    wire = bytearray()
+    writers: list[threading.Thread] = []
+
+    def send(data: bytes) -> int:
+        writers.append(threading.current_thread())
+        if not partial.is_set():
+            wire.extend(data[:3])
+            partial.set()
+            assert release.wait(2)
+            return 3
+        wire.extend(data)
+        return len(data)
+
+    def network_loop(retry_first_connection: bool, timeout: float = 1.0) -> None:
+        # Replace only actual network I/O. Use Paho's real loop_start, thread,
+        # socketpair, publish, packet queue and partial-write implementation.
+        transport._sock = Mock()
+        client._connected = True
+        try:
+            assert flush.wait(2)
+            assert transport.loop_write() == mqtt.MQTT_ERR_SUCCESS
+            written.set()
+            while not client._stopping:
+                threading.Event().wait(0.001)
+        finally:
+            transport._sock = None
+
+    def packet(topic: str, payload: bytes) -> bytes:
+        body = len(topic).to_bytes(2, "big") + topic.encode() + payload
+        return bytes([0x30, len(body)]) + body
+
+    with (
+        patch("mcp_venus_os.mqtt_client.mqtt.Client", return_value=transport),
+        patch.object(transport, "loop_forever", side_effect=network_loop),
+        patch.object(transport, "_sock_send", side_effect=send),
+    ):
+        try:
+            await client.connect()
+            first, second = "R/testportal/first", "R/testportal/second"
+            await asyncio.to_thread(client.publish, first, "A")
+            assert wire == b"", "A caller bypassed the native network queue"
+            flush.set()
+            assert await asyncio.to_thread(partial.wait, 1)
+            await asyncio.to_thread(client.publish, second, "B")
+            assert len(wire) == 3, "A concurrent publisher wrote inside the first packet"
+            release.set()
+            assert await asyncio.to_thread(written.wait, 1)
+            assert wire == packet(first, b"A") + packet(second, b"B")
+            assert set(writers) == {client._loop_thread}
+            assert transport._sockpairW is not None
+        finally:
+            flush.set()
+            release.set()
+            await client.disconnect()
+        assert client.client is None
+        assert client._loop_thread is None
+
+
+@pytest.mark.asyncio
+async def test_native_loop_start_failure_keeps_worker_owned_until_retired() -> None:
+    client = _make_client()
+    transport = _mock_transport()
+    transport.loop_start.side_effect = None
+    transport.loop_start.return_value = mqtt.MQTT_ERR_INVAL
+    with patch("mcp_venus_os.mqtt_client.mqtt.Client", return_value=transport):
+        from mcp_venus_os.mqtt_client import MQTTError
+
+        with pytest.raises(MQTTError):
+            await client.connect()
+        assert client.client is transport
+        await client.disconnect()
+        assert client.client is None
+        assert client._worker is None
