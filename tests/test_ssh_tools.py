@@ -1,5 +1,6 @@
 """Tests for the Cerbo SSH toolset."""
 
+import asyncio
 from pathlib import Path
 from typing import Any, cast
 from unittest.mock import AsyncMock, Mock, patch
@@ -78,6 +79,205 @@ async def test_run_reports_transport_error_without_raising() -> None:
         out = await c.run("echo hi")
     assert out["success"] is False
     assert "refused" in out["error"]
+
+
+@pytest.mark.asyncio
+async def test_concurrent_commands_share_connection_and_remain_parallel() -> None:
+    with patch("mcp_venus_os.ssh_client.get_config", return_value=_ssh_cfg()):
+        client = CerboSSHClient()
+    connecting = asyncio.Event()
+    allow_connection = asyncio.Event()
+    all_commands_started = asyncio.Event()
+    finish_commands = asyncio.Event()
+    connections: list[Mock] = []
+    commands: list[str] = []
+
+    async def run_command(command: str) -> Mock:
+        commands.append(command)
+        if len(commands) == 4:
+            all_commands_started.set()
+        await finish_commands.wait()
+        return Mock(exit_status=0, stdout=command, stderr="")
+
+    async def connect(**kwargs: object) -> Mock:
+        connection = Mock()
+        connection.is_closed.return_value = False
+        connection.run = AsyncMock(side_effect=run_command)
+        connections.append(connection)
+        connecting.set()
+        await allow_connection.wait()
+        return connection
+
+    with patch("mcp_venus_os.ssh_client.asyncssh.connect", side_effect=connect):
+        tasks = [asyncio.create_task(client.run(f"command-{i}")) for i in range(4)]
+        try:
+            await asyncio.wait_for(connecting.wait(), timeout=1)
+            allow_connection.set()
+            await asyncio.wait_for(all_commands_started.wait(), timeout=1)
+        finally:
+            allow_connection.set()
+            finish_commands.set()
+            results = await asyncio.gather(*tasks)
+            await client.close()
+
+    assert len(connections) == 1
+    connections[0].close.assert_called_once_with()
+    assert [result["stdout"] for result in results] == [f"command-{i}" for i in range(4)]
+    assert all(result["success"] for result in results)
+
+
+@pytest.mark.asyncio
+async def test_close_waits_for_pending_connection_and_releases_it() -> None:
+    with patch("mcp_venus_os.ssh_client.get_config", return_value=_ssh_cfg()):
+        client = CerboSSHClient()
+    connecting = asyncio.Event()
+    allow_connection = asyncio.Event()
+    connection = Mock()
+    connection.is_closed.return_value = False
+
+    async def connect(**kwargs: object) -> Mock:
+        connecting.set()
+        await allow_connection.wait()
+        return connection
+
+    with patch("mcp_venus_os.ssh_client.asyncssh.connect", side_effect=connect):
+        opening = asyncio.create_task(client._ensure_conn())
+        await asyncio.wait_for(connecting.wait(), timeout=1)
+        closing = asyncio.create_task(client.close())
+        await asyncio.sleep(0)
+        close_was_pending = not closing.done()
+        allow_connection.set()
+        await asyncio.wait_for(asyncio.gather(opening, closing), timeout=1)
+
+    assert close_was_pending
+    connection.close.assert_called_once_with()
+    assert client._conn is None
+
+
+@pytest.mark.asyncio
+async def test_cancelled_connection_does_not_block_next_command() -> None:
+    with patch("mcp_venus_os.ssh_client.get_config", return_value=_ssh_cfg()):
+        client = CerboSSHClient()
+    connecting = asyncio.Event()
+    connection = Mock()
+    connection.is_closed.return_value = False
+    connection.run = AsyncMock(return_value=Mock(exit_status=0, stdout="ready", stderr=""))
+    attempts = 0
+
+    async def connect(**kwargs: object) -> Mock:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            connecting.set()
+            await asyncio.Event().wait()
+        return connection
+
+    with patch("mcp_venus_os.ssh_client.asyncssh.connect", side_effect=connect):
+        opening = asyncio.create_task(client.run("cancelled"))
+        await asyncio.wait_for(connecting.wait(), timeout=1)
+        opening.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await opening
+        result = await asyncio.wait_for(client.run("retry"), timeout=1)
+        await client.close()
+
+    assert attempts == 2
+    assert result["success"]
+    assert result["stdout"] == "ready"
+
+
+@pytest.mark.asyncio
+async def test_failed_handshake_does_not_close_another_callers_connection() -> None:
+    with patch("mcp_venus_os.ssh_client.get_config", return_value=_ssh_cfg()):
+        client = CerboSSHClient()
+    connecting = asyncio.Event()
+    fail_handshake = asyncio.Event()
+    connection = Mock()
+    connection.is_closed.return_value = False
+    connection.run = AsyncMock(return_value=Mock(exit_status=0, stdout="ready", stderr=""))
+    attempts = 0
+
+    async def connect(**kwargs: object) -> Mock:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            connecting.set()
+            await fail_handshake.wait()
+            raise OSError("refused")
+        return connection
+
+    with patch("mcp_venus_os.ssh_client.asyncssh.connect", side_effect=connect):
+        first = asyncio.create_task(client.run("first"))
+        await asyncio.wait_for(connecting.wait(), timeout=1)
+        second = asyncio.create_task(client.run("second"))
+        await asyncio.sleep(0)
+        fail_handshake.set()
+        results = await asyncio.wait_for(asyncio.gather(first, second), timeout=1)
+        connection.close.assert_not_called()
+        assert client._conn is connection
+        await client.close()
+
+    assert not results[0]["success"]
+    assert results[1]["success"]
+    assert attempts == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("operation", ["command", "password"])
+async def test_old_transport_error_does_not_close_replacement(operation: str) -> None:
+    with patch("mcp_venus_os.ssh_client.get_config", return_value=_ssh_cfg()):
+        client = CerboSSHClient()
+    started = asyncio.Event()
+    fail_old_command = asyncio.Event()
+    old_connection = Mock()
+    old_connection.is_closed.return_value = False
+
+    async def old_command(*args: object, **kwargs: object) -> None:
+        started.set()
+        await fail_old_command.wait()
+        raise OSError("disconnected")
+
+    old_connection.run = AsyncMock(side_effect=old_command)
+    client._conn = old_connection
+    replacement = Mock()
+    replacement.is_closed.return_value = False
+    replacement.run = AsyncMock(return_value=Mock(exit_status=0, stdout="ready", stderr=""))
+    with patch("mcp_venus_os.ssh_client.asyncssh.connect", new=AsyncMock(return_value=replacement)):
+        pending = asyncio.create_task(
+            client.run("old")
+            if operation == "command"
+            else client.enable_root_password("test-password")
+        )
+        await asyncio.wait_for(started.wait(), timeout=1)
+        await client.close()
+        assert (await client.run("new"))["success"]
+        fail_old_command.set()
+        assert not (await asyncio.wait_for(pending, timeout=1))["success"]
+        replacement.close.assert_not_called()
+        assert client._conn is replacement
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_connect_timeout_covers_native_asyncssh_transport_setup() -> None:
+    """Exercise AsyncSSH's timeout before TCP/login without opening a real socket."""
+    with patch("mcp_venus_os.ssh_client.get_config", return_value=_ssh_cfg(timeout_s=0.01)):
+        client = CerboSSHClient()
+    transport_cancelled = asyncio.Event()
+
+    async def stalled_transport(*args: object, **kwargs: object) -> None:
+        try:
+            await asyncio.Event().wait()
+        finally:
+            transport_cancelled.set()
+
+    with patch("asyncssh.connection._connect", side_effect=stalled_transport):
+        result = await asyncio.wait_for(client.run("probe"), timeout=1)
+
+    assert not result["success"]
+    assert result["error"].startswith("ssh failed:")
+    assert transport_cancelled.is_set()
+    assert client._conn is None
 
 
 @pytest.mark.asyncio

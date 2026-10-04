@@ -51,6 +51,7 @@ class CerboSSHClient:
     def __init__(self) -> None:
         self.config = get_config().ssh
         self._conn: asyncssh.SSHClientConnection | None = None
+        self._connection_lock = asyncio.Lock()
 
     @property
     def configured(self) -> bool:
@@ -63,6 +64,7 @@ class CerboSSHClient:
             "port": self.config.port,
             "username": self.config.user,
             "known_hosts": None,  # LAN appliance; host key changes on reflash
+            "connect_timeout": self.config.timeout_s,
             "login_timeout": self.config.timeout_s,
         }
         if self.config.key_path:
@@ -72,19 +74,25 @@ class CerboSSHClient:
         return kwargs
 
     async def _ensure_conn(self) -> asyncssh.SSHClientConnection:
-        if self._conn is None or self._conn.is_closed():
-            self._conn = await asyncssh.connect(**self._connect_kwargs())
-        return self._conn
+        async with self._connection_lock:
+            if self._conn is None or self._conn.is_closed():
+                self._conn = await asyncssh.connect(**self._connect_kwargs())
+            return self._conn
 
     async def close(self) -> None:
-        if self._conn is not None:
-            with contextlib.suppress(Exception):
-                self._conn.close()
-            self._conn = None
+        await self._close_connection()
+
+    async def _close_connection(self, expected: asyncssh.SSHClientConnection | None = None) -> None:
+        async with self._connection_lock:
+            if self._conn is not None and (expected is None or self._conn is expected):
+                with contextlib.suppress(Exception):
+                    self._conn.close()
+                self._conn = None
 
     async def run(self, command: str, timeout_s: float | None = None) -> dict[str, Any]:
         """Run ``command``; never raises — returns success/stdout/stderr/exit_code."""
         started = time.monotonic()
+        conn = None
         try:
             conn = await self._ensure_conn()
             result = await asyncio.wait_for(conn.run(command), timeout_s or self.config.timeout_s)
@@ -98,7 +106,8 @@ class CerboSSHClient:
         except asyncssh.PermissionDenied:
             return {"success": False, "error": "ssh permission denied — check key/password"}
         except (OSError, TimeoutError, asyncssh.Error) as exc:
-            await self.close()  # dead connection must not poison later calls
+            if conn is not None:
+                await self._close_connection(conn)
             return {"success": False, "error": f"ssh failed: {exc}"}
 
     async def available(self) -> dict[str, Any]:
@@ -223,6 +232,7 @@ class CerboSSHClient:
         Password goes over the channel via stdin to ``chpasswd`` — never in
         argv or shell-visible command line.
         """
+        conn = None
         try:
             conn = await self._ensure_conn()
             result = await conn.run("chpasswd 2>&1", input=f"root:{password}\n")
@@ -233,7 +243,8 @@ class CerboSSHClient:
                 "stderr": _truncate(str(result.stderr or result.stdout or "")),
             }
         except (OSError, TimeoutError, asyncssh.Error) as exc:
-            await self.close()
+            if conn is not None:
+                await self._close_connection(conn)
             return {"success": False, "error": f"ssh failed: {exc}"}
 
 
