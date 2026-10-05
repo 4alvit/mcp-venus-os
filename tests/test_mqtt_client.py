@@ -424,6 +424,7 @@ async def test_connect_success() -> None:
         await client.disconnect()
     factory.assert_called_once()
     transport.loop_start.assert_called_once_with()
+    assert transport.on_log == client._on_log
     transport.connect_async.assert_called_once_with("localhost", 1883, keepalive=30)
 
 
