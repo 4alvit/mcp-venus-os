@@ -50,6 +50,11 @@ may be requested without a previous beta. Channel order is a workflow policy,
 not a comparison of tag strings. Native binaries/packages retain the committed
 base version; the release tag and manifest identify their channel and source.
 
+Once the committed base has a stable tag, automatic push betas report
+`version-required`: quality and security checks still run, while packaging and
+publication are skipped. Prepare the next committed base through a reviewed PR.
+Explicit beta/RC requests still reject an occupied base; nightlies are unchanged.
+
 ## Required validation and evidence
 
 1. The aggregate **CI gate** requires every workflow declared in the policy to

@@ -9,7 +9,8 @@ permissions:
 jobs:
   ci:
     name: CI
-    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/python-ci.yml@ae314dd023e48e3a4651996132f332a894efc8d9
+    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/python-ci.yml@0582ac703ff47fd0cde42d5fff695c0569ca8392  # main
     with:
       force-full: true
       python-version: '3.11'
+      coverage-artifact-name: coverage-python
