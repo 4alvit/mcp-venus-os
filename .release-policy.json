@@ -23,5 +23,18 @@
   "mode": "release",
   "repository": "4alvit/mcp-venus-os",
   "visibility": "public",
-  "single_entry_ci": true
+  "single_entry_ci": true,
+  "coverage": {
+    "toolkit_ref": "0582ac703ff47fd0cde42d5fff695c0569ca8392",
+    "reports": [
+      {
+        "name": "python",
+        "workflow": "ci.yml",
+        "job": "ci",
+        "path": "coverage.xml",
+        "format": "cobertura",
+        "required": false
+      }
+    ]
+  }
 }
