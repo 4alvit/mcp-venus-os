@@ -101,6 +101,16 @@ class MQTTClient:
         self._loop_thread: threading.Thread | None = None
         self._last_drop_log = 0.0
         self._connection_epoch = 0
+        # Metadata only, protected by _state_lock and reset for each successful
+        # connection. PINGREQ is an attempt, not proof of bytes sent on the wire.
+        self._session_started_at: float | None = None
+        self._last_received_at: float | None = None
+        self._last_pingreq_at: float | None = None
+        self._last_pingresp_at: float | None = None
+        self._pingreq_attempts = 0
+        self._pingresp_received = 0
+        self._disconnect_callbacks = 0
+        self._inbox_dropped = 0
         self._maintenance_epoch = -1
         self._next_keepalive = 0.0
         self._next_refresh = 0.0
@@ -135,6 +145,14 @@ class MQTTClient:
             self._connected = reason_code == 0
             if self._connected:
                 self._connection_epoch += 1
+                self._session_started_at = time.monotonic()
+                self._last_received_at = None
+                self._last_pingreq_at = None
+                self._last_pingresp_at = None
+                self._pingreq_attempts = 0
+                self._pingresp_received = 0
+                self._disconnect_callbacks = 0
+                self._inbox_dropped = 0
         if reason_code == 0:
             logger.info("Connected to MQTT broker at %s:%d", self.config.host, self.config.port)
             with self._callback_lock:
@@ -157,12 +175,56 @@ class MQTTClient:
         reason_code: mqtt.ReasonCode,  # type: ignore[name-defined]
         properties: mqtt.Properties,  # type: ignore[name-defined]
     ) -> None:
-        """MQTT on_disconnect callback."""
+        """Log bounded metadata for this session without inspecting message data."""
         with self._state_lock:
             if client is not self.client or self._stopping:
                 return
             self._connected = False
-        logger.warning("Disconnected from MQTT broker: %s", reason_code)
+            self._disconnect_callbacks += 1
+            now = time.monotonic()
+
+            def age(received_at: float | None) -> float | None:
+                return None if received_at is None else round(max(0.0, now - received_at), 3)
+
+            diagnostics = {
+                "connection_epoch": self._connection_epoch,
+                "disconnect_callback": self._disconnect_callbacks,
+                "duplicate_in_epoch": self._disconnect_callbacks > 1,
+                "session_age_s": age(self._session_started_at),
+                "notification_age_s": age(self._last_received_at),
+                "pingreq_attempt_age_s": age(self._last_pingreq_at),
+                "pingresp_age_s": age(self._last_pingresp_at),
+                "pingreq_attempts": self._pingreq_attempts,
+                "pingresp_received": self._pingresp_received,
+                "inbox_depth": self._inbox.qsize(),
+                "inbox_dropped": self._inbox_dropped,
+            }
+        logger.warning(
+            "Disconnected from MQTT broker: %s; mqtt_diagnostics=%s",
+            reason_code,
+            json.dumps(diagnostics, sort_keys=True),
+        )
+
+    def _on_log(
+        self,
+        client: mqtt.Client,
+        userdata: Any,  # noqa: ANN401
+        level: int,
+        message: str,
+    ) -> None:
+        """Observe only Paho's fixed control-packet events; never forward logs."""
+        # Reject message/connection log strings before any lock or persistence.
+        if message not in ("Sending PINGREQ", "Received PINGRESP"):
+            return
+        with self._state_lock:
+            if client is not self.client or self._stopping or not self._connected:
+                return
+            if message == "Sending PINGREQ":
+                self._last_pingreq_at = time.monotonic()
+                self._pingreq_attempts += 1
+            else:
+                self._last_pingresp_at = time.monotonic()
+                self._pingresp_received += 1
 
     def _on_message(
         self,
@@ -181,8 +243,13 @@ class MQTTClient:
             with self._state_lock:
                 if client is not self.client or self._stopping:
                     return
-                self._inbox.put_nowait((client, msg, time.monotonic()))
+                received_at = time.monotonic()
+                self._last_received_at = received_at
+                self._inbox.put_nowait((client, msg, received_at))
         except queue.Full:
+            with self._state_lock:
+                if client is self.client and not self._stopping:
+                    self._inbox_dropped += 1
             now = time.monotonic()
             if now - self._last_drop_log >= DROP_LOG_INTERVAL_S:
                 logger.warning("MQTT inbox overflow, dropping messages")
@@ -454,6 +521,7 @@ class MQTTClient:
         transport.on_connect = self._on_connect
         transport.on_disconnect = self._on_disconnect
         transport.on_message = self._on_message
+        transport.on_log = self._on_log
         transport.connect_async(
             self.config.host, self.config.port, keepalive=MQTT_PROTOCOL_KEEPALIVE_S
         )
