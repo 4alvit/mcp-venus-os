@@ -7,13 +7,12 @@ runtime off a constrained GX while using the existing Venus MQTT gateway.
 The Cerbo audit on 2026-09-12 found no native `mcp-venus-os` service; the documented
 Synology deployment is a separate host and must be checked there.
 
-The shared deployment now runs on Kubernetes node `mp` at
-`https://venus-os.k3s.2560801.xyz/mcp`, with TLS and bearer authentication.
-Device writes are disabled and Cerbo SSH credentials are not installed.
-The project `.mcp.json` points to this endpoint and reads `VENUS_MCP_TOKEN` from
-the client environment. See the
-[MP deployment runbook](https://github.com/4alvit/k3s-self-healing/tree/main/deployments/11-mcp-venus-os)
-for pinned image, deployment, verification and rollback details.
+For an off-device HTTP deployment, configure an operator-owned HTTPS endpoint
+and bearer authentication. Start with device writes disabled and no Cerbo SSH
+credentials. Keep the deployment manifest, image pin, credentials, verification
+record and rollback plan with the operator's deployment configuration. The
+[deployment matrix](#deployment-matrix) and [HTTP authentication setup](#http-auth-token)
+below describe the supported transports and client configuration.
 
 SSH package refresh downloads into a temporary `/data` staging directory and
 validates that `setup` exists before copying into the installed tree. It retains
@@ -227,7 +226,7 @@ without them never pay tool-schema context:
 
 | Group | Detected via | Tools |
 |-------|--------------|-------|
-| `control` | `inverter/state` topic ([inverter-control](https://github.com/4alvit/inverter-control)) | `get_control_state()` — grid, per-battery detail, MPPT breakdown, tasmota, EV, water level, booleans, inverter state/setpoint in one JSON |
+| `control` | `inverter/state` topic ([inverter-control](https://github.com/victron-venus/inverter-control)) | `get_control_state()` — grid, per-battery detail, MPPT breakdown, tasmota, EV, water level, booleans, inverter state/setpoint in one JSON |
 | `pump` | `tank/<n>/…` topics (dbus-pump) | `get_tank_level(instance=0)` |
 | `ssh` | `SSH_PASSWORD`/`SSH_KEY_PATH` set | Cerbo management toolkit (below) |
 
