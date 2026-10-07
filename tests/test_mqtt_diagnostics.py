@@ -84,6 +84,23 @@ def test_real_paho_control_events_produce_only_bounded_metadata(
             "pingresp_received": 1,
             "inbox_depth": 1,
             "inbox_dropped": 0,
+            "socket_generation": 0,
+            "network_thread_alive": None,
+            "transport_events_repeated": False,
+            "transport_events": [
+                {
+                    "event": "pingreq_attempt",
+                    "socket_generation": 0,
+                    "socket": {"status": "no_socket"},
+                    "age_s": 15.0,
+                },
+                {
+                    "event": "pingresp_decoded",
+                    "socket_generation": 0,
+                    "socket": {"status": "no_socket"},
+                    "age_s": 14.0,
+                },
+            ],
         }
     ]
     assert len(caplog.text) < 1000
