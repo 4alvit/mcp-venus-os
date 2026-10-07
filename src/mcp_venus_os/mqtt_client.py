@@ -17,6 +17,7 @@ from paho.mqtt.matcher import MQTTMatcher
 
 from .capabilities import capability_subscriptions, is_capability_topic
 from .config import MissingPortalIdError, get_config
+from .socket_diagnostics import sample_socket
 from .telemetry import refresh_topics, subscriptions
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ REFRESH_BATCH_INTERVAL_S = 0.25
 REFRESH_BATCH_SIZE = 8
 MAX_REFRESH_TOPICS = 512
 SUPPRESS_REPUBLISH = '{"keepalive-options":["suppress-republish"]}'
+TRANSPORT_EVENT_LIMIT = 12
 
 
 class MQTTError(Exception):
@@ -111,6 +113,16 @@ class MQTTClient:
         self._pingresp_received = 0
         self._disconnect_callbacks = 0
         self._inbox_dropped = 0
+        # A socket can open and fail without receiving CONNACK. Keep its identity
+        # separate from the successful-session epoch; never retain socket data.
+        self._socket_generation = 0
+        self._diagnostic_socket: object | None = None
+        self._pending_pingreq_generation: int | None = None
+        self._transport_events: deque[tuple[float, dict[str, object]]] = deque(
+            maxlen=TRANSPORT_EVENT_LIMIT
+        )
+        self._transport_event_revision = 0
+        self._reported_transport_event_revision = -1
         self._maintenance_epoch = -1
         self._next_keepalive = 0.0
         self._next_refresh = 0.0
@@ -153,6 +165,7 @@ class MQTTClient:
                 self._pingresp_received = 0
                 self._disconnect_callbacks = 0
                 self._inbox_dropped = 0
+                self._pending_pingreq_generation = None
         if reason_code == 0:
             logger.info("Connected to MQTT broker at %s:%d", self.config.host, self.config.port)
             with self._callback_lock:
@@ -198,7 +211,23 @@ class MQTTClient:
                 "pingresp_received": self._pingresp_received,
                 "inbox_depth": self._inbox.qsize(),
                 "inbox_dropped": self._inbox_dropped,
+                "socket_generation": self._socket_generation,
+                "network_thread_alive": (
+                    self._loop_thread.is_alive() if self._loop_thread is not None else None
+                ),
+                "transport_events_repeated": (
+                    self._reported_transport_event_revision == self._transport_event_revision
+                ),
+                "transport_events": (
+                    [
+                        {**event, "age_s": age(observed_at)}
+                        for observed_at, event in self._transport_events
+                    ]
+                    if self._reported_transport_event_revision != self._transport_event_revision
+                    else []
+                ),
             }
+            self._reported_transport_event_revision = self._transport_event_revision
         logger.warning(
             "Disconnected from MQTT broker: %s; mqtt_diagnostics=%s",
             reason_code,
@@ -222,9 +251,81 @@ class MQTTClient:
             if message == "Sending PINGREQ":
                 self._last_pingreq_at = time.monotonic()
                 self._pingreq_attempts += 1
+                self._pending_pingreq_generation = self._socket_generation
+                self._record_transport_event("pingreq_attempt", self._last_pingreq_at)
             else:
                 self._last_pingresp_at = time.monotonic()
                 self._pingresp_received += 1
+                self._record_transport_event("pingresp_decoded", self._last_pingresp_at)
+
+    def _record_transport_event(self, event: str, observed_at: float) -> None:
+        """Append fixed metadata while holding _state_lock; never inspect MQTT bytes."""
+        self._transport_events.append(
+            (
+                observed_at,
+                {
+                    "event": event,
+                    "socket_generation": self._socket_generation,
+                    "socket": sample_socket(self._diagnostic_socket),
+                },
+            )
+        )
+        self._transport_event_revision += 1
+
+    def _on_socket_open(
+        self,
+        client: mqtt.Client,
+        userdata: Any,  # noqa: ANN401
+        sock: object,
+    ) -> None:
+        """Track transport identity independently of a successful MQTT session."""
+        with self._state_lock:
+            if client is not self.client or self._stopping or client.socket() is not sock:
+                return
+            self._socket_generation += 1
+            self._diagnostic_socket = sock
+            self._pending_pingreq_generation = None
+            self._transport_events.clear()
+            self._record_transport_event("socket_open", time.monotonic())
+
+    def _on_socket_unregister_write(
+        self,
+        client: mqtt.Client,
+        userdata: Any,  # noqa: ANN401
+        sock: object,
+    ) -> None:
+        """Observe a drained Paho queue, never claim a wire send or broker receipt."""
+        with self._state_lock:
+            # Paho also unregisters writes while closing: it clears client.socket()
+            # first. Reject that callback, stale sockets and nonempty output queues.
+            if (
+                client is not self.client
+                or self._stopping
+                or not self._connected
+                or sock is not self._diagnostic_socket
+                or client.socket() is not sock
+                or client.want_write()
+                or self._pending_pingreq_generation != self._socket_generation
+            ):
+                return
+            self._pending_pingreq_generation = None
+            self._record_transport_event("output_drained_after_pingreq", time.monotonic())
+
+    def _on_socket_close(
+        self,
+        client: mqtt.Client,
+        userdata: Any,  # noqa: ANN401
+        sock: object,
+    ) -> None:
+        """Freeze kernel metadata before Paho closes the passed socket."""
+        with self._state_lock:
+            if client is not self.client or self._stopping or sock is not self._diagnostic_socket:
+                return
+            # client.socket() is already None here; the callback argument is still
+            # open. Later disconnect callbacks reuse this snapshot, not a dead FD.
+            self._record_transport_event("socket_close", time.monotonic())
+            self._diagnostic_socket = None
+            self._pending_pingreq_generation = None
 
     def _on_message(
         self,
@@ -522,6 +623,9 @@ class MQTTClient:
         transport.on_disconnect = self._on_disconnect
         transport.on_message = self._on_message
         transport.on_log = self._on_log
+        transport.on_socket_open = self._on_socket_open
+        transport.on_socket_close = self._on_socket_close
+        transport.on_socket_unregister_write = self._on_socket_unregister_write
         transport.connect_async(
             self.config.host, self.config.port, keepalive=MQTT_PROTOCOL_KEEPALIVE_S
         )
@@ -571,6 +675,8 @@ class MQTTClient:
         if self._worker is None and self._loop_thread is None:
             with self._state_lock:
                 self.client = None
+                self._diagnostic_socket = None
+                self._pending_pingreq_generation = None
             # Discard retired telemetry/sentinels; preserve receive timestamps
             # in the existing cache, so its normal freshness checks still apply.
             self._inbox = queue.Queue(maxsize=INBOX_MAXSIZE)

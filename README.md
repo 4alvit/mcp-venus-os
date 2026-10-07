@@ -321,19 +321,34 @@ tank/<n>/Level                                 dbus-pump tank level
 - Disconnect diagnostics: each warning includes bounded `mqtt_diagnostics` JSON
   containing the connection epoch, callback ordinal, queue depth/drop count, and
   monotonic ages/counts for notification receipt, PINGREQ attempts and decoded
-  PINGRESPs. The public Paho log callback observes only its two fixed ping events;
-  it does not retain or forward other log strings, topics, payloads or credentials,
-  and does not enable debug logging. A PINGREQ attempt is not proof of a wire send;
-  these fields help distinguish a silent transport from a delayed pong or decoder
-  backlog, but do not establish the cause of a timeout by themselves.
+  PINGRESPs, socket generation and network-thread liveness. A socket generation
+  advances on socket open, including connections that never receive CONNACK.
+  A ring of at most 12 transport events stays in memory until a disconnect;
+  repeated callbacks omit the ring unless a new event has arrived. Public socket
+  callbacks capture metadata before closure, when the passed socket is still
+  open even though `client.socket()` is already empty. The public log callback
+  observes only Paho's two fixed ping events. Other log strings, topics, payloads,
+  addresses and credentials are never retained or forwarded by these diagnostics;
+  debug logging is not enabled.
+  On Linux, events include best-effort `TCP_INFO` counters/timers and kernel receive
+  and send queue byte counts. Missing measurements have a fixed status and are
+  omitted, never reported as zero. The send queue includes unsent and unacknowledged
+  bytes; TLS buffers are not included. These sequential measurements are not an
+  atomic snapshot. No socket reads, peeks, option changes or packet captures occur.
+  Sampling happens only at socket open/close and ping-related events, never per
+  telemetry message; no background sampler or second socket writer is introduced.
+  `pingreq_attempt` precedes Paho enqueueing the packet. The guarded
+  `output_drained_after_pingreq` event means Paho's output queue subsequently
+  drained on the same live socket; closing the socket cannot generate this event.
+  Neither proves delivery to the broker. `pingresp_decoded` records parser progress,
+  not wire arrival, and thread liveness is not a network-loop heartbeat. These
+  observations help distinguish client/TCP backlogs from a missing response but
+  cannot establish the cause of a timeout on their own.
   Paho 2.1 can invoke the disconnect callback twice for one keepalive failure;
   `disconnect_callback` and `duplicate_in_epoch` identify repeated callbacks in
   one epoch, not necessarily the same outage. An epoch advances only after a
   successful CONNACK, so failed reconnect attempts can also share it. Timers,
   freshness limits, subscriptions and reconnect behavior are unchanged.
-  A bounded local ARM64/Python 3.14 benchmark of Paho publish parsing and enqueueing
-  measured about 0.16 microseconds/message of additional callback cost (3.8% of
-  that in-memory path). This is not an MP scheduling or throughput guarantee.
 - Writes: a value is published as JSON only to its hardware-qualified `W/…`
   path. There are no periodic writes to additional paths and no automatic
   rollback on disconnect/shutdown. Persistence is device-specific.
