@@ -5,6 +5,11 @@ updates:
     schedule:
       interval: daily
 
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
   - package-ecosystem: docker
     directory: /
     schedule:
