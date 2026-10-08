@@ -461,3 +461,23 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development, bug reports and proposal
 [SECURITY.md](SECURITY.md) for confidential vulnerability reports and deployment
 boundaries, and the [OpenSSF evidence index](docs/openssf-evidence.md) for assessment
 scope and verification.
+
+
+### Verify the SSH host key before upgrading
+
+SSH management now verifies the Cerbo host key. Without `SSH_KNOWN_HOSTS`,
+AsyncSSH uses the standard `~/.ssh/known_hosts` trust files. You can set an
+explicit verified file path; the Compose example mounts `keys/known_hosts` at
+`/app/keys/known_hosts`. Compare the device's SSH host-key fingerprint through
+an independently trusted console or administrator before accepting it. A key
+observed by `ssh-keyscan` alone is not proof of identity.
+
+Unknown or changed host keys now fail closed. After a genuine firmware reflash,
+verify the new key independently before replacing the trusted record. Never
+disable host-key verification to work around a mismatch. The MCP API does not
+provide an insecure bypass. SSH access still uses its configured credentials,
+and write operations still require the existing safety gates.
+
+SSH negotiation requires SHA-2/Ed25519/ECDSA authentication and ephemeral key
+exchange. Use trusted Ed25519/ECDSA host keys or RSA keys of at least 2048 bits.
+Legacy servers limited to SHA-1 must be updated before connecting.

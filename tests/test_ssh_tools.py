@@ -456,3 +456,46 @@ async def test_install_shell_preserves_local_state_and_cleans_staging(tmp_path: 
     assert (package / "config.local").read_text() == "local settings"
     assert (package / ".venv" / "sentinel").read_text() == "device dependencies"
     assert not list(data.glob(".mcp-package.*"))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("trusted", "legacy"), [(True, False), (False, False), (True, True)])
+async def test_real_ssh_connection_rejects_untrusted_host_key(
+    tmp_path: Path, trusted: bool, legacy: bool
+) -> None:
+    """A disposable local SSH handshake must enforce the configured host key."""
+    import asyncssh
+
+    class LocalServer(asyncssh.SSHServer):
+        def begin_auth(self, username: str) -> bool:
+            return False
+
+    host_key = asyncssh.generate_private_key("ssh-ed25519")
+    other_key = asyncssh.generate_private_key("ssh-ed25519")
+    listener = await asyncssh.create_server(
+        LocalServer,
+        "127.0.0.1",
+        0,
+        server_host_keys=[host_key],
+        kex_algs=["diffie-hellman-group14-sha1"] if legacy else ["curve25519-sha256"],
+    )
+    key = host_key if trusted else other_key
+    known_hosts = tmp_path / "known_hosts"
+    known_hosts.write_text(f"[127.0.0.1]:{listener.get_port()} " + key.export_public_key().decode())
+    cfg = _ssh_cfg(host="127.0.0.1", port=listener.get_port(), known_hosts=str(known_hosts))
+    with patch("mcp_venus_os.ssh_client.get_config", return_value=cfg):
+        client = CerboSSHClient()
+    try:
+        if legacy:
+            with pytest.raises(asyncssh.KeyExchangeFailed):
+                await client._ensure_conn()
+        elif trusted:
+            connection = await client._ensure_conn()
+            assert not connection.is_closed()
+        else:
+            with pytest.raises(asyncssh.HostKeyNotVerifiable):
+                await client._ensure_conn()
+    finally:
+        await client.close()
+        listener.close()
+        await listener.wait_closed()

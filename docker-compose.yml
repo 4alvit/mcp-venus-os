@@ -10,6 +10,7 @@ services:
       # Cerbo SSH key mounted below; drop the two lines + volume to use
       # SSH_PASSWORD from .env instead
       SSH_KEY_PATH: /app/keys/cerbo_rsa
+      SSH_KNOWN_HOSTS: /app/keys/known_hosts
     volumes:
       # Private key for the SSH management tools (owned by uid 999, mode 600)
       - ./keys:/app/keys:ro

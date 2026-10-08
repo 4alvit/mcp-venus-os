@@ -10,6 +10,7 @@ import contextlib
 import logging
 import re
 import time
+from pathlib import Path
 from typing import Any
 
 import asyncssh
@@ -63,10 +64,34 @@ class CerboSSHClient:
             "host": self.config.effective_host,
             "port": self.config.port,
             "username": self.config.user,
-            "known_hosts": None,  # LAN appliance; host key changes on reflash
+            "kex_algs": [
+                "curve25519-sha256",
+                "curve25519-sha256@libssh.org",
+                "ecdh-sha2-nistp256",
+                "ecdh-sha2-nistp384",
+                "ecdh-sha2-nistp521",
+                "diffie-hellman-group14-sha256",
+                "diffie-hellman-group16-sha512",
+            ],
+            "server_host_key_algs": [
+                "ssh-ed25519",
+                "ecdsa-sha2-nistp256",
+                "ecdsa-sha2-nistp384",
+                "ecdsa-sha2-nistp521",
+                "rsa-sha2-512",
+                "rsa-sha2-256",
+            ],
+            "mac_algs": [
+                "hmac-sha2-256-etm@openssh.com",
+                "hmac-sha2-512-etm@openssh.com",
+                "hmac-sha2-256",
+                "hmac-sha2-512",
+            ],
             "connect_timeout": self.config.timeout_s,
             "login_timeout": self.config.timeout_s,
         }
+        if self.config.known_hosts:
+            kwargs["known_hosts"] = str(Path(self.config.known_hosts).expanduser())
         if self.config.key_path:
             kwargs["client_keys"] = [self.config.key_path]
         if self.config.password:
