@@ -48,3 +48,13 @@ Include the affected version or commit, steps to reproduce, expected and actual
 behavior, and potential impact. Remove access tokens, credentials and personal
 data from examples. Do not disclose exploit details in public issues before
 coordinating with the maintainers.
+
+## Support and response
+
+Security fixes target the current default branch and the latest maintained release, where releases exist. Older versions are not promised backports. Maintainers aim to acknowledge private reports within 14 days, investigate and communicate status within 60 days, and coordinate disclosure with the reporter. Confirmed vulnerabilities with a practical fix receive priority over feature work; publish an advisory and release notes that identify affected versions, mitigation and the fixed version. If a fix takes longer, keep the reporter informed without exposing confidential details.
+
+## Deployment trust boundaries
+
+Keep the default write killswitch disabled until the operator explicitly enables control. Confirmations, path allowlists and value limits are independent gates. An MCP tool call is not authorization to bypass those gates. HTTP transport authentication, MQTT TLS/authentication and SSH host/key controls must match the deployment threat model. Shell access carries the privileges of the configured remote user; deny patterns are an additional safeguard, not a shell sandbox.
+
+Use synthetic data for testing. Never attach live tokens, private keys, database exports or household telemetry to public CI artifacts. Report a suspected credential exposure privately and revoke the credential through its issuer. See [CONTRIBUTING.md](CONTRIBUTING.md) for validation and [the evidence index](docs/openssf-evidence.md) for assessment limits.
