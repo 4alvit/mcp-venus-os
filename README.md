@@ -503,3 +503,37 @@ To keep SSH management disabled, leave both `SSH_KEY_PATH` and `SSH_PASSWORD`
 unset and restart the MCP server. The SSH tools are not registered in this mode;
 the MQTT telemetry tools remain available. This does not disable or weaken MQTT
 TLS or its independent credentials.
+
+
+### MQTT certificate policy
+
+When `MQTT_TLS=true`, the owned Paho connection verifies the broker's certificate
+and hostname, then checks every certificate in the verified chain, including its
+selected trust anchor, before sending MQTT CONNECT or credentials. RSA keys must
+have an actual modulus of at least 2048 bits; EC keys require at least 224 bits,
+DSA requires a 2048-bit group and 224-bit subgroup, and Ed25519/Ed448 are supported.
+OpenSSL can impose stronger restrictions. TLS is at least 1.2; stricter defaults
+and the existing cipher selection remain intact.
+
+This closes a boundary where OpenSSL security level 2 alone accepts a 2047-bit RSA
+key. Reissue a weak broker or CA certificate instead of disabling verification.
+The client keeps the same system trust and `SSL_CERT_FILE`/`SSL_CERT_DIR` behavior
+as Paho's default `tls_set()`. MQTT protocol 3.1.1, connection ownership, retries,
+subscriptions and the plaintext mode are unchanged. This does not secure the
+plain MQTT mode or certify an external broker's configuration.
+
+The supported runtime is CPython 3.11 or later with the project's existing
+`cryptography` dependency. The guard uses the public verified-chain API when
+available, and CPython's internal SSL-object API on 3.11/3.12. A runtime that
+cannot supply its verified chain fails closed. The configuration does not expose
+MQTT client-certificate or proxy settings; this change adds neither feature.
+No system-wide SSL defaults or CA stores are modified.
+
+`tests/test_mqtt_tls.py` exercises the actual application/Paho path with disposable
+local brokers: trusted RSA 1024/2047 leaf, intermediate and root rejection,
+strong RSA/EC acceptance, invalid issuer/hostname controls and zero MQTT credential
+bytes on rejection. Separate low-security fixture clients validate each test
+chain with normal CA/hostname verification. No physical device is contacted.
+The helper is adapted under MIT from the reviewed
+[inverter-dashboard TLS policy](https://github.com/victron-venus/inverter-dashboard)
+and [FastAPI MQTT policy](https://github.com/4alvit/fastapi-mqtt-gateway/pull/71).

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+MQTT TLS now rejects undersized keys in the entire verified broker chain before
+sending CONNECT or credentials, including RSA 2047-bit trust anchors. Normal CA
+and hostname verification and the existing MQTT lifecycle remain active.
+
 Enforce the key-strength policy on both SSH server host keys and the explicitly
 selected client private key. RSA keys below 2048 bits and unsupported keys fail
 closed. Trusted host matching, revocations and key verification during rekeying
@@ -17,6 +21,11 @@ agents, default identities, hardware tokens, GSS/host-based authentication and
 SSH/X.509 certificates cannot bypass the policy.
 
 ### Upgrade
+
+For `MQTT_TLS=true`, replace broker or CA keys below the documented minimum before
+upgrading. Use supported CPython 3.11+ with the existing `cryptography` dependency;
+unsupported verified-chain APIs fail closed. No device or trust-store settings
+are changed automatically.
 
 Replace weak SSH keys before upgrading, verifying new host fingerprints through
 an independently trusted channel. Configure `SSH_KEY_PATH` and
