@@ -19,6 +19,7 @@ from .capabilities import capability_subscriptions, is_capability_topic
 from .config import MissingPortalIdError, get_config
 from .socket_diagnostics import sample_socket
 from .telemetry import refresh_topics, subscriptions
+from .tls_policy import mqtt_context
 
 logger = logging.getLogger(__name__)
 
@@ -618,7 +619,7 @@ class MQTTClient:
         if self.config.username and self.config.password:
             transport.username_pw_set(self.config.username, self.config.password)
         if self.config.tls:
-            transport.tls_set()
+            transport.tls_set_context(mqtt_context())
         transport.on_connect = self._on_connect
         transport.on_disconnect = self._on_disconnect
         transport.on_message = self._on_message

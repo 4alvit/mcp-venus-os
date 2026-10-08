@@ -469,7 +469,7 @@ async def test_connect_with_auth_and_tls() -> None:
         await client.connect()
         await client.disconnect()
     mock_client_cls.return_value.username_pw_set.assert_called_once_with("u", "p")
-    mock_client_cls.return_value.tls_set.assert_called_once()
+    mock_client_cls.return_value.tls_set_context.assert_called_once()
     mock_client_cls.return_value.connect_async.assert_called_once_with("broker", 8883, keepalive=30)
 
 
