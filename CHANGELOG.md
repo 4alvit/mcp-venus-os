@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.12]
+
+### Security
+
+SSH management verifies the remote host key instead of accepting any key.
+Unknown or changed hosts fail closed. An optional `SSH_KNOWN_HOSTS` file allows
+an explicit trust store; otherwise standard AsyncSSH known-host files apply.
+SSH negotiation also excludes SHA-1 signatures/MACs and non-ephemeral key
+exchange. Algorithm selection keeps the trusted `known_hosts` preference order,
+so a server offering several keys can still use its trusted RSA/SHA-2 key.
+Update obsolete SSH server software instead of disabling verification.
+
+### Upgrade
+
+Before using SSH tools, independently verify the Cerbo host-key fingerprint
+and install its trusted record. Compose installations must provide
+`keys/known_hosts`, mounted read-only with the existing key directory. Existing
+installations without a trusted record will refuse SSH access until configured.
+After a firmware reflash verify the new key independently before updating it;
+there is no verification-disable switch. No hardware access, deployment or
+trust-store modification is performed automatically by this release.
+
+The release also adds contributor instructions and a source-linked OpenSSF
+assessment, without claiming a badge before the assessment is completed.
+
 ## [0.2.4] - 2026-09-12
 
 ### Fixed
