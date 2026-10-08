@@ -15,7 +15,9 @@ SSH management verifies the remote host key instead of accepting any key.
 Unknown or changed hosts fail closed. An optional `SSH_KNOWN_HOSTS` file allows
 an explicit trust store; otherwise standard AsyncSSH known-host files apply.
 SSH negotiation also excludes SHA-1 signatures/MACs and non-ephemeral key
-exchange. Update obsolete SSH server software instead of disabling verification.
+exchange. Algorithm selection keeps the trusted `known_hosts` preference order,
+so a server offering several keys can still use its trusted RSA/SHA-2 key.
+Update obsolete SSH server software instead of disabling verification.
 
 ### Upgrade
 
