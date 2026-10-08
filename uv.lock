@@ -1068,6 +1068,7 @@ version = "0.2.12"
 source = { editable = "." }
 dependencies = [
     { name = "asyncssh" },
+    { name = "cryptography" },
     { name = "dbus-fast" },
     { name = "fastmcp" },
     { name = "paho-mqtt" },
@@ -1090,6 +1091,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "asyncssh", specifier = ">=2.24.0" },
+    { name = "cryptography", specifier = ">=39.0" },
     { name = "dbus-fast", specifier = ">=0.50.0" },
     { name = "fastmcp", specifier = ">=2.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10.0" },
