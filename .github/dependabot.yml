@@ -19,3 +19,8 @@ updates:
     directory: /
     schedule:
       interval: daily
+    groups:
+      python-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
