@@ -14,6 +14,9 @@ from pathlib import Path
 from typing import Any
 
 import asyncssh
+from cryptography.exceptions import UnsupportedAlgorithm
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
 
 from .config import get_config
 
@@ -46,6 +49,19 @@ def _truncate(text: str) -> str:
     )
 
 
+def _strong_key(key: asyncssh.SSHKey) -> bool:
+    """Check public parameters using the cryptographic library, never private data."""
+    try:
+        public = serialization.load_pem_public_key(key.export_public_key("pkcs8-pem"))
+    except (ValueError, UnsupportedAlgorithm, asyncssh.KeyExportError):
+        return False
+    if isinstance(public, rsa.RSAPublicKey):
+        return public.key_size >= 2048
+    if isinstance(public, ec.EllipticCurvePublicKey):
+        return isinstance(public.curve, (ec.SECP256R1, ec.SECP384R1, ec.SECP521R1))
+    return isinstance(public, (ed25519.Ed25519PublicKey, ed448.Ed448PublicKey))
+
+
 class CerboSSHClient:
     """Shared asyncssh connection with lazy connect and structured results."""
 
@@ -58,6 +74,15 @@ class CerboSSHClient:
     def configured(self) -> bool:
         """True when credentials exist (host defaults to MQTT_HOST)."""
         return bool(self.config.key_path or self.config.password)
+
+    def _known_hosts(
+        self, host: str, addr: str, port: int | None
+    ) -> tuple[list[asyncssh.SSHKey], list[asyncssh.SSHKey], list[asyncssh.SSHKey]]:
+        """Keep host matching and revocations; trust only strong raw host keys."""
+        path = Path(self.config.known_hosts or "~/.ssh/known_hosts").expanduser()
+        source = str(path) if self.config.known_hosts or path.is_file() else b""
+        trusted, _, revoked, *_ = asyncssh.match_known_hosts(source, host, addr, port)
+        return [key for key in trusted if _strong_key(key)], [], list(revoked)
 
     def _connect_kwargs(self) -> dict[str, Any]:
         kwargs: dict[str, Any] = {
@@ -75,7 +100,20 @@ class CerboSSHClient:
             ],
             # Filter AsyncSSH's known_hosts-derived preference order. A fixed
             # allowlist can select an offered key which the operator never trusted.
-            "server_host_key_algs": "-*ssh-rsa*,*ssh-dss*",
+            "server_host_key_algs": "-*ssh-rsa*,*ssh-dss*,*-cert-*",
+            "signature_algs": "-*ssh-rsa*,*ssh-dss*",
+            "known_hosts": self._known_hosts,
+            # Only the documented raw key/password credentials may authenticate.
+            # Ambient identities and certificate chains would bypass this policy.
+            "client_keys": None,
+            "client_certs": [],
+            "agent_path": None,
+            "agent_forwarding": False,
+            "pkcs11_provider": None,
+            "gss_kex": False,
+            "gss_auth": False,
+            "host_based_auth": False,
+            "x509_trusted_certs": None,
             "mac_algs": [
                 "hmac-sha2-256-etm@openssh.com",
                 "hmac-sha2-512-etm@openssh.com",
@@ -85,10 +123,17 @@ class CerboSSHClient:
             "connect_timeout": self.config.timeout_s,
             "login_timeout": self.config.timeout_s,
         }
-        if self.config.known_hosts:
-            kwargs["known_hosts"] = str(Path(self.config.known_hosts).expanduser())
         if self.config.key_path:
-            kwargs["client_keys"] = [self.config.key_path]
+            try:
+                key = asyncssh.read_private_key(Path(self.config.key_path).expanduser())
+            except (OSError, asyncssh.KeyImportError):
+                message = "Unable to load configured SSH client key"
+                raise asyncssh.KeyExchangeFailed(message) from None
+            if not _strong_key(key):
+                message = "Configured SSH client key does not meet key policy"
+                raise asyncssh.KeyExchangeFailed(message)
+            # Pass the checked object, so the connection cannot reload another key.
+            kwargs["client_keys"] = [key]
         if self.config.password:
             kwargs["password"] = self.config.password
         return kwargs
