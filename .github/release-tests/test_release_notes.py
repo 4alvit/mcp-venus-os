@@ -2,11 +2,10 @@
 
 import base64
 import importlib.util
-from pathlib import Path
-from unittest.mock import Mock, patch
-
 import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 _SPEC = importlib.util.spec_from_file_location(
     "notes_release_control", Path(__file__).parents[2] / "scripts/release_control.py"
@@ -55,9 +54,7 @@ def render(text=NOTES, tag="v1.2.3-beta.8", response_change=None):
         "source_policy_snapshot",
         return_value={"data": {"release_notes": "CHANGELOG.md"}},
     ):
-        body = release.release_notes(
-            github, tag, SOURCE, "Original source and validation links."
-        )
+        body = release.release_notes(github, tag, SOURCE, "Original source and validation links.")
     github.api.assert_called_once_with(f"contents/CHANGELOG.md?ref={SOURCE}")
     return body
 
@@ -119,9 +116,7 @@ class ReleaseNotesTests(unittest.TestCase):
             ),
             self.assertRaisesRegex(release.ReleaseError, "missing notes"),
         ):
-            release.publish(
-                github, "v1.2.3", SOURCE, Path(directory), False, "provenance"
-            )
+            release.publish(github, "v1.2.3", SOURCE, Path(directory), False, "provenance")
         github.api.assert_not_called()
 
     def test_api_requires_commit_pinned_source(self):
@@ -133,7 +128,5 @@ class ReleaseNotesTests(unittest.TestCase):
         )
         for ref in ("main", "v1.2.3", "a" * 39, "../main"):
             self.assertFalse(
-                any(
-                    re.fullmatch(p, f"contents/CHANGELOG.md?ref={ref}") for p in allowed
-                )
+                any(re.fullmatch(p, f"contents/CHANGELOG.md?ref={ref}") for p in allowed)
             )
