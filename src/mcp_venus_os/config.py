@@ -67,7 +67,7 @@ class SSHConfig(BaseSettings):
     known_hosts: str | None = Field(
         default=None,
         min_length=1,
-        description="SSH host-key trust file; unset uses AsyncSSH standard known_hosts files",
+        description="SSH host-key trust file; unset uses ~/.ssh/known_hosts",
     )
 
     @property

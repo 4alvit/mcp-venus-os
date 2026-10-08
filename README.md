@@ -466,7 +466,7 @@ scope and verification.
 ### Verify the SSH host key before upgrading
 
 SSH management now verifies the Cerbo host key. Without `SSH_KNOWN_HOSTS`,
-AsyncSSH uses the standard `~/.ssh/known_hosts` trust files. You can set an
+the client reads the standard `~/.ssh/known_hosts` trust file. You can set an
 explicit verified file path; the Compose example mounts `keys/known_hosts` at
 `/app/keys/known_hosts`. Compare the device's SSH host-key fingerprint through
 an independently trusted console or administrator before accepting it. A key
@@ -481,3 +481,25 @@ and write operations still require the existing safety gates.
 SSH negotiation requires SHA-2/Ed25519/ECDSA authentication and ephemeral key
 exchange. Use trusted Ed25519/ECDSA host keys or RSA keys of at least 2048 bits.
 Legacy servers limited to SHA-1 must be updated before connecting.
+
+Both server host keys and the private key selected by `SSH_KEY_PATH` must use
+RSA of at least 2048 bits, NIST P-256/P-384/P-521, Ed25519 or Ed448. Weak host keys
+are removed from the trusted set without changing hostname, port, hashed-host,
+wildcard or revocation matching. A trust file containing only weak keys therefore
+refuses the connection, including a later key exchange on an existing connection.
+The selected client key is checked before connecting; failure does not fall back
+to a password. No private-key content is included in the error.
+
+The supported authentication inputs are an ordinary private-key file at
+`SSH_KEY_PATH` and/or `SSH_PASSWORD`. SSH agents, default identity files,
+PKCS#11 tokens, host-based/GSS authentication and SSH/X.509 certificates are not
+used. This makes the key policy independent of ambient credentials. If an
+installation relied on one of those previously implicit AsyncSSH behaviors,
+configure an explicit supported key before upgrading. For a custom host trust
+file use `SSH_KNOWN_HOSTS`; `UserKnownHostsFile` in an ambient SSH config does not
+replace it. The client never disables host verification for an empty trust file.
+
+To keep SSH management disabled, leave both `SSH_KEY_PATH` and `SSH_PASSWORD`
+unset and restart the MCP server. The SSH tools are not registered in this mode;
+the MQTT telemetry tools remain available. This does not disable or weaken MQTT
+TLS or its independent credentials.

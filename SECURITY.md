@@ -82,3 +82,36 @@ default). Its explicit algorithm policy allows Curve25519, ECDH and SHA-2
 finite-field ephemeral key exchange with groups of at least 2048 bits. SHA-1
 key exchange and signature/MAC algorithms are excluded. See the SSH setup and
 firmware key-rotation instructions in [README.md](README.md).
+
+## Verifying key-length policy in the deployed environment
+
+MQTT TLS delegates to Paho when enabled. SSH has a separate raw-key policy described below; the Go setting for release helpers does not affect SSH or Python TLS.
+
+The verified Python profile is CPython 3.12.14 with OpenSSL 3.5.8 and
+SSL security level 2. At this level OpenSSL rejects RSA/DH keys shorter than
+2048 bits and elliptic-curve keys shorter than 224 bits. It applies the check
+to certificate-chain keys as well as negotiated parameters. Use current
+supported runtime builds which preserve this policy; do not lower the security
+level or turn off certificate/hostname verification to accept an old endpoint.
+Check the interpreter which actually runs the application:
+
+```sh
+python - <<'PYTHON'
+import ssl
+import sys
+context = ssl.create_default_context()
+print(sys.version)
+print(ssl.OPENSSL_VERSION)
+print(context.security_level, context.minimum_version.name)
+if context.security_level < 2 or context.minimum_version < ssl.TLSVersion.TLSv1_2:
+    raise SystemExit("Unsupported TLS policy: upgrade the runtime; do not weaken verification")
+PYTHON
+```
+
+Release helpers also invoke `gh`, which has a separate TLS implementation.
+Follow [the release helper profile](docs/RELEASE_TLS_PROFILE.md) for the tested
+GitHub CLI/Go versions and the command-local option that completely disables
+smaller certificate keys. That option does not change system-wide settings.
+
+References: [OpenSSL security levels](https://docs.openssl.org/3.5/man3/SSL_CTX_set_security_level/)
+and [Python SSL contexts](https://docs.python.org/3.12/library/ssl.html#ssl.SSLContext).
