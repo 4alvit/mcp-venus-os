@@ -1,5 +1,8 @@
 """Keep human release notes bound to the source used to build the package."""
 
+# The release-contract job uses stdlib unittest without installing pytest.
+# ruff: noqa: PT009, PT027
+
 import base64
 import importlib.util
 import tempfile
@@ -15,7 +18,7 @@ _SPEC.loader.exec_module(release)
 SOURCE = "a" * 40
 
 
-def contents(text):
+def contents(text: str):
     raw = text.encode()
     return {
         "type": "file",
@@ -44,7 +47,11 @@ Do not copy older notes either.
 """
 
 
-def render(text=NOTES, tag="v1.2.3-beta.8", response_change=None):
+def render(
+    text: str = NOTES,
+    tag: str = "v1.2.3-beta.8",
+    response_change: dict[str, object] | None = None,
+):
     github = Mock()
     response = contents(text)
     response.update(response_change or {})
