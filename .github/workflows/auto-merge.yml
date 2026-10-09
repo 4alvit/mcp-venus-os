@@ -24,7 +24,7 @@ jobs:
     if: >-
       (github.event.action != 'edited' || github.event.changes.base) &&
       contains(fromJSON('["4alvit","californiantiramisu","dependabot[bot]","renovate[bot]"]'), github.event.pull_request.user.login)
-    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/auto-merge.yml@5ec4c925c86558ee4cdd2bd76a4cb5c17c90d23f
+    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/auto-merge.yml@5892b68cf18ac330b76773532ca28bb716492fe9
     with:
       native-auto-merge: true
       required-status-checks: CodeQL
