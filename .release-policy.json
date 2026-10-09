@@ -25,7 +25,7 @@
   "visibility": "public",
   "single_entry_ci": true,
   "coverage": {
-    "toolkit_ref": "5ec4c925c86558ee4cdd2bd76a4cb5c17c90d23f",
+    "toolkit_ref": "5892b68cf18ac330b76773532ca28bb716492fe9",
     "reports": [
       {
         "name": "python",
