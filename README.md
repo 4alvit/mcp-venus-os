@@ -54,11 +54,21 @@ See the [release strategy](RELEASING.md) for validation, nightly, beta, RC and s
 
 ### Installation
 
-Not yet on PyPI. Install from GitHub:
+The supported release channel is [GitHub Releases](https://github.com/4alvit/mcp-venus-os/releases).
+There is no `mcp-venus-os` distribution on PyPI as of 12 October 2026. Install the
+wheel from an explicitly selected stable release; installing the default Git
+branch instead selects unreleased development code.
 
 ```bash
-pip install git+https://github.com/4alvit/mcp-venus-os
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install "https://github.com/4alvit/mcp-venus-os/releases/download/v0.2.11/mcp_venus_os-0.2.11-py3-none-any.whl"
 ```
+
+`v0.2.11` is the stable example above. `v0.2.12-*` nightly/beta/RC releases remain
+prereleases. Each release includes `SHA256SUMS` and `release-manifest.json` for
+artifact integrity and source/workflow provenance. GitHub release publication
+does not publish to PyPI, update a GHCR tag, or deploy a running server.
 
 Or for development:
 
