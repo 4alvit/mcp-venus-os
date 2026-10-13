@@ -37,6 +37,12 @@ failed run is diagnostic evidence, not a successful coverage qualification.
 Broker integration tests require the isolated Mosquitto fixture described in
 `tests/test_integration_mosquitto.py`; a skipped fixture is not a live-device test.
 
+The successful 12 October 2026 local run passed **968 tests**, with three optional
+environment skips, and executed **5,655 of 6,376 statements (88.69%)** across all
+36 production Python modules. [The measured report](evidence/coverage-2026-10-12.json)
+records module hashes, the complete denominator and environment limitations.
+Hosted CI remains required for Linux/container-specific validation.
+
 ## Regression history
 
 [The six-month ledger](evidence/regression-history-2026-10-12.json) links candidate
@@ -70,6 +76,12 @@ reproducibility of the wheel, sdist or multi-platform container. Publish measure
 comparison results and the actual toolchain before marking repeatable builds
 verified. `RELEASE_PYTHON` selects the build interpreter; this project does not
 compile owned C/C++ code or recursively invoke Make.
+
+On 12 October 2026, two real builds of the synchronized Python release fixture
+produced identical wheel, sdist and checksum bytes, and the build receipt verified
+their package metadata. [The comparison](evidence/repeat-build-2026-10-12.json)
+records the toolchain and hashes. Multi-platform OCI reproducibility remains
+unverified, so this does not yet establish the complete Silver build criterion.
 
 ## Analysis and limitations
 

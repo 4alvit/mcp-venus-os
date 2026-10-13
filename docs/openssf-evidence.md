@@ -65,6 +65,7 @@ inventory reviewed that day contained no ordinary issues. These project-specific
 statements are recorded as owner attestations, not inferred from another repo.
 The primary maintainer also confirmed that repository access continuity is
 not arranged: `access_continuity` remains **Unmet**. Regression-history
-classification, successful complete-scope coverage, repeat-build results and a
-real signed publication must each be verified before claiming their respective
-criteria. Passing is a prerequisite for Silver.
+classification, complete multi-platform repeatability and a real signed
+publication still require verification. Complete-scope Python coverage and
+Python distribution repeatability have measured evidence linked from the
+quality page. Passing is a prerequisite for Silver.
