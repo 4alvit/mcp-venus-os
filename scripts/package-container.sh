@@ -17,10 +17,14 @@ for architecture in amd64 arm64; do
   docker buildx build --platform "linux/$architecture" \
     --build-arg "SOURCE_DATE_EPOCH=$source_epoch" \
     --provenance=mode=max \
+    --tag "ghcr.io/4alvit/mcp-venus-os:$package_version" \
     --metadata-file "$inputs/$architecture.metadata.json" \
     --label "org.opencontainers.image.version=$package_version" \
     --label "org.opencontainers.image.revision=$source_revision" \
     --output "type=oci,dest=$inputs/$architecture.oci.tar,rewrite-timestamp=true" .
+  if [[ "${KEEP_CONTAINER_INPUTS:-0}" == 1 ]]; then
+    "$python_bin" scripts/inspect_container_metadata.py "$inputs/$architecture.oci.tar" "$inputs/$architecture.validation.json"
+  fi
 done
 "$python_bin" scripts/release_provenance.py detach --directory release-dist \
   --input "linux/amd64=$inputs/amd64.oci.tar" --input "linux/arm64=$inputs/arm64.oci.tar" \

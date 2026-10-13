@@ -43,6 +43,8 @@ the [roadmap](ROADMAP.md). The [security assurance case](docs/security-assurance
 and [quality evidence](docs/quality-evidence.md) explain the checks and their limits.
 The [OpenSSF evidence index](docs/openssf-evidence.md) separates verified evidence
 from criteria that remain open, including repository access continuity.
+The [container repeatability procedure](docs/container-repeatability.md) explains
+full-image comparison and preservation of original build provenance.
 
 <!-- ci-release-process:start -->
 ## Release process

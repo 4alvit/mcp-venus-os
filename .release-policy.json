@@ -4,7 +4,8 @@
     "docker-build.yml",
     "release-security.yml",
     "codeql.yml",
-    "dependency-review.yml"
+    "dependency-review.yml",
+    "container-repeatability.yml"
   ],
   "artifact_pattern": "release-assets*",
   "local_checks": [
