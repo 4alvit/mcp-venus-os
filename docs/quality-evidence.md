@@ -17,17 +17,21 @@ coverage. Namespace-package discovery includes scripts which no test imports.
 The minimum required statement coverage is 80%; the configured minimum
 is a gate, not a claim that a particular run achieved it. Keep modules with no
 executed lines in the denominator. A separate source inventory includes shell
-launchers, executable workflow fragments, the Dockerfile and the Compose
-healthcheck. Their coverage is not instrumented, so the all-language lower
+launchers, executable workflow fragments, the Dockerfile, the Compose
+healthcheck, release-policy shell checks and fixed/generated SSH payloads. Their coverage is not instrumented, so the all-language lower
 bound credits none of those statements as executed.
 
 [The supplemental inventory](evidence/supplemental-coverage-2026-10-12.json)
-records all 40 fragments, their hashes and a reviewed upper bound of 204
-statements. Counting comments, blank/continuation lines and extra command
-separators deliberately overstates the actual executable count. A further
-52-statement margin rounds this denominator addition up to 256. Recheck this
-inventory whenever executable fragments change; it is not a general shell
-parser or a measurement of shell coverage.
+records 54 reviewed fragments, their source hashes and an upper bound of 238
+statements. The correction adds 14 previously omitted shell/SSH payloads,
+including nested command substitutions, deferred trap commands and an awk
+statement. Counting comments, blank/continuation lines, extra command separators
+and both fixed firmware-path alternatives deliberately overstates the executable
+count. The remaining 18-statement margin preserves the original denominator
+addition of 256, so the coverage lower bound below is unchanged.
+[Reproduce the inventory review](evidence/supplemental-coverage-recipe.md) whenever
+executable fragments change; this is not a general shell parser or a measurement
+of shell coverage.
 
 Prepare the locked application/test environment, then run:
 

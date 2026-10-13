@@ -1,9 +1,9 @@
 {
-  "schema": 1,
-  "source_revision": "92daf35a2f9bf7e7f953e12d482a20e8ff590955",
+  "schema": 2,
+  "source_revision": "ab26fe6e4bc0c4f72b1453fbf9caadad836a049a",
   "date": "2026-10-12",
-  "scope": "Every tracked non-Python shebang source, actual workflow step run block, Dockerfile and Compose executable healthcheck. Embedded Python in these fragments is included here because coverage.py does not trace these subprocess fragments. Declarative YAML settings and GitHub expressions are configuration, not extra program statements. Test source is not production scope.",
-  "method": "Manually review the complete fragments for executable syntax, then conservatively count every physical line including comments, blanks and continuations, plus every semicolon, &&, ||, command-substitution opener and backtick pair as an additional possible statement. No fragment uses additional uncounted one-line command forms. This is a source-inventory upper bound for this reviewed revision, not a general-purpose shell parser and not measured shell coverage.",
+  "scope": "Reviewed tracked non-Python shebang sources, workflow step run blocks, Dockerfile, Compose executable healthcheck, release-policy local shell checks and fallback, and fixed/generated SSH command templates in owned Python. Embedded Python, awk, command substitutions and deferred trap commands are included because coverage.py does not trace these payloads. Declarative YAML settings and GitHub expressions are configuration, not extra program statements. Test source and arbitrary operator-supplied commands are not first-party production scope.",
+  "method": "The original 40 fragments use a conservative physical-line count including blanks/comments/continuations plus semicolons, &&, ||, command-substitution openers and backtick pairs. The 14 additional shell/SSH payload entries use explicit manual command counts including nested languages and both fixed firmware-path alternatives. Every entry is tied to its source-file hash. This revision-specific source review is not a general-purpose shell parser or measured shell coverage. See supplemental-coverage-recipe.md for reproduction and limitations.",
   "fragments": [
     {
       "path": "release.sh",
@@ -564,11 +564,196 @@
         "backtick_pairs": 0
       },
       "statement_upper_bound": 9
+    },
+    {
+      "path": ".release-policy.json",
+      "fragment": "local_checks[0]",
+      "reviewed_code_summary": "bash scripts/ci.sh",
+      "statement_upper_bound": 1,
+      "source_sha256": "1fc3594bc85758d577c3247f9e8fbf92ed3f850cc6ea9e604507cf0d89ce1607",
+      "reviewed_commands": [
+        "bash scripts/ci.sh"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": ".release-policy.json",
+      "fragment": "local_checks[1]",
+      "reviewed_code_summary": "bash scripts/ci.sh security",
+      "statement_upper_bound": 1,
+      "source_sha256": "1fc3594bc85758d577c3247f9e8fbf92ed3f850cc6ea9e604507cf0d89ce1607",
+      "reviewed_commands": [
+        "bash scripts/ci.sh security"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "scripts/release.py",
+      "fragment": "local_checks fallback",
+      "reviewed_code_summary": "bash scripts/ci.sh",
+      "statement_upper_bound": 1,
+      "source_sha256": "2584b05d01ef82b48f2ef75dc5d8e649de09df591fc6121097b2388f65a7b4eb",
+      "reviewed_commands": [
+        "bash scripts/ci.sh"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "firmware_version",
+      "reviewed_code_summary": "cat /opt/victronenergy/version",
+      "statement_upper_bound": 1,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "cat /opt/victronenergy/version"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "check_updates",
+      "reviewed_code_summary": "Either of two fixed firmware-update script paths",
+      "statement_upper_bound": 2,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "/opt/victronenergy/swupdate-scripts/check-updates.sh",
+        "/opt/victronenergy/swupdate-scripts/check-swupdate.sh"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "apply_updates",
+      "reviewed_code_summary": "Either fixed firmware-update script path -force -update",
+      "statement_upper_bound": 2,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "/opt/victronenergy/swupdate-scripts/check-updates.sh -force -update",
+        "/opt/victronenergy/swupdate-scripts/check-swupdate.sh -force -update"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "_swupdate_script",
+      "reviewed_code_summary": "[ -f {candidate} ] && echo y; count both fixed choices",
+      "statement_upper_bound": 4,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "[ -f /opt/victronenergy/swupdate-scripts/check-updates.sh ] && echo y",
+        "[ -f /opt/victronenergy/swupdate-scripts/check-swupdate.sh ] && echo y"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "setuphelper_status probe",
+      "reviewed_code_summary": "[ -d /data/SetupHelper ] && echo y",
+      "statement_upper_bound": 2,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "[ -d /data/SetupHelper ] && echo y"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "setuphelper_status version",
+      "reviewed_code_summary": "grep -m1 ... /data/SetupHelper/PackageManager.py 2>/dev/null",
+      "statement_upper_bound": 1,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "grep -m1 '^version' /data/SetupHelper/PackageManager.py 2>/dev/null"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "setuphelper_status packages",
+      "reviewed_code_summary": "ls /data/packageManager 2>/dev/null",
+      "statement_upper_bound": 1,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "ls /data/packageManager 2>/dev/null"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "setuphelper_install_package",
+      "reviewed_code_summary": "set; stage assignment + mktemp substitution; trap + deferred rm; wget; tar; test; mkdir; cp; cd; environment-prefixed bash invocation",
+      "statement_upper_bound": 12,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "set -eu; stage=$(mktemp -d /data/.mcp-package.XXXXXX); trap 'rm -rf \"$stage\"' EXIT HUP INT TERM; wget -qO \"$stage/release.tar.gz\" https://github.com/example-owner/example-package/archive/refs/heads/main.tar.gz; tar -xzf \"$stage/release.tar.gz\" -C \"$stage\"; test -f \"$stage/example-package-main/setup\"; mkdir -p /data/example-package; cp -a \"$stage/example-package-main/.\" /data/example-package/; cd /data/example-package; scriptAction=INSTALL packageName=example-package scriptDir=/data/example-package bash /data/example-package/setup install </dev/null"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands.",
+      "synthetic_arguments": {
+        "package": "example-package",
+        "repo": "example-owner/example-package"
+      },
+      "count_breakdown": {
+        "set": 1,
+        "stage_assignment": 1,
+        "nested_mktemp": 1,
+        "trap_registration": 1,
+        "deferred_rm": 1,
+        "wget": 1,
+        "tar": 1,
+        "test": 1,
+        "mkdir": 1,
+        "cp": 1,
+        "cd": 1,
+        "environment_prefixed_bash": 1
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "setuphelper_remove_package",
+      "reviewed_code_summary": "test -f ... && bash ... uninstall </dev/null",
+      "statement_upper_bound": 2,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "test -f /data/example-package/setup && bash /data/example-package/setup uninstall </dev/null"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands.",
+      "synthetic_arguments": {
+        "package": "example-package",
+        "repo": "example-owner/example-package"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "enable_root_password",
+      "reviewed_code_summary": "chpasswd 2>&1",
+      "statement_upper_bound": 1,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "chpasswd 2>&1"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/server.py",
+      "fragment": "cerbo_ip",
+      "reviewed_code_summary": "ip ... | awk print; count both shell commands plus the awk print statement",
+      "statement_upper_bound": 3,
+      "source_sha256": "3bbe8feea26f5a9147b35c6c4314163d7be1f5be588e810aaf814b912c40bddd",
+      "reviewed_commands": [
+        "ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}'"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands.",
+      "count_breakdown": {
+        "ip": 1,
+        "awk_invocation": 1,
+        "embedded_awk_print": 1
+      }
     }
   ],
-  "reviewed_statement_upper_bound": 204,
-  "rounding_safety_margin": 52,
+  "reviewed_statement_upper_bound": 238,
+  "rounding_safety_margin": 18,
   "supplemental_denominator_used": 256,
   "supplemental_covered_statements_credited": 0,
-  "invalidation": "Recompute and review after changing or adding executable fragments. Shared action implementations are third-party dependencies; vendored Python implementations remain in the instrumented denominator."
+  "invalidation": "Recompute and review after changing or adding executable fragments. Shared action implementations are third-party dependencies; vendored Python implementations remain in the instrumented denominator.",
+  "correction": "The earlier 40-entry inventory omitted the 14 shell/SSH payload entries added here (34 statements). The existing 256-statement denominator reserve already covered them; measured coverage and the all-language lower bound are unchanged."
 }
