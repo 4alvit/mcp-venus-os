@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Reject boolean, non-finite and nonnumeric readbacks when confirming numeric
+  hardware writes; a fresh `true` echo no longer confirms a requested mode `1`.
+  Finite numeric strings remain compatible with device telemetry.
+
 - Close TLS sockets when native certificate verification or handshake fails,
   while preserving nonblocking read/write retries. Strict warning tests now
   catch leaked sockets before publication.

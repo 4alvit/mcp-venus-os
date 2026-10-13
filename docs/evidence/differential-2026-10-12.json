@@ -75,5 +75,27 @@
     "tls-after.log": "c6640e485c6f19563aaa0a1417cf6a70fcb04cdecd67ce80f7870e28759a3276",
     "retirement-before.log": "3141f347aea86d639723ad38914b7c8559f8dd55f862d4896b7ef60c79713da1",
     "retirement-after.log": "666838b93a837ba7b2556a5cfef67e70d990a3803b4b0d0719b647cee42b9ba3"
+  },
+  "numeric_readback_regression": {
+    "historical_source": "f7421f68325711b334ea446a7aaab600db0238bc:src/mcp_venus_os/server.py::_values_match",
+    "method": "Substitute only the historical function AST into the current module globals before pytest collection. Use current dependencies and tests.",
+    "tests": [
+      "tests/test_write_tools.py::test_readback_rejects_non_finite_or_non_numeric_values",
+      "tests/test_write_tools.py::test_boolean_echo_cannot_acknowledge_numeric_mode"
+    ],
+    "historical_result": {
+      "failed": 9,
+      "passed": 1
+    },
+    "current_result": {
+      "failed": 0,
+      "passed": 10
+    },
+    "interpretation": "The former comparison accepted booleans, equal infinite values and equal nonnumeric text, and raised OverflowError for a huge integer. The integration test proves that a fresh true echo must not acknowledge numeric mode1. NaN was already rejected; it remains a negative control. Finite numeric strings remain accepted by the existing positive test.",
+    "test_sha256": "8651105fb6a180f82db735c1380876f9fd87d0ad3be78fcfdff749a3d69284c2",
+    "logs_sha256": {
+      "readback-before.log": "d18a3d675019adfc2c9dd79ff1d1dfc0d4ea6d3f469954b526164e3bdfe9f40f",
+      "readback-after.log": "34b00ea83fcb46aff3701a2db03426e9da92f5d1af698874b74559aa17dd6376"
+    }
   }
 }

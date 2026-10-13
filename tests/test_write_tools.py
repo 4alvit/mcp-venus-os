@@ -311,6 +311,47 @@ def test_values_match_unwraps_gateway_value_dict() -> None:
     assert _values_match("50", 50.0)
 
 
+@pytest.mark.parametrize(
+    ("received", "expected"),
+    [
+        (True, 1),
+        (False, 0),
+        ({"value": True}, 1),
+        ({"value": False}, 0),
+        (float("inf"), float("inf")),
+        ("-inf", float("-inf")),
+        (float("nan"), 0),
+        ("not numeric", "not numeric"),
+        (10**1000, 1),
+    ],
+)
+def test_readback_rejects_non_finite_or_non_numeric_values(
+    received: Payload, expected: Payload
+) -> None:
+    assert not _values_match(received, expected)
+
+
+@pytest.mark.asyncio
+async def test_boolean_echo_cannot_acknowledge_numeric_mode(enable_writes: None) -> None:
+    client = _mqtt_client()
+    transport = Mock()
+    client.client = cast(Any, transport)
+    client._connected = True
+    transport.publish.side_effect = lambda *_args, **_kwargs: _seed_cache(
+        client, "N/testportal/vebus/256/Mode", True
+    )
+    with (
+        patch("mcp_venus_os.server.get_mqtt_client", return_value=client),
+        patch("mcp_venus_os.server.WRITE_VERIFY_TIMEOUT_S", 0.001),
+    ):
+        result = await set_inverter_mode(mode="charger_only", instance=256, confirmed=True)
+    transport.publish.assert_called_once_with(
+        "W/testportal/vebus/256/Mode", '{"value": 1}', retain=False
+    )
+    assert result["success"] is False
+    assert "did not reflect" in result["error"]
+
+
 def test_cache_since_rejects_matching_values_received_before_a_write() -> None:
     """Compare ingestion timestamps directly, without a timing-tolerance race."""
     client = _mqtt_client()

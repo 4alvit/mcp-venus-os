@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import logging
+import math
 import time
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
@@ -591,10 +592,12 @@ def _values_match(received: Payload, expected: Payload) -> bool:
     """
     if isinstance(received, dict):
         received = received.get("value")
-    if received == expected:
-        return True
-    with contextlib.suppress(TypeError, ValueError):
-        return float(received) == float(expected)  # type: ignore[arg-type]
+    if isinstance(received, bool) or isinstance(expected, bool):
+        return False
+    with contextlib.suppress(TypeError, ValueError, OverflowError):
+        actual = float(received)  # type: ignore[arg-type]
+        target = float(expected)  # type: ignore[arg-type]
+        return math.isfinite(actual) and math.isfinite(target) and actual == target
     return False
 
 
