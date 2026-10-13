@@ -13,7 +13,8 @@ The measured production scope is every Python module under `src/` and `scripts/`
 including vendored release, registry-publication and security tools. Tests are
 discovered in `tests/`, `.github/release-tests/` and `.github/workflow-tests/`.
 The report excludes test bodies so adding assertions cannot inflate production
-coverage. The minimum required statement coverage is 80%; the configured minimum
+coverage. Namespace-package discovery includes scripts which no test imports.
+The minimum required statement coverage is 80%; the configured minimum
 is a gate, not a claim that a particular run achieved it. Keep modules with no
 executed lines in the denominator. The simple shell launchers are reviewed and
 exercise Python entry points; their shell lines are not Python statements.
@@ -56,8 +57,8 @@ locks, build-tool lock, release policy and frozen release plan where applicable.
 Use the same supported interpreter, operating system/architecture, build tools,
 environment and source timestamp for a repeat comparison. Install the hashed
 build requirements from `.github/requirements-build.txt`. Record the build
-backend version as well: an isolated PEP 517 build may resolve its backend
-independently of the outer environment. Run the documented packaging command
+backend version as well: this project pins the isolated PEP 517 backend in
+`pyproject.toml`, separately from the outer environment. Run the documented packaging command
 twice into different empty output directories and compare their SHA-256 sums.
 
 The source-archive regression test verifies stable archive ordering, timestamps,

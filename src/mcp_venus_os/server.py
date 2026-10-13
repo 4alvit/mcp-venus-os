@@ -6,10 +6,11 @@ import logging
 import time
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Annotated, Any
 
 from fastmcp import FastMCP
 from fastmcp.server.auth import StaticTokenVerifier
+from pydantic import Field
 
 from .capabilities import detect_capabilities
 from .config import get_config
@@ -836,7 +837,9 @@ async def set_inverter_mode(
 
 @mcp.tool()
 async def set_charge_current_limit(
-    current: float, instance: int = 0, confirmed: bool = False
+    current: Annotated[float, Field(strict=True, allow_inf_nan=False)],
+    instance: int = 0,
+    confirmed: bool = False,
 ) -> dict[str, Any]:
     """Set maximum charge current limit in Amps.
 
@@ -862,7 +865,7 @@ async def set_charge_current_limit(
 
 @mcp.tool()
 async def set_soc_limit(
-    soc_limit: int, instance: int = 0, confirmed: bool = False
+    soc_limit: Annotated[int, Field(strict=True)], instance: int = 0, confirmed: bool = False
 ) -> dict[str, Any]:
     """Set battery SoC limit percentage.
 

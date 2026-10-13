@@ -2,6 +2,7 @@ import json
 from unittest.mock import Mock, patch
 
 import pytest
+from fastmcp.exceptions import ValidationError as ToolValidationError
 
 from mcp_venus_os import server as server_module
 from mcp_venus_os.safety import SafetyCheckResult
@@ -11,6 +12,52 @@ from mcp_venus_os.server import (
     set_inverter_mode,
     set_soc_limit,
 )
+
+
+@pytest.mark.parametrize(
+    ("tool", "parameter", "value"),
+    [
+        ("set_charge_current_limit", "current", True),
+        ("set_charge_current_limit", "current", False),
+        ("set_charge_current_limit", "current", float("nan")),
+        ("set_charge_current_limit", "current", float("inf")),
+        ("set_charge_current_limit", "current", "12"),
+        ("set_soc_limit", "soc_limit", True),
+        ("set_soc_limit", "soc_limit", False),
+        ("set_soc_limit", "soc_limit", 50.5),
+        ("set_soc_limit", "soc_limit", "50"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_mcp_dispatch_does_not_coerce_invalid_control_numbers(
+    tool: str, parameter: str, value: object
+) -> None:
+    """Exercise the real MCP argument validator before any write gate/backend."""
+    with patch.object(server_module, "_confirm_gate") as gate:
+        with pytest.raises(ToolValidationError, match="validation error"):
+            await server_module.mcp.call_tool(tool, {parameter: value, "confirmed": True})
+        gate.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("tool", "parameter", "value"),
+    [
+        ("set_charge_current_limit", "current", 12),
+        ("set_charge_current_limit", "current", 12.5),
+        ("set_soc_limit", "soc_limit", 50),
+    ],
+)
+@pytest.mark.asyncio
+async def test_mcp_dispatch_preserves_valid_control_numbers(
+    tool: str, parameter: str, value: float
+) -> None:
+    """Valid numbers still reach the safety gate; the fixture stops before IO."""
+    with patch.object(
+        server_module, "_confirm_gate", return_value={"success": False, "error": "fixture stop"}
+    ) as gate:
+        await server_module.mcp.call_tool(tool, {parameter: value, "confirmed": True})
+        assert gate.call_count == 1
+        assert value in gate.call_args.args[1].values()
 
 
 @pytest.mark.asyncio
