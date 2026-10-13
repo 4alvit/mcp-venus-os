@@ -1,10 +1,11 @@
 # Reproduce the supplemental source inventory
 
 This is a source-review upper bound, not measured shell coverage. The inventory
-records the source revision and SHA-256 of each input file. Its correction adds
-14 previously omitted shell/SSH payload entries to the original 40 entries:
-204 + 34 = 238 reviewed statements, plus an 18-statement margin = the same 256
-uncovered supplemental statements used by the coverage report.
+records the source revision and SHA-256 of each input file. The current inventory includes 44 automatically enumerated fragments and 14
+reviewed shell/SSH payloads: 261 + 34 = 295 reviewed statements, plus a
+25-statement margin = 320 uncovered supplemental statements. The earlier
+54-fragment inventory remains as historical evidence for PR101/PR102; it does
+not describe the new container build workflow.
 
 Use the recorded revision, or a later checkout whose recorded input hashes all
 match. Prepare the locked development environment as described in
@@ -22,7 +23,7 @@ from pathlib import Path
 import yaml
 
 inventory = json.loads(
-    Path('docs/evidence/supplemental-coverage-2026-10-12.json').read_text()
+    Path('docs/evidence/supplemental-coverage-repeatable-2026-10-12.json').read_text()
 )
 entries = inventory['fragments']
 for entry in entries:
@@ -63,7 +64,7 @@ expected = {
     for entry in entries if 'physical_lines_including_blanks_comments_and_continuations' in entry
 }
 assert actual == expected
-assert len(actual) == 40 and sum(actual.values()) == 204
+assert len(actual) == 44 and sum(actual.values()) == 261
 
 manual = [entry for entry in entries if 'reviewed_commands' in entry]
 assert len(manual) == 14
@@ -73,12 +74,12 @@ for entry in manual:
     if 'count_breakdown' in entry:
         assert sum(entry['count_breakdown'].values()) == entry['statement_upper_bound']
 assert sum(entry['statement_upper_bound'] for entry in manual) == 34
-assert len(entries) == 54
-assert sum(entry['statement_upper_bound'] for entry in entries) == 238
-assert inventory['reviewed_statement_upper_bound'] + inventory['rounding_safety_margin'] == 256
-assert inventory['supplemental_denominator_used'] == 256
+assert len(entries) == 58
+assert sum(entry['statement_upper_bound'] for entry in entries) == 295
+assert inventory['reviewed_statement_upper_bound'] + inventory['rounding_safety_margin'] == 320
+assert inventory['supplemental_denominator_used'] == 320
 assert inventory['supplemental_covered_statements_credited'] == 0
-print('54 fragments; reviewed bound 238; margin 18; supplemental denominator 256')
+print('58 fragments; reviewed bound 295; margin 25; supplemental denominator 320')
 PY
 ```
 
@@ -95,7 +96,10 @@ non-Python shebang, Docker/Compose commands, and AsyncSSH payload construction.
 At the recorded revision, local subprocess calls use argument vectors without
 `shell=True`. `scripts/release.py::local_checks` invokes `bash -c`; its two policy
 commands and fallback are counted separately, even though the fallback repeats
-a command. The invoked `scripts/ci.sh` body is already in the original inventory.
+a command. The invoked `scripts/ci.sh` body is already in the automatic inventory. The new repeatability helper invokes
+`git` through a fixed argument vector and adds no shell payload. The Dockerfile,
+packaging script and every new workflow run block are included in the automatic
+part of the inventory.
 
 For remote commands, compare `reviewed_commands` with the source, including
 both literal firmware paths. The package examples instantiate the validated

@@ -64,11 +64,13 @@ or vulnerability reports during the preceding 12 months. The GitHub issue
 inventory reviewed that day contained no ordinary issues. These project-specific
 statements are recorded as owner attestations, not inferred from another repo.
 The primary maintainer also confirmed that repository access continuity is
-not arranged: `access_continuity` remains **Unmet**. Regression-history
-classification, complete multi-platform repeatability and a real signed
-publication still require verification. Complete-scope Python coverage and
-Python distribution repeatability have measured evidence linked from the
-quality page. Passing is a prerequisite for Silver.
+not arranged: `access_continuity` remains **Unmet**. Passing was awarded by the
+public application. [The quality page](quality-evidence.md) now links the reviewed
+regression inventory, complete-source coverage and measured repeatability of
+Python distributions and full multi-platform runnable OCI archives. Signed
+prereleases have been verified, but the currently advertised stable release still
+requires signed publication and the normal release acceptance; `signed_releases`
+remains **Unmet** until then. A Silver badge has not been awarded.
 
 ## Provider authentication and security-fix credit
 

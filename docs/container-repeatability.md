@@ -22,6 +22,9 @@ source hashes; `PYTHONHASHSEED=0` is scoped to compilation, and is not a runtime
 environment setting. The pinned uv installer omits its machine-specific installer
 metadata; distribution metadata, entry points and `RECORD` remain present. The
 final image runs the CLI help path as its non-root account during construction.
+Those smoke commands disable bytecode writes only for their own processes: the
+beartype import hook otherwise persists timestamped transformed caches.
+The normal checked-hash precompilation remains, and runtime settings are unchanged.
 The account's shadow date comes from the source epoch; temporary account-tool
 backup files are removed in that same layer. Active account records remain.
 
@@ -54,6 +57,19 @@ promise identical evidence sidecars across executions. Packaging changes require
 a new RC and the normal [release acceptance](../RELEASING.md) checks before stable
 promotion. The previous RC1 predates this packaging change.
 
-Measurement status for this pull request is pending: the initial real cold builds
-exposed an attestation validation failure. No repeatable-container claim is made
-until the corrected shipping recipe passes the full two-run comparison.
+## Measured result
+
+[The hosted comparison](evidence/container-repeatable-2026-10-12.json) on
+12 October 2026 validated both complete provenance graphs and produced identical
+**143,974,400-byte** runnable archives. Both have SHA-256
+`5fb3b910374a51b79c1101fdda892b7ee996e7d462043dbc4c51fb4159e15ff8`.
+The record includes the tested source/plan, recipe hashes, toolchain, distinct
+preserved sidecars and [required CI run](https://github.com/4alvit/mcp-venus-os/actions/runs/38337908962).
+
+The first named-export comparison correctly failed. Its
+[diagnostic record](evidence/container-cache-diagnostic-2026-10-12.json) shows
+that only the final smoke layer differed: beartype cached source timestamps in
+transformed bytecode. The fix prevents those build-time writes while retaining
+the real CLI smoke test. The earlier unnamed exporter also correctly failed
+because its raw in-toto subject was empty; the explicit frozen-version name
+supplies the required manifest subject without publishing a registry tag.

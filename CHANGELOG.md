@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.12]
 
+### Changed
+
+- Make the full multi-platform runnable OCI archive repeatable for the same
+  reviewed source and frozen plan. Preserve the original build attestations in
+  a separate required provenance file, including their truthful per-run dates.
+
 ### Security
+
+- Verify captured signature-control bytes consistently and reject nonregular
+  files and aliases. Release verification binds the required OCI/provenance pair
+  to the signed inventory, reviewed source, frozen plan and both platforms.
 
 - Reject boolean, non-finite and nonnumeric readbacks when confirming numeric
   hardware writes; a fresh `true` echo no longer confirms a requested mode `1`.
@@ -42,6 +52,12 @@ so a server offering several keys can still use its trusted RSA/SHA-2 key.
 Update obsolete SSH server software instead of disabling verification.
 
 ### Upgrade
+
+For new container candidates, retain both `mcp-venus-os-container.oci.tar` and
+`mcp-venus-os-container.provenance.json` with the full release asset set. Follow
+`docs/release-signatures.md` using the reviewed verifier; the sidecar is required
+for provenance verification. The packaging change requires a new RC after RC1
+and the normal release acceptance before stable promotion.
 
 Keep current limits finite and non-negative, and keep SoC bounds within 0–100
 with the minimum no greater than the maximum. Existing normal numeric environment

@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "repository": "4alvit/mcp-venus-os",
+  "date": "2026-10-12",
+  "failed_run": "https://github.com/4alvit/mcp-venus-os/actions/runs/38337469508",
+  "source_sha": "21c401f3dd8b9b8fa512faacbb9339baa0ed15c7",
+  "plan_sha256": "bcde68f975e478aa3e10623c2d7de560623b9f704be169bd8da505e838d63803",
+  "result": "Both provenance graphs passed; full runtime OCI archives differed. This is diagnostic evidence, not a repeatability pass.",
+  "archive_comparison": {
+    "schema": 1,
+    "source_sha": "21c401f3dd8b9b8fa512faacbb9339baa0ed15c7",
+    "plan_sha256": "bcde68f975e478aa3e10623c2d7de560623b9f704be169bd8da505e838d63803",
+    "full_runnable_archive_equal": false,
+    "builds": [
+      {
+        "directory": "cold-1",
+        "size": 144097280,
+        "sha256": "d11e32f569aa244cc517311ed9aa7b10064c563185ec327b77c7b60f3dd71197"
+      },
+      {
+        "directory": "cold-2",
+        "size": 144097280,
+        "sha256": "ef2a0683dc653faefaa1d76d45d729060b1d029a9785fd5a916ad838d23f18a8"
+      }
+    ],
+    "scope": "Complete runnable OCI tar; truthful per-build provenance is verified separately, not expected to repeat."
+  },
+  "platform_comparison": [
+    {
+      "platform": "linux/amd64",
+      "matching_layer_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "differing_layer_indices": [
+        7
+      ],
+      "last_layers": [
+        {
+          "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+          "digest": "sha256:46921ba856907c209cf577a10ffce53d2a06447fb8ed62a2a16d46c1559df760",
+          "size": 58979,
+          "annotations": {
+            "buildkit/rewritten-timestamp": "1791858826"
+          }
+        },
+        {
+          "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+          "digest": "sha256:484d9ee5f6a9e68698dcc8bb7c66a3052e6fc6ce6cfed6caf8ddf8353f40dd0a",
+          "size": 58977,
+          "annotations": {
+            "buildkit/rewritten-timestamp": "1791858826"
+          }
+        }
+      ],
+      "differing_config_fields": [
+        "rootfs"
+      ]
+    },
+    {
+      "platform": "linux/arm64",
+      "matching_layer_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "differing_layer_indices": [
+        7
+      ],
+      "last_layers": [
+        {
+          "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+          "digest": "sha256:5ba7378f10d1a566342e52bc505775a07eb1de15fcbcfdbd6f73f3bfdd0c3b6b",
+          "size": 58977,
+          "annotations": {
+            "buildkit/rewritten-timestamp": "1791858826"
+          }
+        },
+        {
+          "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+          "digest": "sha256:c6b694f9e2c124f9ace193c25b7418488812ba567ef5bafd79a0fc69c75acd5b",
+          "size": 58979,
+          "annotations": {
+            "buildkit/rewritten-timestamp": "1791858826"
+          }
+        }
+      ],
+      "differing_config_fields": [
+        "rootfs"
+      ]
+    }
+  ],
+  "localized_cause": {
+    "step": "Final non-root CLI smoke RUN",
+    "contents": "On both architectures of build 2 the last layer contained 30 opt-beartype0v22v9.pyc files and their parent directories only. All 30 marshalled bodies after the 16-byte header matched across those platforms; source timestamps embedded in the headers differed by 22 seconds.",
+    "cache_suffix": "cpython-313.opt-beartype0v22v9.pyc",
+    "preceding_layers": "All preceding 7 layer descriptors match between the two independent builders for each architecture."
+  },
+  "flag_probe": {
+    "interpreter": "CPython 3.12.14",
+    "beartype": "0.22.9",
+    "py_key_value_aio": "0.4.5",
+    "without_flag": {
+      "pyc": 506,
+      "beartype_pyc": 20
+    },
+    "with_PYTHONDONTWRITEBYTECODE_1": {
+      "pyc": 0,
+      "beartype_pyc": 0
+    },
+    "same_imported_type": "key_value.aio.stores.memory.MemoryStore",
+    "same_loader": "BeartypeSourceFileLoader",
+    "loader_sha256": "6279c7a280ce26e884d0c5db3e965380048ad21fd2dcc9b9ca6e871dd9fa2cae",
+    "loader_matches_container_bytes": true,
+    "limitation": "Local probe explains the mechanism; final hosted CPython 3.13 full archive comparison is still required."
+  },
+  "fix": "Set PYTHONDONTWRITEBYTECODE=1 only on final build-smoke commands, preserving normal checked-hash precompilation, runtime environment, non-root checks and real CLI invocation."
+}

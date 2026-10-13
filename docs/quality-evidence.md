@@ -21,17 +21,18 @@ launchers, executable workflow fragments, the Dockerfile, the Compose
 healthcheck, release-policy shell checks and fixed/generated SSH payloads. Their coverage is not instrumented, so the all-language lower
 bound credits none of those statements as executed.
 
-[The supplemental inventory](evidence/supplemental-coverage-2026-10-12.json)
-records 54 reviewed fragments, their source hashes and an upper bound of 238
-statements. The correction adds 14 previously omitted shell/SSH payloads,
-including nested command substitutions, deferred trap commands and an awk
-statement. Counting comments, blank/continuation lines, extra command separators
-and both fixed firmware-path alternatives deliberately overstates the executable
-count. The remaining 18-statement margin preserves the original denominator
-addition of 256, so the coverage lower bound below is unchanged.
+[The current supplemental inventory](evidence/supplemental-coverage-repeatable-2026-10-12.json)
+records 58 reviewed fragments with source hashes and an upper bound of 295
+statements. It includes the new container packaging recipe and repeatability
+workflow, as well as all fixed/generated shell and SSH payloads. Counting
+comments, blank/continuation lines, extra command separators and both fixed
+firmware-path alternatives deliberately overstates the executable count.
+A further 25-statement margin gives 320 supplemental statements with no
+execution credit. The earlier 256-statement bound remains historical evidence
+for PR101/PR102; it is not reused after adding new executable fragments.
 [Reproduce the inventory review](evidence/supplemental-coverage-recipe.md) whenever
-executable fragments change; this is not a general shell parser or a measurement
-of shell coverage.
+executable fragments change; this is not a general shell parser or measured
+shell coverage.
 
 Prepare the locked application/test environment, then run:
 
@@ -51,7 +52,7 @@ failed run is diagnostic evidence, not a successful coverage qualification.
 Broker integration tests require the isolated Mosquitto fixture described in
 `tests/test_integration_mosquitto.py`; a skipped fixture is not a live-device test.
 
-The successful 12 October 2026 local run passed **984 tests**, with three optional
+The earlier PR101 local run on 12 October 2026 passed **984 tests**, with three optional
 environment skips, and executed **5,662 of 6,383 statements (88.70%)** across all
 36 production Python modules. Counting the 256 supplemental statements and all
 5 excluded Python lines as uncovered gives an all-language coverage lower bound
@@ -59,6 +60,15 @@ of **5,662 / 6,644 = 85.22%**. This is not a claim of measured shell coverage.
 [The report](evidence/coverage-2026-10-12.json) records source hashes, both
 denominators and environment limitations. Hosted CI remains required for
 Linux/container-specific validation.
+
+The subsequent container/provenance change passed **1,012 tests**, with three
+optional environment skips, and executed **6,032 of 6,810 statements (88.58%)**
+across all **39 production Python modules**. Including all five excluded lines
+and the renewed 320-statement supplemental bound gives
+**6,032 / 7,135 = 84.54%**. The
+[current coverage record](evidence/coverage-repeatable-2026-10-12.json) binds the
+measurement to exact source hashes and records the successful run. This
+conservative all-language calculation still gives no credit for shell coverage.
 
 ## Warning policy
 
@@ -89,13 +99,23 @@ findings count separately with no regression credit, even though archival
 advisory identities and possible duplicates remain unknown. Stale tracked
 package metadata counts separately. The resulting lower bound is **59.13%**.
 
-To include this pull request conservatively, the ledger adds 15 possible
+To include PR101 conservatively, that historical ledger adds 15 possible
 behavioral defects, deliberately splitting some overlapping boundary fixes,
 and gives their tests no additional numerator credit. **68 / 130 = 52.31%**
 still exceeds the 50% criterion. These are lower bounds, not exact percentages
 of distinct vulnerabilities. Source/assertion review determines credit;
 commit subjects and test-function counts alone do not. Test introduction dates
 and retrospective additions remain explicit.
+
+
+The [subsequent reviewed inventory](evidence/regression-repeatable-2026-10-12.json)
+retains that history and credits eight merged PR101 regressions backed by the
+already published parent/current differential results. It adds 19 further
+possible behavior units with no new regression credit, including separately
+counted packaging nondeterminism causes and unshipped draft integration failures.
+The resulting reviewed-inventory lower bound is **76 / 149 = 51.01%**. This is
+not an exact defect universe; the extra denominator intentionally overcounts
+possible overlaps. Test-addition dates do not establish bug-introduction dates.
 
 [Differential evidence](evidence/differential-2026-10-12.json) records new tests
 run against historical function definitions and the corrected implementation.
@@ -125,9 +145,18 @@ compile owned C/C++ code or recursively invoke Make.
 
 On 12 October 2026, two real builds of the synchronized Python release fixture
 produced identical wheel, sdist and checksum bytes, and the build receipt verified
-their package metadata. [The comparison](evidence/repeat-build-2026-10-12.json)
-records the toolchain and hashes. Multi-platform OCI reproducibility remains
-unverified, so this does not yet establish the complete Silver build criterion.
+their package metadata. [The historical comparison](evidence/repeat-build-2026-10-12.json)
+records that toolchain and its hashes. The current packaging revision was then
+[rebuilt twice](evidence/python-repeatable-2026-10-12.json): wheel, sdist and
+checksums again matched and both package-metadata receipts passed.
+
+[Two fresh hosted container builders](evidence/container-repeatable-2026-10-12.json)
+also produced identical complete multi-platform runnable OCI archives after
+independent provenance validation. The [container procedure](container-repeatability.md)
+records the exact source, plan, toolchain and diagnostic correction. The diagnostic sidecars are semantically verified; the release workflow also
+signs the complete inventory containing those sidecars. Attestation and signature
+bytes are not claimed identical. These measurements do not replace device acceptance
+or approval of a supported stable release.
 
 ## Analysis and limitations
 

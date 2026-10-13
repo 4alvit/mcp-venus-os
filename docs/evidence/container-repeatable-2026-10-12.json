@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "source_sha": "97cf116b8fae4ec073a57965f959df68064e870a",
+  "plan_sha256": "466bc3d2ea4c5670fe2226942a4ae22bf8bed31b758b876518dae5b5bb6d7193",
+  "full_runnable_archive_equal": true,
+  "builds": [
+    {
+      "directory": "cold-1",
+      "size": 143974400,
+      "sha256": "5fb3b910374a51b79c1101fdda892b7ee996e7d462043dbc4c51fb4159e15ff8"
+    },
+    {
+      "directory": "cold-2",
+      "size": 143974400,
+      "sha256": "5fb3b910374a51b79c1101fdda892b7ee996e7d462043dbc4c51fb4159e15ff8"
+    }
+  ],
+  "scope": "Complete runnable OCI tar; truthful per-build provenance is verified separately, not expected to repeat.",
+  "date": "2026-10-12",
+  "pull_request_head": "6e5bee9a040d11cf8b13911686d9780d98089b89",
+  "workflow_run": "https://github.com/4alvit/mcp-venus-os/actions/runs/38337908962",
+  "comparison_job": "https://github.com/4alvit/mcp-venus-os/actions/runs/38337908962/job/115102897448",
+  "method": "Two separate GitHub-hosted Ubuntu runners, fresh BuildKit instances with no imported build cache, same frozen diagnostic plan, full original provenance graph verification before comparing complete OCI tar size and SHA256.",
+  "toolchain": {
+    "buildx": "v0.37.2",
+    "buildkit": "moby/buildkit@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea",
+    "binfmt": "tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0",
+    "dockerfile_frontend": "docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e"
+  },
+  "recipe_sha256": {
+    "Dockerfile": "ae56253a1f6f4b08fe15393a13df17cb030b29949ca67b2fb181d7f6ef90f966",
+    "scripts/package-container.sh": "4d2f7153ca831db206fbda56edd3c1d5fd19dd95a2ca3f7ce610d03790d2a378",
+    ".github/workflows/container-repeatability.yml": "dca63239605ad5d93b7ca63ed58c0b848af6b92dd93b583b3bbfb5e725c1916e",
+    ".release-policy.json": "23c992ebe414aa08b41a7f5ff5da43622104e1dfc0933abfe1ab2eb08929c8af"
+  },
+  "provenance": [
+    {
+      "build": 1,
+      "artifact_id": 11785224950,
+      "sidecar_sha256": "6f3d52366a3231d711b176e6289c5bf0102d02e584be2112c1368764f59f4852",
+      "statements": [
+        {
+          "blob_sha256": "8518d9f4552459f61cfd0a728e85af9131f3e28afe443b8d17b33723237a0472",
+          "predicate_type": "https://slsa.dev/provenance/v1",
+          "subjects": [
+            {
+              "name": "pkg:docker/ghcr.io/4alvit/mcp-venus-os@0.2.12-beta.1?platform=linux%2Famd64",
+              "digest": {
+                "sha256": "47e0b1752027d6ed335826d0883a027a31bf8f9c7edb346be95231e7c9708ec3"
+              }
+            }
+          ]
+        },
+        {
+          "blob_sha256": "ccd55b039dc20f1d0dd08294ebfc319259b3ea71370efbf7be2461cbd9589d4f",
+          "predicate_type": "https://slsa.dev/provenance/v1",
+          "subjects": [
+            {
+              "name": "pkg:docker/ghcr.io/4alvit/mcp-venus-os@0.2.12-beta.1?platform=linux%2Farm64",
+              "digest": {
+                "sha256": "16cfc9582b9d62d2e84186b3f6d6d75bc1ecf85d49c819372c38fc4b38dcb710"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "build": 2,
+      "artifact_id": 11784709765,
+      "sidecar_sha256": "19aec99844a46c8a5f9453bb51053f3039f533dc177f8ef8e8c5a7ccf5d1bd48",
+      "statements": [
+        {
+          "blob_sha256": "d410f800476dae17e1482bd21cf17c59d00404ca9f05ce8d1e4d523ad7f7ae3d",
+          "predicate_type": "https://slsa.dev/provenance/v1",
+          "subjects": [
+            {
+              "name": "pkg:docker/ghcr.io/4alvit/mcp-venus-os@0.2.12-beta.1?platform=linux%2Famd64",
+              "digest": {
+                "sha256": "47e0b1752027d6ed335826d0883a027a31bf8f9c7edb346be95231e7c9708ec3"
+              }
+            }
+          ]
+        },
+        {
+          "blob_sha256": "dc9a6f1692b6b7ac3e7f80e977453eb410cf9de47459af6cdccb961591efc3e1",
+          "predicate_type": "https://slsa.dev/provenance/v1",
+          "subjects": [
+            {
+              "name": "pkg:docker/ghcr.io/4alvit/mcp-venus-os@0.2.12-beta.1?platform=linux%2Farm64",
+              "digest": {
+                "sha256": "16cfc9582b9d62d2e84186b3f6d6d75bc1ecf85d49c819372c38fc4b38dcb710"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "The source SHA is the tested GitHub PR merge commit; the PR branch head and recipe file hashes are recorded separately.",
+    "The complete runnable OCI archive is repeatable; truthful per-build provenance/signature metadata is retained separately and is not claimed byte-identical.",
+    "The diagnostic plan is not a published release allocation, stable approval or physical device acceptance."
+  ]
+}

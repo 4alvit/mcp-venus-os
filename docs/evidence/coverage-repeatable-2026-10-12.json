@@ -1,0 +1,592 @@
+{
+  "schema": 2,
+  "date": "2026-10-12",
+  "source_revision": "54d355e883f60fd7496f8c7cd5cb2f96389361ae",
+  "runtime_revision_tested": "54d355e883f60fd7496f8c7cd5cb2f96389361ae",
+  "environment": "CPython 3.12.14, locked project development dependencies; warnings promoted to errors",
+  "command": "PYTHONPATH=src ../mcp-venus-os/.venv/bin/python -m pytest --cov=. --cov-report=json --cov-report=term --cov-fail-under=80",
+  "result": {
+    "passed": 1012,
+    "skipped": 3,
+    "failed": 0,
+    "seconds": 92.46
+  },
+  "scope": "All 39 production Python files under src/ and scripts/; unimported namespace scripts remain included. Supplemental executable fragments receive zero coverage credit.",
+  "totals": {
+    "covered_lines": 6032,
+    "num_statements": 6810,
+    "percent_covered": 88.57562408223201,
+    "percent_covered_display": "89",
+    "missing_lines": 778,
+    "excluded_lines": 5,
+    "percent_statements_covered": 88.57562408223201,
+    "percent_statements_covered_display": "89"
+  },
+  "modules": [
+    {
+      "path": "scripts/assemble_native_container.py",
+      "sha256": "c1ce903c244e676a8ac8722f2270b1de1d8599d3f09493ce04d4637168466c81",
+      "summary": {
+        "covered_lines": 110,
+        "num_statements": 123,
+        "percent_covered": 89.4308943089431,
+        "percent_covered_display": "89",
+        "missing_lines": 13,
+        "excluded_lines": 0,
+        "percent_statements_covered": 89.4308943089431,
+        "percent_statements_covered_display": "89"
+      }
+    },
+    {
+      "path": "scripts/change_scope.py",
+      "sha256": "174e460603f2efe87cf6e5cde1b8682f0a0f2d35c4c129aafe3cde8801299be8",
+      "summary": {
+        "covered_lines": 118,
+        "num_statements": 160,
+        "percent_covered": 73.75,
+        "percent_covered_display": "74",
+        "missing_lines": 42,
+        "excluded_lines": 0,
+        "percent_statements_covered": 73.75,
+        "percent_statements_covered_display": "74"
+      }
+    },
+    {
+      "path": "scripts/check_container_repeatability.py",
+      "sha256": "c5acd00d4c9b0706c056e79b2a76b7bf12d6db2fcb75d7c9c89af529a204b0b1",
+      "summary": {
+        "covered_lines": 29,
+        "num_statements": 45,
+        "percent_covered": 64.44444444444444,
+        "percent_covered_display": "64",
+        "missing_lines": 16,
+        "excluded_lines": 0,
+        "percent_statements_covered": 64.44444444444444,
+        "percent_statements_covered_display": "64"
+      }
+    },
+    {
+      "path": "scripts/inspect_container_metadata.py",
+      "sha256": "28c989bda91f37d21eb9878330d8a8b75f584858058b7c0a1514d099ae79440f",
+      "summary": {
+        "covered_lines": 36,
+        "num_statements": 46,
+        "percent_covered": 78.26086956521739,
+        "percent_covered_display": "78",
+        "missing_lines": 10,
+        "excluded_lines": 0,
+        "percent_statements_covered": 78.26086956521739,
+        "percent_statements_covered_display": "78"
+      }
+    },
+    {
+      "path": "scripts/merge_oci_archives.py",
+      "sha256": "c5f011e7b52a2776e4885570b98e22b69db36426dd4436d67aee316607ab8a57",
+      "summary": {
+        "covered_lines": 301,
+        "num_statements": 334,
+        "percent_covered": 90.11976047904191,
+        "percent_covered_display": "90",
+        "missing_lines": 33,
+        "excluded_lines": 0,
+        "percent_statements_covered": 90.11976047904191,
+        "percent_statements_covered_display": "90"
+      }
+    },
+    {
+      "path": "scripts/package_release.py",
+      "sha256": "b4dca938eebee02fb4cfa51b3055fb7bef342ed19600ed1346a4907e7dab7548",
+      "summary": {
+        "covered_lines": 115,
+        "num_statements": 131,
+        "percent_covered": 87.78625954198473,
+        "percent_covered_display": "88",
+        "missing_lines": 16,
+        "excluded_lines": 0,
+        "percent_statements_covered": 87.78625954198473,
+        "percent_statements_covered_display": "88"
+      }
+    },
+    {
+      "path": "scripts/prepare_version.py",
+      "sha256": "6e9c4a9c2fe4e3c7e4954d9725ed02fb2f179c5771ef843a653ef4f065fae0e2",
+      "summary": {
+        "covered_lines": 182,
+        "num_statements": 213,
+        "percent_covered": 85.44600938967136,
+        "percent_covered_display": "85",
+        "missing_lines": 31,
+        "excluded_lines": 0,
+        "percent_statements_covered": 85.44600938967136,
+        "percent_statements_covered_display": "85"
+      }
+    },
+    {
+      "path": "scripts/publish_verified.py",
+      "sha256": "764d512dd78a26a348eedfd50e37fa4ffddb31c5010f1c8d634e930dce070f8d",
+      "summary": {
+        "covered_lines": 102,
+        "num_statements": 109,
+        "percent_covered": 93.57798165137615,
+        "percent_covered_display": "94",
+        "missing_lines": 7,
+        "excluded_lines": 0,
+        "percent_statements_covered": 93.57798165137615,
+        "percent_statements_covered_display": "94"
+      }
+    },
+    {
+      "path": "scripts/release.py",
+      "sha256": "2584b05d01ef82b48f2ef75dc5d8e649de09df591fc6121097b2388f65a7b4eb",
+      "summary": {
+        "covered_lines": 138,
+        "num_statements": 187,
+        "percent_covered": 73.79679144385027,
+        "percent_covered_display": "74",
+        "missing_lines": 49,
+        "excluded_lines": 0,
+        "percent_statements_covered": 73.79679144385027,
+        "percent_statements_covered_display": "74"
+      }
+    },
+    {
+      "path": "scripts/release_container_labels.py",
+      "sha256": "8030cb28474e577a97ff9f406acfe75bf6b1d423dc144173667becc0605bec9f",
+      "summary": {
+        "covered_lines": 17,
+        "num_statements": 35,
+        "percent_covered": 48.57142857142857,
+        "percent_covered_display": "49",
+        "missing_lines": 18,
+        "excluded_lines": 0,
+        "percent_statements_covered": 48.57142857142857,
+        "percent_statements_covered_display": "49"
+      }
+    },
+    {
+      "path": "scripts/release_control.py",
+      "sha256": "1700427ea38864763ca223bca4f3074456ad80d52cc1bf3e63ed6929ff29a7ff",
+      "summary": {
+        "covered_lines": 859,
+        "num_statements": 922,
+        "percent_covered": 93.16702819956616,
+        "percent_covered_display": "93",
+        "missing_lines": 63,
+        "excluded_lines": 0,
+        "percent_statements_covered": 93.16702819956616,
+        "percent_statements_covered_display": "93"
+      }
+    },
+    {
+      "path": "scripts/release_provenance.py",
+      "sha256": "331663431944621bf122dc330221f5b488583bece2c00f4c3182b02f467ba807",
+      "summary": {
+        "covered_lines": 280,
+        "num_statements": 308,
+        "percent_covered": 90.9090909090909,
+        "percent_covered_display": "91",
+        "missing_lines": 28,
+        "excluded_lines": 0,
+        "percent_statements_covered": 90.9090909090909,
+        "percent_statements_covered_display": "91"
+      }
+    },
+    {
+      "path": "scripts/release_signing.py",
+      "sha256": "b2b042fada135eb31afe3e8fff6e0b702fb836a6357b8dea1bd3f712a060ea26",
+      "summary": {
+        "covered_lines": 111,
+        "num_statements": 127,
+        "percent_covered": 87.4015748031496,
+        "percent_covered_display": "87",
+        "missing_lines": 16,
+        "excluded_lines": 0,
+        "percent_statements_covered": 87.4015748031496,
+        "percent_statements_covered_display": "87"
+      }
+    },
+    {
+      "path": "scripts/release_state.py",
+      "sha256": "7c9717ce50dd10695dbc74f4fa876a5143c83f49e4f9a6bca77190916fef3641",
+      "summary": {
+        "covered_lines": 120,
+        "num_statements": 120,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100"
+      }
+    },
+    {
+      "path": "scripts/release_validation.py",
+      "sha256": "d87f110445cd6618aff991ff126218de47154afc7a878aa9ba37621b800ece42",
+      "summary": {
+        "covered_lines": 53,
+        "num_statements": 75,
+        "percent_covered": 70.66666666666667,
+        "percent_covered_display": "71",
+        "missing_lines": 22,
+        "excluded_lines": 0,
+        "percent_statements_covered": 70.66666666666667,
+        "percent_statements_covered_display": "71"
+      }
+    },
+    {
+      "path": "scripts/release_version_adapter.py",
+      "sha256": "2a520b4333d681cfda32437c8f5f00050839dabdcdd29527d1b1346f43fd5792",
+      "summary": {
+        "covered_lines": 37,
+        "num_statements": 48,
+        "percent_covered": 77.08333333333333,
+        "percent_covered_display": "77",
+        "missing_lines": 11,
+        "excluded_lines": 0,
+        "percent_statements_covered": 77.08333333333333,
+        "percent_statements_covered_display": "77"
+      }
+    },
+    {
+      "path": "scripts/release_versioned.py",
+      "sha256": "9461377600faf2010804eaa943b6283674457b0d5c9a55db6b2f11d0156acb75",
+      "summary": {
+        "covered_lines": 273,
+        "num_statements": 295,
+        "percent_covered": 92.54237288135593,
+        "percent_covered_display": "93",
+        "missing_lines": 22,
+        "excluded_lines": 0,
+        "percent_statements_covered": 92.54237288135593,
+        "percent_statements_covered_display": "93"
+      }
+    },
+    {
+      "path": "scripts/runner_preflight.py",
+      "sha256": "c0460d162e83d2fa515615452c59567186d05f3ef26dddaa68735352bbcedf80",
+      "summary": {
+        "covered_lines": 195,
+        "num_statements": 197,
+        "percent_covered": 98.98477157360406,
+        "percent_covered_display": "99",
+        "missing_lines": 2,
+        "excluded_lines": 0,
+        "percent_statements_covered": 98.98477157360406,
+        "percent_statements_covered_display": "99"
+      }
+    },
+    {
+      "path": "scripts/stage_release_assets.py",
+      "sha256": "a639a10cc44097f250e9190efcadd09dfbe26c7abd7ee9acfd7cb84c8af482e0",
+      "summary": {
+        "covered_lines": 99,
+        "num_statements": 110,
+        "percent_covered": 90.0,
+        "percent_covered_display": "90",
+        "missing_lines": 11,
+        "excluded_lines": 0,
+        "percent_statements_covered": 90.0,
+        "percent_statements_covered_display": "90"
+      }
+    },
+    {
+      "path": "scripts/validate_scorecard_json.py",
+      "sha256": "b350bcb356af053f63065c6681c41e76fabc60b9e5c24de9521c9475f27a938b",
+      "summary": {
+        "covered_lines": 45,
+        "num_statements": 46,
+        "percent_covered": 97.82608695652173,
+        "percent_covered_display": "98",
+        "missing_lines": 1,
+        "excluded_lines": 0,
+        "percent_statements_covered": 97.82608695652173,
+        "percent_statements_covered_display": "98"
+      }
+    },
+    {
+      "path": "scripts/verified_images.py",
+      "sha256": "16e66685364277555dd246b072c679546c361929be3efe45f5b6ff47b92f77b0",
+      "summary": {
+        "covered_lines": 95,
+        "num_statements": 97,
+        "percent_covered": 97.9381443298969,
+        "percent_covered_display": "98",
+        "missing_lines": 2,
+        "excluded_lines": 0,
+        "percent_statements_covered": 97.9381443298969,
+        "percent_statements_covered_display": "98"
+      }
+    },
+    {
+      "path": "scripts/version_plan.py",
+      "sha256": "5ab44b0750a135f291417825b18536e0256938d8b36f87918ab5e35ce1b49a39",
+      "summary": {
+        "covered_lines": 930,
+        "num_statements": 954,
+        "percent_covered": 97.48427672955975,
+        "percent_covered_display": "97",
+        "missing_lines": 24,
+        "excluded_lines": 0,
+        "percent_statements_covered": 97.48427672955975,
+        "percent_statements_covered_display": "97"
+      }
+    },
+    {
+      "path": "scripts/version_receipt.py",
+      "sha256": "bbe24c7d99a8a2fc225e094cbefa30f2f5a089e868286c98d9e1b84a2e3f425c",
+      "summary": {
+        "covered_lines": 179,
+        "num_statements": 196,
+        "percent_covered": 91.3265306122449,
+        "percent_covered_display": "91",
+        "missing_lines": 17,
+        "excluded_lines": 0,
+        "percent_statements_covered": 91.3265306122449,
+        "percent_statements_covered_display": "91"
+      }
+    },
+    {
+      "path": "scripts/workflow_contracts.py",
+      "sha256": "5332b472b01df64077e7a474b7e5171ba48d8cfa2ae1b0b4d7572024effd248d",
+      "summary": {
+        "covered_lines": 64,
+        "num_statements": 216,
+        "percent_covered": 29.62962962962963,
+        "percent_covered_display": "30",
+        "missing_lines": 152,
+        "excluded_lines": 0,
+        "percent_statements_covered": 29.62962962962963,
+        "percent_statements_covered_display": "30"
+      }
+    },
+    {
+      "path": "scripts/write_binary_build_metadata.py",
+      "sha256": "d09d1642bb675b585ab3a69384efb87ff48dc3a37b2c04cadedb693cf5113c41",
+      "summary": {
+        "covered_lines": 16,
+        "num_statements": 18,
+        "percent_covered": 88.88888888888889,
+        "percent_covered_display": "89",
+        "missing_lines": 2,
+        "excluded_lines": 0,
+        "percent_statements_covered": 88.88888888888889,
+        "percent_statements_covered_display": "89"
+      }
+    },
+    {
+      "path": "scripts/write_web_build_metadata.py",
+      "sha256": "1d962dfedb82feada5a062f2e075e895deb687d79ad982596d915ad6bef668f0",
+      "summary": {
+        "covered_lines": 0,
+        "num_statements": 24,
+        "percent_covered": 0.0,
+        "percent_covered_display": "0",
+        "missing_lines": 24,
+        "excluded_lines": 0,
+        "percent_statements_covered": 0.0,
+        "percent_statements_covered_display": "0"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/__init__.py",
+      "sha256": "70e97ada553c020536a08ffd41907e979d3cc7e21d0805e62175b995656f8fb1",
+      "summary": {
+        "covered_lines": 9,
+        "num_statements": 9,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/__main__.py",
+      "sha256": "3007611713299a2e410fef69969720fd5482dc3b1dbf0425a9005384b047b004",
+      "summary": {
+        "covered_lines": 14,
+        "num_statements": 14,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/capabilities.py",
+      "sha256": "3e1ef4255158d114d3e4d2286d88149135de153b00e5b818802c717784ecf293",
+      "summary": {
+        "covered_lines": 18,
+        "num_statements": 18,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/config.py",
+      "sha256": "360ee695c95c9f8f7534c6accdf2c9cd3e130aba8e0b0a3aa9757bec1863d583",
+      "summary": {
+        "covered_lines": 81,
+        "num_statements": 81,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/dbus_client.py",
+      "sha256": "f950744cbf8bb07443b65c6aa3aef619cc030ba019ded59cd0966b01d81357ff",
+      "summary": {
+        "covered_lines": 148,
+        "num_statements": 148,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/hardware_contracts.py",
+      "sha256": "d6b8f9da13184b0b003e8512242ce622f8b3093c7d2e7419b7b94461856b9c3b",
+      "summary": {
+        "covered_lines": 67,
+        "num_statements": 67,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/mqtt_client.py",
+      "sha256": "ed924e7d60bc38d17cc6d667e2aaf33b93ae715804e1464d3b560bfd6d252d58",
+      "summary": {
+        "covered_lines": 450,
+        "num_statements": 458,
+        "percent_covered": 98.2532751091703,
+        "percent_covered_display": "98",
+        "missing_lines": 8,
+        "excluded_lines": 0,
+        "percent_statements_covered": 98.2532751091703,
+        "percent_statements_covered_display": "98"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/safety.py",
+      "sha256": "f6cacbb1faed967709e7ebf4ddc59f56ca74cda2420b458d619239486ae6d692",
+      "summary": {
+        "covered_lines": 123,
+        "num_statements": 124,
+        "percent_covered": 99.19354838709677,
+        "percent_covered_display": "99",
+        "missing_lines": 1,
+        "excluded_lines": 0,
+        "percent_statements_covered": 99.19354838709677,
+        "percent_statements_covered_display": "99"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/server.py",
+      "sha256": "3bbe8feea26f5a9147b35c6c4314163d7be1f5be588e810aaf814b912c40bddd",
+      "summary": {
+        "covered_lines": 338,
+        "num_statements": 421,
+        "percent_covered": 80.28503562945369,
+        "percent_covered_display": "80",
+        "missing_lines": 83,
+        "excluded_lines": 0,
+        "percent_statements_covered": 80.28503562945369,
+        "percent_statements_covered_display": "80"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/socket_diagnostics.py",
+      "sha256": "ed61c86a37118c0dded6b76f8e358dd4600877241b9fca8c880cf13eb5764af6",
+      "summary": {
+        "covered_lines": 63,
+        "num_statements": 66,
+        "percent_covered": 95.45454545454545,
+        "percent_covered_display": "95",
+        "missing_lines": 3,
+        "excluded_lines": 5,
+        "percent_statements_covered": 95.45454545454545,
+        "percent_statements_covered_display": "95"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "summary": {
+        "covered_lines": 127,
+        "num_statements": 159,
+        "percent_covered": 79.87421383647799,
+        "percent_covered_display": "80",
+        "missing_lines": 32,
+        "excluded_lines": 0,
+        "percent_statements_covered": 79.87421383647799,
+        "percent_statements_covered_display": "80"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/telemetry.py",
+      "sha256": "13690d9bcb847932dc983df94724465562838cf1c3ea794f0f3598455b650512",
+      "summary": {
+        "covered_lines": 39,
+        "num_statements": 42,
+        "percent_covered": 92.85714285714286,
+        "percent_covered_display": "93",
+        "missing_lines": 3,
+        "excluded_lines": 0,
+        "percent_statements_covered": 92.85714285714286,
+        "percent_statements_covered_display": "93"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/tls_policy.py",
+      "sha256": "8bc0d6b17dbc5dadfef21e850c7319144c58aaf04f2e31d2e4e760f3b5fb64c7",
+      "summary": {
+        "covered_lines": 51,
+        "num_statements": 67,
+        "percent_covered": 76.11940298507463,
+        "percent_covered_display": "76",
+        "missing_lines": 16,
+        "excluded_lines": 0,
+        "percent_statements_covered": 76.11940298507463,
+        "percent_statements_covered_display": "76"
+      }
+    }
+  ],
+  "supplemental": {
+    "inventory": "supplemental-coverage-repeatable-2026-10-12.json",
+    "reviewed_fragments": 58,
+    "reviewed_statement_upper_bound": 295,
+    "rounding_safety_margin": 25,
+    "uncovered_denominator": 320,
+    "covered_statements_credited": 0
+  },
+  "all_language_lower_bound": {
+    "covered_statements": 6032,
+    "total_statements_upper_bound": 7135,
+    "percent": 84.54099509460407,
+    "formula": "6032 / (6810 + 5 + 320)"
+  },
+  "limitations": [
+    "Local macOS run skips optional Linux/Mosquitto fixtures; hosted CI remains required.",
+    "Shell, embedded shell/Python workflow snippets and Docker commands are not instrumented; a source-reviewed conservative upper bound receives zero execution credit.",
+    "The final smoke-cache change only edits Dockerfile; all recorded production Python hashes remain unchanged. No scripts directory was added to PYTHONPATH for this clean-discovery run."
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "date": "2026-10-12",
+  "source_revision": "6e5bee9a040d11cf8b13911686d9780d98089b89",
+  "plan_sha256": "2cdff02566b4382fc10edf525b54767d4ded8dc0714b248441509daec2711291",
+  "kind": "Local nonpublished beta1 diagnostic plan, not a release allocation",
+  "environment": {
+    "platform": "macOS arm64",
+    "python": "3.12.14",
+    "SOURCE_DATE_EPOCH": "0 (confirmed normalized sdist member timestamps)",
+    "build": "1.2.2.post1",
+    "setuptools_backend": "84.0.0"
+  },
+  "method": "Same clean tracked source and frozen plan, two empty output directories, real isolated setuptools builds and strict twine check, complete output SHA256 equality.",
+  "files": [
+    {
+      "name": "SHA256SUMS",
+      "size": 200,
+      "first_sha256": "12c0953e41efde6b98b20c40b904687fdba870a2b279302b9d646b815317f0cd",
+      "second_sha256": "12c0953e41efde6b98b20c40b904687fdba870a2b279302b9d646b815317f0cd",
+      "identical": true
+    },
+    {
+      "name": "mcp_venus_os-0.2.12b1-py3-none-any.whl",
+      "size": 54721,
+      "first_sha256": "9487049e8b48fae6d3e0c8d12a512f5a5326f8d9ec593d2151fe754fc9e6b3cd",
+      "second_sha256": "9487049e8b48fae6d3e0c8d12a512f5a5326f8d9ec593d2151fe754fc9e6b3cd",
+      "identical": true
+    },
+    {
+      "name": "mcp_venus_os-0.2.12b1.tar.gz",
+      "size": 109314,
+      "first_sha256": "16660cb699faf97f2245e8b0dbab1f39f34df7bad3bef57f08529374f53f956b",
+      "second_sha256": "16660cb699faf97f2245e8b0dbab1f39f34df7bad3bef57f08529374f53f956b",
+      "identical": true
+    }
+  ],
+  "limitations": [
+    "Separate OCI comparison uses hosted Linux builders; provenance metadata intentionally preserves each run.",
+    "This local qualification is not live device acceptance."
+  ],
+  "receipt_validation": {
+    "first": "passed",
+    "second": "passed",
+    "scope": "Real wheel/sdist version metadata inspected and both build-input receipts generated; OCI is verified separately."
+  }
+}
