@@ -9,7 +9,7 @@ permissions:
 jobs:
   ci:
     name: CI
-    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/python-ci.yml@7282a18bd5975975ec323ac765557cf0aec6e11d  # main
+    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/python-ci.yml@3201ada7144602114d38fdf5c5c609d227a9997c  # main
     with:
       force-full: true
       use-uv-lock: true

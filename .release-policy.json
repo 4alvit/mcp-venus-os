@@ -25,7 +25,7 @@
   "visibility": "public",
   "single_entry_ci": true,
   "coverage": {
-    "toolkit_ref": "7282a18bd5975975ec323ac765557cf0aec6e11d",
+    "toolkit_ref": "3201ada7144602114d38fdf5c5c609d227a9997c",
     "reports": [
       {
         "name": "python",
@@ -91,5 +91,15 @@
         "value": "package"
       }
     ]
-  }
+  },
+  "detached_provenance": [
+    {
+      "image": "mcp-venus-os-container.oci.tar",
+      "sidecar": "mcp-venus-os-container.provenance.json",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ]
+    }
+  ]
 }

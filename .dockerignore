@@ -13,3 +13,8 @@ TODO.md
 *.local.py
 Dockerfile
 docker-compose.yml
+
+.container-inputs.*
+release-dist
+release-assets
+cold-*

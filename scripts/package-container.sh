@@ -1,26 +1,36 @@
 #!/usr/bin/env bash
-# Export the same immutable multi-platform OCI payload used by candidate CI.
+# Export immutable runtime bytes and preserve each platform's original evidence.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 [[ -f release-dist/SHA256SUMS ]] || { echo 'Build package assets first.' >&2; exit 1; }
 asset="mcp-venus-os-container.oci.tar"
-[[ ! -e "release-dist/$asset" ]] || { echo 'Container output already exists.' >&2; exit 1; }
+sidecar="mcp-venus-os-container.provenance.json"
+[[ ! -e "release-dist/$asset" && ! -e "release-dist/$sidecar" ]] || { echo 'Container output already exists.' >&2; exit 1; }
 python_bin="${RELEASE_PYTHON:-python3}"
 identity="$("$python_bin" scripts/release_container_labels.py --shell)"
 read -r package_version source_revision <<< "$identity"
-docker buildx build --platform linux/amd64,linux/arm64 \
-  --label "org.opencontainers.image.version=$package_version" \
-  --label "org.opencontainers.image.revision=$source_revision" \
-  --output "type=oci,dest=release-dist/$asset" .
-python3 - "$asset" <<'CHECKSUM'
+source_epoch="$(git show -s --format=%ct "$source_revision")"
+inputs="$(mktemp -d "$PWD/.container-inputs.XXXXXX")"
+trap 'rm -rf "$inputs"' EXIT
+for architecture in amd64 arm64; do
+  docker buildx build --platform "linux/$architecture" \
+    --build-arg "SOURCE_DATE_EPOCH=$source_epoch" \
+    --provenance=mode=max \
+    --label "org.opencontainers.image.version=$package_version" \
+    --label "org.opencontainers.image.revision=$source_revision" \
+    --output "type=oci,dest=$inputs/$architecture.oci.tar,rewrite-timestamp=true" .
+done
+"$python_bin" scripts/release_provenance.py detach --directory release-dist \
+  --input "linux/amd64=$inputs/amd64.oci.tar" --input "linux/arm64=$inputs/arm64.oci.tar" \
+  --image "$asset" --sidecar "$sidecar"
+"$python_bin" - "$asset" "$sidecar" <<'CHECKSUM'
 import hashlib
 import sys
 from pathlib import Path
-path = Path("release-dist") / sys.argv[1]
-digest = hashlib.sha256()
-with path.open("rb") as source:
-    for chunk in iter(lambda: source.read(1024 * 1024), b""):
-        digest.update(chunk)
 with Path("release-dist/SHA256SUMS").open("a") as checksums:
-    checksums.write(f"{digest.hexdigest()}  {path.name}\n")
+    for name in sys.argv[1:]:
+        path = Path("release-dist") / name
+        with path.open("rb") as source:
+            digest = hashlib.file_digest(source, "sha256").hexdigest()
+        checksums.write(f"{digest}  {name}\n")
 CHECKSUM
