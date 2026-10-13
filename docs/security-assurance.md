@@ -23,13 +23,15 @@ operation-specific bounds and confirmation; the MQTT client additionally
 requires one exact operator-reviewed hardware contract, fresh identities and
 qualified value semantics before publishing a write. A read-back echo is not
 hardware qualification. Invalid numeric values must be rejected before ordinary
-range comparisons.
+range comparisons. Confirmation of a numeric write rejects boolean, non-finite
+and nonnumeric echoes while accepting finite numeric strings from telemetry.
 
 Evidence: [safety.py](../src/mcp_venus_os/safety.py),
 [hardware_contracts.py](../src/mcp_venus_os/hardware_contracts.py),
 [MQTT client](../src/mcp_venus_os/mqtt_client.py),
 [safety denial tests](../tests/test_safety_deny.py),
-[numeric boundary tests](../tests/test_safety.py), and
+[numeric boundary tests](../tests/test_safety.py),
+[real MCP dispatch and readback tests](../tests/test_write_tools.py), and
 [hardware contract tests](../tests/test_hardware_contracts.py).
 
 Limitation: an authorized operator can configure unsafe physical bounds or

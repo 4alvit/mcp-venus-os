@@ -16,8 +16,18 @@ The report excludes test bodies so adding assertions cannot inflate production
 coverage. Namespace-package discovery includes scripts which no test imports.
 The minimum required statement coverage is 80%; the configured minimum
 is a gate, not a claim that a particular run achieved it. Keep modules with no
-executed lines in the denominator. The simple shell launchers are reviewed and
-exercise Python entry points; their shell lines are not Python statements.
+executed lines in the denominator. A separate source inventory includes shell
+launchers, executable workflow fragments, the Dockerfile and the Compose
+healthcheck. Their coverage is not instrumented, so the all-language lower
+bound credits none of those statements as executed.
+
+[The supplemental inventory](evidence/supplemental-coverage-2026-10-12.json)
+records all 40 fragments, their hashes and a reviewed upper bound of 204
+statements. Counting comments, blank/continuation lines and extra command
+separators deliberately overstates the actual executable count. A further
+52-statement margin rounds this denominator addition up to 256. Recheck this
+inventory whenever executable fragments change; it is not a general shell
+parser or a measurement of shell coverage.
 
 Prepare the locked application/test environment, then run:
 
@@ -37,11 +47,14 @@ failed run is diagnostic evidence, not a successful coverage qualification.
 Broker integration tests require the isolated Mosquitto fixture described in
 `tests/test_integration_mosquitto.py`; a skipped fixture is not a live-device test.
 
-The successful 12 October 2026 local run passed **974 tests**, with three optional
-environment skips, and executed **5,659 of 6,380 statements (88.70%)** across all
-36 production Python modules. [The measured report](evidence/coverage-2026-10-12.json)
-records module hashes, the complete denominator and environment limitations.
-Hosted CI remains required for Linux/container-specific validation.
+The successful 12 October 2026 local run passed **984 tests**, with three optional
+environment skips, and executed **5,662 of 6,383 statements (88.70%)** across all
+36 production Python modules. Counting the 256 supplemental statements and all
+5 excluded Python lines as uncovered gives an all-language coverage lower bound
+of **5,662 / 6,644 = 85.22%**. This is not a claim of measured shell coverage.
+[The report](evidence/coverage-2026-10-12.json) records source hashes, both
+denominators and environment limitations. Hosted CI remains required for
+Linux/container-specific validation.
 
 ## Warning policy
 
@@ -64,11 +77,21 @@ evidence and does not suppress runtime warnings or relax failure gates.
 
 ## Regression history
 
-[The six-month ledger](evidence/regression-history-2026-10-12.json) links candidate
-defect-fix commits to newly added test cases and states where classification or
-causal verification remains incomplete. Test names alone do not prove that a
-test detects the defect. The ledger deliberately does not claim the Silver
-50% requirement while its complete defect denominator is unresolved.
+[The six-month ledger](evidence/regression-history-2026-10-12.json) reviews all
+122 first-parent changes through the recorded base revision and links reviewed
+behavioral assertions to 68 corrected defects. It uses an upper denominator of
+115: all six reported PyJWT findings and all three virtualenv/python-discovery
+findings count separately with no regression credit, even though archival
+advisory identities and possible duplicates remain unknown. Stale tracked
+package metadata counts separately. The resulting lower bound is **59.13%**.
+
+To include this pull request conservatively, the ledger adds 15 possible
+behavioral defects, deliberately splitting some overlapping boundary fixes,
+and gives their tests no additional numerator credit. **68 / 130 = 52.31%**
+still exceeds the 50% criterion. These are lower bounds, not exact percentages
+of distinct vulnerabilities. Source/assertion review determines credit;
+commit subjects and test-function counts alone do not. Test introduction dates
+and retrospective additions remain explicit.
 
 [Differential evidence](evidence/differential-2026-10-12.json) records new tests
 run against historical function definitions and the corrected implementation.

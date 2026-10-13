@@ -1,25 +1,26 @@
 {
-  "schema": 1,
+  "schema": 2,
   "date": "2026-10-12",
-  "source_revision": "7f0b266551f5078dc10fa83ada20d96966587fba",
-  "runtime_revision_tested": "7f0b266551f5078dc10fa83ada20d96966587fba",
-  "note": "Successful final run with all Python warnings promoted to errors; no warning filters suppress resource or unraisable exceptions.",
+  "source_revision": "92daf35a2f9bf7e7f953e12d482a20e8ff590955",
+  "runtime_revision_tested": "92daf35a2f9bf7e7f953e12d482a20e8ff590955",
+  "environment": "CPython 3.12.14, locked project development dependencies; warning-as-error pytest policy",
+  "note": "Successful final run with all Python warnings promoted to errors; no resource or unraisable warning suppression.",
   "command": ".venv/bin/python -m pytest --cov=. --cov-report=term-missing --cov-report=json --cov-report=xml",
   "result": {
-    "passed": 974,
+    "passed": 984,
     "skipped": 3,
     "failed": 0,
-    "seconds": 96.87
+    "seconds": 92.42
   },
-  "scope": "All 36 production Python files in src/ and scripts/, including unimported namespace scripts. Shell lines are not Python statements.",
+  "scope": "All 36 production Python files in src/ and scripts/, including unimported namespace scripts. Supplemental executable fragments are counted separately without any coverage credit.",
   "totals": {
-    "covered_lines": 5659,
-    "num_statements": 6380,
-    "percent_covered": 88.69905956112852,
+    "covered_lines": 5662,
+    "num_statements": 6383,
+    "percent_covered": 88.70437098543005,
     "percent_covered_display": "89",
     "missing_lines": 721,
     "excluded_lines": 5,
-    "percent_statements_covered": 88.69905956112852,
+    "percent_statements_covered": 88.70437098543005,
     "percent_statements_covered_display": "89"
   },
   "modules": [
@@ -459,15 +460,15 @@
     },
     {
       "path": "src/mcp_venus_os/server.py",
-      "sha256": "92dc6731aa4b075a5c603c416cb4fcf3bcd99588dd6ee5fd93cbff76782aec0e",
+      "sha256": "3bbe8feea26f5a9147b35c6c4314163d7be1f5be588e810aaf814b912c40bddd",
       "summary": {
-        "covered_lines": 335,
-        "num_statements": 418,
-        "percent_covered": 80.14354066985646,
+        "covered_lines": 338,
+        "num_statements": 421,
+        "percent_covered": 80.28503562945369,
         "percent_covered_display": "80",
         "missing_lines": 83,
         "excluded_lines": 0,
-        "percent_statements_covered": 80.14354066985646,
+        "percent_statements_covered": 80.28503562945369,
         "percent_statements_covered_display": "80"
       }
     },
@@ -528,9 +529,20 @@
       }
     }
   ],
+  "all_language_conservative_bound": {
+    "covered_statements_credited": 5662,
+    "measured_python_denominator": 6383,
+    "excluded_python_lines_counted_as_additional_uncovered_statements": 5,
+    "supplemental_executable_statement_bound": 256,
+    "denominator_upper_bound": 6644,
+    "coverage_lower_bound_percent": 85.21974714027694,
+    "supplemental_inventory": "supplemental-coverage-2026-10-12.json",
+    "interpretation": "Only instrumented covered Python statements contribute to numerator. Every supplemental statement and excluded Python line is conservatively counted uncovered. The supplemental count is an audited source bound, not measured shell coverage."
+  },
   "limitations": [
     "No physical inverter or live control commands were used.",
-    "Optional Docker/Mosquitto/platform fixtures were skipped in this macOS run; hosted Linux CI remains required."
+    "Three optional Docker/Mosquitto/platform fixtures were skipped in this macOS run; hosted Linux CI remains required."
   ],
-  "raw_report_sha256": "afd9dcd95c302c08434cb19bf977b5806c454412592cf58f4787b0680c9a9c49"
+  "raw_report_sha256": "f670ec48d1df5b03b2a307f8c396b8580375e0fea24c4ae456a975f8543b26db",
+  "successful_log_sha256": "96a5c3ac1a516e6b693bcdd1c3d588fe51e0b7deda249ab966f0cc543f984986"
 }
