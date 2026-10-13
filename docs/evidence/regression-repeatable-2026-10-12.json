@@ -1,0 +1,240 @@
+{
+  "schema": 1,
+  "date": "2026-10-12",
+  "repository": "4alvit/mcp-venus-os",
+  "through_head": "6e5bee9a040d11cf8b13911686d9780d98089b89",
+  "status": "reviewed_inventory_lower_bound",
+  "prior_evidence": "regression-history-2026-10-12.json",
+  "prior_counts": {
+    "credited": 68,
+    "denominator_upper_bound": 130
+  },
+  "new_credit_from_merged_pr101": [
+    {
+      "id": "PR101-01",
+      "behavior": "Charge-current admission accepted NaN/boolean values.",
+      "source_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/src/mcp_venus_os/safety.py",
+      "test_or_evidence_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/tests/test_safety.py",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": true,
+      "evidence": "differential-2026-10-12.json",
+      "regression_test_added": "2026-10-12; merged in PR101; not a pre-existing historical test claim",
+      "bug_introduction_date": "not established"
+    },
+    {
+      "id": "PR101-02",
+      "behavior": "Discharge-current admission accepted NaN/boolean values.",
+      "source_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/src/mcp_venus_os/safety.py",
+      "test_or_evidence_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/tests/test_safety.py",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": true,
+      "evidence": "differential-2026-10-12.json",
+      "regression_test_added": "2026-10-12; merged in PR101; not a pre-existing historical test claim",
+      "bug_introduction_date": "not established"
+    },
+    {
+      "id": "PR101-07",
+      "behavior": "Validation logs included operator argument values including possible SSH secrets.",
+      "source_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/src/mcp_venus_os/safety.py",
+      "test_or_evidence_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/tests/test_safety.py",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": true,
+      "evidence": "differential-2026-10-12.json",
+      "regression_test_added": "2026-10-12; merged in PR101; not a pre-existing historical test claim",
+      "bug_introduction_date": "not established"
+    },
+    {
+      "id": "PR101-10",
+      "behavior": "Native TLS handshake/certificate failures could leak wrapped sockets.",
+      "source_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/src/mcp_venus_os/tls_policy.py",
+      "test_or_evidence_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/tests/test_mqtt_tls.py",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": true,
+      "evidence": "differential-2026-10-12.json",
+      "regression_test_added": "2026-10-12; merged in PR101; not a pre-existing historical test claim",
+      "bug_introduction_date": "not established"
+    },
+    {
+      "id": "PR101-11",
+      "behavior": "Retired Paho clients left wake-up descriptors to cyclic garbage collection.",
+      "source_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/src/mcp_venus_os/mqtt_client.py",
+      "test_or_evidence_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/tests/test_mqtt_client.py",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": true,
+      "evidence": "differential-2026-10-12.json",
+      "regression_test_added": "2026-10-12; merged in PR101; not a pre-existing historical test claim",
+      "bug_introduction_date": "not established"
+    },
+    {
+      "id": "PR101-12",
+      "behavior": "Boolean readback could falsely acknowledge numeric mode1.",
+      "source_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/src/mcp_venus_os/server.py",
+      "test_or_evidence_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/tests/test_write_tools.py",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": true,
+      "evidence": "differential-2026-10-12.json",
+      "regression_test_added": "2026-10-12; merged in PR101; not a pre-existing historical test claim",
+      "bug_introduction_date": "not established"
+    },
+    {
+      "id": "PR101-13",
+      "behavior": "Equal infinite/nonnumeric readbacks could satisfy a numeric comparison.",
+      "source_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/src/mcp_venus_os/server.py",
+      "test_or_evidence_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/tests/test_write_tools.py",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": true,
+      "evidence": "differential-2026-10-12.json",
+      "regression_test_added": "2026-10-12; merged in PR101; not a pre-existing historical test claim",
+      "bug_introduction_date": "not established"
+    },
+    {
+      "id": "PR101-14",
+      "behavior": "Huge integer readback could raise OverflowError instead of rejecting the match.",
+      "source_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/src/mcp_venus_os/server.py",
+      "test_or_evidence_url": "https://github.com/4alvit/mcp-venus-os/blob/92daf35a2f9bf7e7f953e12d482a20e8ff590955/tests/test_write_tools.py",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": true,
+      "evidence": "differential-2026-10-12.json",
+      "regression_test_added": "2026-10-12; merged in PR101; not a pre-existing historical test claim",
+      "bug_introduction_date": "not established"
+    }
+  ],
+  "subsequent_possible_defect_units": [
+    {
+      "id": "PR102-01",
+      "behavior": "Supplemental coverage inventory omitted nested/local shell and fixed SSH payloads.",
+      "corrected_path": "docs/evidence/supplemental-coverage-recipe.md",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-01",
+      "behavior": "OCI config/history wall-clock timestamps differed across builds.",
+      "corrected_path": "Dockerfile",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-02",
+      "behavior": "New OCI layer file timestamps differed across builds.",
+      "corrected_path": "scripts/package-container.sh",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-03",
+      "behavior": "Timestamp-based bytecode embedded build-time source timestamps.",
+      "corrected_path": "Dockerfile",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-04",
+      "behavior": "Hash-randomized bytecode constants could vary across compiler processes.",
+      "corrected_path": "Dockerfile",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-05",
+      "behavior": "uv installer cache metadata embedded filesystem/time-specific values.",
+      "corrected_path": "Dockerfile",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-06",
+      "behavior": "New account shadow aging record used build date.",
+      "corrected_path": "Dockerfile",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-07",
+      "behavior": "Account-tool backup files retained build-date records after active record normalization.",
+      "corrected_path": "Dockerfile",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-08",
+      "behavior": "Inline truthful per-run provenance made the complete old runtime/evidence archive differ.",
+      "corrected_path": "scripts/release_provenance.py",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-09",
+      "behavior": "Signature verification and subsequent parsing could observe different mutable manifest bytes.",
+      "corrected_path": "scripts/release_signing.py",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-10",
+      "behavior": "Signer control-file aliases/nonregular replacements were not bounded safely when opened.",
+      "corrected_path": "scripts/release_signing.py",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-11",
+      "behavior": "Draft unnamed single-platform OCI export produced empty SLSA subjects and was correctly rejected.",
+      "corrected_path": "scripts/package-container.sh",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-12",
+      "behavior": "Draft direct pull_request repeatability entry was outside the required validation workflow inventory.",
+      "corrected_path": ".github/workflows/container-repeatability.yml",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-13",
+      "behavior": "Draft provisional toolkit commit became unavailable for reusable workflow resolution after branch deletion.",
+      "corrected_path": ".release-policy.json",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-14",
+      "behavior": "Legacy signing, receipt and lifecycle/consumer fixtures assumed unsigned/no-detached policy while testing generated opt-in consumers. Count three fixture families conservatively.",
+      "corrected_path": ".github/release-tests/",
+      "denominator_weight_upper_bound": 3,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-15",
+      "behavior": "Draft comparison-helper test could not resolve sibling script imports under clean pytest discovery without an external PYTHONPATH.",
+      "corrected_path": "tests/test_container_repeatability.py",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-16",
+      "behavior": "Draft final image smoke test persisted timestamped beartype import-hook bytecode caches after deterministic precompilation.",
+      "corrected_path": "Dockerfile",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-17",
+      "behavior": "Draft Docker context did not exclude the actual temporary platform archive directory after its path moved under build/.",
+      "corrected_path": ".dockerignore",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
+    }
+  ],
+  "method": "Preserve the complete original six-month inventory. Add eight PR101 fixes whose existing published function-level parent/current differential runs prove regression behavior. Split distinct packaging nondeterminism causes. Include draft-only integration/fixture failures conservatively although they were never shipped. Give this phase no additional regression credit, including new feature contract tests. The result is a lower bound, not an exact unique-defect percentage.",
+  "summary": {
+    "credited": 76,
+    "denominator_upper_bound": 150,
+    "lower_bound_percent": 50.666666666666664,
+    "formula": "76 / (130 + 20)",
+    "qualifies_at_least_50_percent": true
+  },
+  "validation_run": "https://github.com/4alvit/mcp-venus-os/actions/runs/38337908962",
+  "qualification_note": "The through_head identifies the last qualified functional source. This inventory also conservatively counts the subsequent Docker-context ignore correction in the same PR; the final required gate must pass before merge."
+}

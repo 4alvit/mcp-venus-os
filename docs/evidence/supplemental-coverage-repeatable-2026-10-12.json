@@ -1,0 +1,814 @@
+{
+  "source_revision": "6e5bee9a040d11cf8b13911686d9780d98089b89",
+  "status": "source-reviewed current revision; no measured shell coverage",
+  "fragments": [
+    {
+      "path": "release.sh",
+      "fragment": "whole non-Python shebang file (including embedded Python)",
+      "source_sha256": "18c32118fd9e7748ea2bb6b673588b23f5bbe59205317b56a4bcb158e04c4cc6",
+      "physical_lines_including_blanks_comments_and_continuations": 5,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 1,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 6
+    },
+    {
+      "path": "scripts/ci.sh",
+      "fragment": "whole non-Python shebang file (including embedded Python)",
+      "source_sha256": "3f1797dab6a1a3956541b6d98ae206e57577136fe2b8e3e04f32126f4ef3ff99",
+      "physical_lines_including_blanks_comments_and_continuations": 24,
+      "additional_possible_statement_boundaries": {
+        ";": 5,
+        "&&": 0,
+        "||": 1,
+        "$(": 1,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 31
+    },
+    {
+      "path": "scripts/package-container.sh",
+      "fragment": "whole non-Python shebang file (including embedded Python)",
+      "source_sha256": "4d2f7153ca831db206fbda56edd3c1d5fd19dd95a2ca3f7ce610d03790d2a378",
+      "physical_lines_including_blanks_comments_and_continuations": 42,
+      "additional_possible_statement_boundaries": {
+        ";": 8,
+        "&&": 1,
+        "||": 2,
+        "$(": 4,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 57
+    },
+    {
+      "path": "scripts/package-release.sh",
+      "fragment": "whole non-Python shebang file (including embedded Python)",
+      "source_sha256": "602f3edc2f807a9884aaf062b551fcaf323743875314a51e1cf6da724a8a322a",
+      "physical_lines_including_blanks_comments_and_continuations": 5,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 1,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 6
+    },
+    {
+      "path": ".github/workflows/container-repeatability.yml",
+      "fragment": "jobs.cold.steps[5].run",
+      "source_sha256": "dca63239605ad5d93b7ca63ed58c0b848af6b92dd93b583b3bbfb5e725c1916e",
+      "physical_lines_including_blanks_comments_and_continuations": 4,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 4
+    },
+    {
+      "path": ".github/workflows/container-repeatability.yml",
+      "fragment": "jobs.cold.steps[6].run",
+      "source_sha256": "dca63239605ad5d93b7ca63ed58c0b848af6b92dd93b583b3bbfb5e725c1916e",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/container-repeatability.yml",
+      "fragment": "jobs.compare.steps[4].run",
+      "source_sha256": "dca63239605ad5d93b7ca63ed58c0b848af6b92dd93b583b3bbfb5e725c1916e",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/dependency-review.yml",
+      "fragment": "jobs.dependency-review.steps[3].run",
+      "source_sha256": "c864842e188b58ae57c2747fb98a3d9755f6a691f50b42155b0901dbbd56bccb",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 1,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 2
+    },
+    {
+      "path": ".github/workflows/docker-build.yml",
+      "fragment": "jobs.build.steps[4].run",
+      "source_sha256": "4a15b5b4295a416bb807a60659de0a5564004149f20d0c9303f87755d189838c",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 1,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 2
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.scope.steps[2].run",
+      "source_sha256": "edae72da25295891d10273ab92b875513f5fbfcac07608491a11fe4d263cac7b",
+      "physical_lines_including_blanks_comments_and_continuations": 3,
+      "additional_possible_statement_boundaries": {
+        ";": 2,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 5
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.workflow-contracts.steps[3].run",
+      "source_sha256": "edae72da25295891d10273ab92b875513f5fbfcac07608491a11fe4d263cac7b",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.workflow-contracts.steps[4].run",
+      "source_sha256": "edae72da25295891d10273ab92b875513f5fbfcac07608491a11fe4d263cac7b",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.workflow-contracts.steps[5].run",
+      "source_sha256": "edae72da25295891d10273ab92b875513f5fbfcac07608491a11fe4d263cac7b",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.release-contracts.steps[3].run",
+      "source_sha256": "edae72da25295891d10273ab92b875513f5fbfcac07608491a11fe4d263cac7b",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.release-contracts.steps[4].run",
+      "source_sha256": "edae72da25295891d10273ab92b875513f5fbfcac07608491a11fe4d263cac7b",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.release-contracts.steps[5].run",
+      "source_sha256": "edae72da25295891d10273ab92b875513f5fbfcac07608491a11fe4d263cac7b",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.gate.steps[1].run",
+      "source_sha256": "edae72da25295891d10273ab92b875513f5fbfcac07608491a11fe4d263cac7b",
+      "physical_lines_including_blanks_comments_and_continuations": 23,
+      "additional_possible_statement_boundaries": {
+        ";": 1,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 24
+    },
+    {
+      "path": ".github/workflows/release-build.yml",
+      "fragment": "jobs.package.steps[4].run",
+      "source_sha256": "29c016a56294e1faef360c31db8c0664c98db68137af8cf7cd87dcd3ace5e3be",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-build.yml",
+      "fragment": "jobs.package.steps[5].run",
+      "source_sha256": "29c016a56294e1faef360c31db8c0664c98db68137af8cf7cd87dcd3ace5e3be",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-build.yml",
+      "fragment": "jobs.package.steps[6].run",
+      "source_sha256": "29c016a56294e1faef360c31db8c0664c98db68137af8cf7cd87dcd3ace5e3be",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-build.yml",
+      "fragment": "jobs.package.steps[9].run",
+      "source_sha256": "29c016a56294e1faef360c31db8c0664c98db68137af8cf7cd87dcd3ace5e3be",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-build.yml",
+      "fragment": "jobs.package.steps[10].run",
+      "source_sha256": "29c016a56294e1faef360c31db8c0664c98db68137af8cf7cd87dcd3ace5e3be",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-build.yml",
+      "fragment": "jobs.package.steps[11].run",
+      "source_sha256": "29c016a56294e1faef360c31db8c0664c98db68137af8cf7cd87dcd3ace5e3be",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.scope.steps[2].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 3,
+      "additional_possible_statement_boundaries": {
+        ";": 2,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 5
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.prepare.steps[2].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.gate.steps[1].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 11,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 11
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.candidate.steps[5].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.candidate.steps[6].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.stable.steps[3].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.final.steps[5].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.final.steps[6].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[5].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[7].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 3,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 3
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[8].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[9].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[10].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[11].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 4,
+      "additional_possible_statement_boundaries": {
+        ";": 1,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 5
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[12].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-security.yml",
+      "fragment": "jobs.security.steps[3].run",
+      "source_sha256": "29c94ebfaf656f9f81489833c6c2eafb795ccc5127c1962e9687d7b7ba2bc0fa",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-security.yml",
+      "fragment": "jobs.security.steps[4].run",
+      "source_sha256": "29c94ebfaf656f9f81489833c6c2eafb795ccc5127c1962e9687d7b7ba2bc0fa",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-security.yml",
+      "fragment": "jobs.security.steps[5].run",
+      "source_sha256": "29c94ebfaf656f9f81489833c6c2eafb795ccc5127c1962e9687d7b7ba2bc0fa",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/scorecards.yml",
+      "fragment": "jobs.analysis.steps[3].run",
+      "source_sha256": "8689e25c94e52b67bfcd67bb35e746881669796bc1af85994b007f8b6abac2ef",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": "Dockerfile",
+      "fragment": "whole Dockerfile; counts declarative lines too",
+      "source_sha256": "ae56253a1f6f4b08fe15393a13df17cb030b29949ca67b2fb181d7f6ef90f966",
+      "physical_lines_including_blanks_comments_and_continuations": 44,
+      "additional_possible_statement_boundaries": {
+        ";": 10,
+        "&&": 7,
+        "||": 0,
+        "$(": 1,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 62
+    },
+    {
+      "path": "docker-compose.yml",
+      "fragment": "services.mcp-venus-os.healthcheck.test",
+      "source_sha256": "8e141446b16146a3e5473b49f8693c1c2912c9c0aea2150ce6807bbe2bcee7b1",
+      "physical_lines_including_blanks_comments_and_continuations": 9,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 9
+    },
+    {
+      "path": ".release-policy.json",
+      "fragment": "local_checks[0]",
+      "reviewed_code_summary": "bash scripts/ci.sh",
+      "statement_upper_bound": 1,
+      "source_sha256": "23c992ebe414aa08b41a7f5ff5da43622104e1dfc0933abfe1ab2eb08929c8af",
+      "reviewed_commands": [
+        "bash scripts/ci.sh"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": ".release-policy.json",
+      "fragment": "local_checks[1]",
+      "reviewed_code_summary": "bash scripts/ci.sh security",
+      "statement_upper_bound": 1,
+      "source_sha256": "23c992ebe414aa08b41a7f5ff5da43622104e1dfc0933abfe1ab2eb08929c8af",
+      "reviewed_commands": [
+        "bash scripts/ci.sh security"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "scripts/release.py",
+      "fragment": "local_checks fallback",
+      "reviewed_code_summary": "bash scripts/ci.sh",
+      "statement_upper_bound": 1,
+      "source_sha256": "2584b05d01ef82b48f2ef75dc5d8e649de09df591fc6121097b2388f65a7b4eb",
+      "reviewed_commands": [
+        "bash scripts/ci.sh"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "firmware_version",
+      "reviewed_code_summary": "cat /opt/victronenergy/version",
+      "statement_upper_bound": 1,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "cat /opt/victronenergy/version"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "check_updates",
+      "reviewed_code_summary": "Either of two fixed firmware-update script paths",
+      "statement_upper_bound": 2,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "/opt/victronenergy/swupdate-scripts/check-updates.sh",
+        "/opt/victronenergy/swupdate-scripts/check-swupdate.sh"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "apply_updates",
+      "reviewed_code_summary": "Either fixed firmware-update script path -force -update",
+      "statement_upper_bound": 2,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "/opt/victronenergy/swupdate-scripts/check-updates.sh -force -update",
+        "/opt/victronenergy/swupdate-scripts/check-swupdate.sh -force -update"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "_swupdate_script",
+      "reviewed_code_summary": "[ -f {candidate} ] && echo y; count both fixed choices",
+      "statement_upper_bound": 4,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "[ -f /opt/victronenergy/swupdate-scripts/check-updates.sh ] && echo y",
+        "[ -f /opt/victronenergy/swupdate-scripts/check-swupdate.sh ] && echo y"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "setuphelper_status probe",
+      "reviewed_code_summary": "[ -d /data/SetupHelper ] && echo y",
+      "statement_upper_bound": 2,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "[ -d /data/SetupHelper ] && echo y"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "setuphelper_status version",
+      "reviewed_code_summary": "grep -m1 ... /data/SetupHelper/PackageManager.py 2>/dev/null",
+      "statement_upper_bound": 1,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "grep -m1 '^version' /data/SetupHelper/PackageManager.py 2>/dev/null"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "setuphelper_status packages",
+      "reviewed_code_summary": "ls /data/packageManager 2>/dev/null",
+      "statement_upper_bound": 1,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "ls /data/packageManager 2>/dev/null"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "setuphelper_install_package",
+      "reviewed_code_summary": "set; stage assignment + mktemp substitution; trap + deferred rm; wget; tar; test; mkdir; cp; cd; environment-prefixed bash invocation",
+      "statement_upper_bound": 12,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "set -eu; stage=$(mktemp -d /data/.mcp-package.XXXXXX); trap 'rm -rf \"$stage\"' EXIT HUP INT TERM; wget -qO \"$stage/release.tar.gz\" https://github.com/example-owner/example-package/archive/refs/heads/main.tar.gz; tar -xzf \"$stage/release.tar.gz\" -C \"$stage\"; test -f \"$stage/example-package-main/setup\"; mkdir -p /data/example-package; cp -a \"$stage/example-package-main/.\" /data/example-package/; cd /data/example-package; scriptAction=INSTALL packageName=example-package scriptDir=/data/example-package bash /data/example-package/setup install </dev/null"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands.",
+      "synthetic_arguments": {
+        "package": "example-package",
+        "repo": "example-owner/example-package"
+      },
+      "count_breakdown": {
+        "set": 1,
+        "stage_assignment": 1,
+        "nested_mktemp": 1,
+        "trap_registration": 1,
+        "deferred_rm": 1,
+        "wget": 1,
+        "tar": 1,
+        "test": 1,
+        "mkdir": 1,
+        "cp": 1,
+        "cd": 1,
+        "environment_prefixed_bash": 1
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "setuphelper_remove_package",
+      "reviewed_code_summary": "test -f ... && bash ... uninstall </dev/null",
+      "statement_upper_bound": 2,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "test -f /data/example-package/setup && bash /data/example-package/setup uninstall </dev/null"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands.",
+      "synthetic_arguments": {
+        "package": "example-package",
+        "repo": "example-owner/example-package"
+      }
+    },
+    {
+      "path": "src/mcp_venus_os/ssh_client.py",
+      "fragment": "enable_root_password",
+      "reviewed_code_summary": "chpasswd 2>&1",
+      "statement_upper_bound": 1,
+      "source_sha256": "08c2c77e6bc3f3ae4e11fbf398fbf4ef2c122b2c06c7529de624d1fb7d8d91cd",
+      "reviewed_commands": [
+        "chpasswd 2>&1"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands."
+    },
+    {
+      "path": "src/mcp_venus_os/server.py",
+      "fragment": "cerbo_ip",
+      "reviewed_code_summary": "ip ... | awk print; count both shell commands plus the awk print statement",
+      "statement_upper_bound": 3,
+      "source_sha256": "3bbe8feea26f5a9147b35c6c4314163d7be1f5be588e810aaf814b912c40bddd",
+      "reviewed_commands": [
+        "ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}'"
+      ],
+      "statement_count_method": "Manual count of every simple command, assignment-only command, nested command substitution, deferred trap command and embedded awk statement. Count both fixed firmware alternatives conservatively; environment assignments prefixing one command do not create extra commands.",
+      "count_breakdown": {
+        "ip": 1,
+        "awk_invocation": 1,
+        "embedded_awk_print": 1
+      }
+    }
+  ],
+  "automatic_fragment_count": 44,
+  "automatic_statement_upper_bound": 261,
+  "reviewed_fragment_count": 58,
+  "reviewed_statement_upper_bound": 295,
+  "rounding_safety_margin": 25,
+  "supplemental_denominator_used": 320,
+  "supplemental_covered_statements_credited": 0,
+  "manual_review": "Prior 14 remote/local shell payloads unchanged; .release-policy local_checks unchanged. New subprocess in check_container_repeatability.py invokes fixed git argv; no shell payload. New snapshot/provenance modules do not invoke shells. All new Docker/workflow/packaging fragments are included."
+}
