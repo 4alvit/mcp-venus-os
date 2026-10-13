@@ -1,0 +1,1833 @@
+{
+  "schema": 1,
+  "review_date": "2026-10-12",
+  "repository": "4alvit/mcp-venus-os",
+  "base_head": "f7421f68325711b334ea446a7aaab600db0238bc",
+  "window_start": "2026-04-12",
+  "window_end": "2026-10-12",
+  "criterion": "regression_tests_added50",
+  "assessment": "not_yet_verified",
+  "method": "All first-parent changes are retained. A keyword candidate subset was identified using fix/audit/correct/verify/enforce/bound/preserve/restore/harden/align. Newly added test-function definitions were collected from the parent diff. This is a discovery index, not an automatic causal assertion or a count of individual bugs. Other changes must be classified before computing a compliance percentage.",
+  "candidate_changes": [
+    {
+      "sha": "f7421f68325711b334ea446a7aaab600db0238bc",
+      "date": "2026-10-12T14:27:13-07:00",
+      "subject": "fix(release): derive API status from response headers (#100)",
+      "changed_files": [
+        ".github/release-tests/test_github_missing_status.py",
+        ".github/release-tests/test_release_control.py",
+        "scripts/release_control.py"
+      ],
+      "changed_tests": [
+        ".github/release-tests/test_github_missing_status.py",
+        ".github/release-tests/test_release_control.py"
+      ],
+      "added_test_functions": [
+        "test_error_body_and_cli_message_cannot_authorize_absence",
+        "test_real_http_404_is_optional_regardless_of_error_prose",
+        "test_missing_headers_never_fall_back_to_error_prose",
+        "test_status_and_exit_code_must_agree",
+        "test_failed_post_is_not_replayed_and_raw_upload_never_means_missing",
+        "test_binary_and_empty_response_bytes_are_preserved",
+        "test_pagination_has_exact_json_boundaries_and_discards_partial_result",
+        "test_truncated_or_injected_page_boundaries_fail_closed",
+        "test_local_http_status_wins_over_gh_error_rendering",
+        "test_paginated_cli_normalizes_json_and_rejects_injected_page_headers"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/f7421f68325711b334ea446a7aaab600db0238bc",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "8dd145e1a3fbca47fdf3638184a681784811cebe",
+      "date": "2026-10-12T14:00:15-07:00",
+      "subject": "fix(release): classify API absence from exact status (#99)",
+      "changed_files": [
+        ".github/release-tests/test_release_control.py",
+        "README.md",
+        "scripts/release_control.py"
+      ],
+      "changed_tests": [
+        ".github/release-tests/test_release_control.py"
+      ],
+      "added_test_functions": [
+        "test_only_exact_missing_status_allows_an_optional_resource",
+        "test_embedded_missing_status_cannot_authorize_an_absent_release",
+        "test_failed_write_uses_the_same_exact_missing_status"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/8dd145e1a3fbca47fdf3638184a681784811cebe",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "7eab1254a598536ef2020fab02464c82510e0086",
+      "date": "2026-10-12T12:36:27-07:00",
+      "subject": "fix(release): handle plain GitHub error status formats (#98)",
+      "changed_files": [
+        ".github/release-tests/test_release_control.py",
+        "scripts/release_control.py"
+      ],
+      "changed_tests": [
+        ".github/release-tests/test_release_control.py"
+      ],
+      "added_test_functions": [
+        "test_unrelated_details_and_longer_status_numbers_do_not_trigger_retry"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/7eab1254a598536ef2020fab02464c82510e0086",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "cc46de0bcffd7b53987924f72f52331d3281624f",
+      "date": "2026-10-12T12:14:20-07:00",
+      "subject": "fix(release): retry GitHub read failures and clarify installation (#97)",
+      "changed_files": [
+        ".github/release-tests/test_release_control.py",
+        "README.md",
+        "scripts/release_control.py"
+      ],
+      "changed_tests": [
+        ".github/release-tests/test_release_control.py"
+      ],
+      "added_test_functions": [
+        "test_transient_read_retries_and_discards_partial_pages",
+        "test_exhausted_reads_fail_without_becoming_missing",
+        "test_timeouts_are_bounded_and_do_not_expose_partial_output",
+        "test_policy_and_rate_limit_errors_are_not_retried",
+        "test_writes_and_binary_transfers_are_not_replayed"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/cc46de0bcffd7b53987924f72f52331d3281624f",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "2004ab94052a91963a79240fa3a41bc4da9fb27f",
+      "date": "2026-10-08T11:24:11-07:00",
+      "subject": "Verify exact MQTT peer key sizes before credentials (#94)",
+      "changed_files": [
+        "CHANGELOG.md",
+        "README.md",
+        "src/mcp_venus_os/mqtt_client.py",
+        "src/mcp_venus_os/tls_policy.py",
+        "tests/test_mqtt_client.py",
+        "tests/test_mqtt_tls.py"
+      ],
+      "changed_tests": [
+        "tests/test_mqtt_client.py",
+        "tests/test_mqtt_tls.py"
+      ],
+      "added_test_functions": [
+        "test_actual_mqtt_rejects_before_connect_credentials",
+        "test_policy_preserves_explicit_cipher_and_protocol_restrictions",
+        "test_default_trust_matches_parameterless_paho"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/2004ab94052a91963a79240fa3a41bc4da9fb27f",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "fdd15ffc8b30815dadf0087d0647ce0082a77c37",
+      "date": "2026-10-08T05:02:51-07:00",
+      "subject": "Enforce SSH host and client key strength (#93)",
+      "changed_files": [
+        ".env.sample",
+        "CHANGELOG.md",
+        "README.md",
+        "SECURITY.md",
+        "docs/RELEASE_TLS_PROFILE.md",
+        "pyproject.toml",
+        "src/mcp_venus_os/config.py",
+        "src/mcp_venus_os/ssh_client.py",
+        "tests/test_ssh_key_policy.py",
+        "uv.lock"
+      ],
+      "changed_tests": [
+        "tests/test_ssh_key_policy.py"
+      ],
+      "added_test_functions": [
+        "test_host_key_policy_before_password",
+        "test_client_key_policy_before_network",
+        "test_password_configuration_does_not_load_ambient_keys",
+        "test_rekey_rejects_weak_key_even_when_listed_in_known_hosts",
+        "test_trusted_certificate_cannot_bypass_raw_key_policy"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/fdd15ffc8b30815dadf0087d0647ce0082a77c37",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "905580b703fdba6f9bc36cf1a21ec84cc44e7145",
+      "date": "2026-10-08T03:59:02-07:00",
+      "subject": "fix: preserve security scan and release-note boundaries (#91)",
+      "changed_files": [
+        ".github/release-tests/test_release_notes.py",
+        ".github/security-tests/test_bandit_discovery.py",
+        ".github/workflows/release-security.yml",
+        "scripts/ci.sh",
+        "scripts/release_control.py"
+      ],
+      "changed_tests": [
+        ".github/release-tests/test_release_notes.py",
+        ".github/security-tests/test_bandit_discovery.py"
+      ],
+      "added_test_functions": [
+        "test_closing_hashes_select_version_and_required_guidance",
+        "test_closing_hashes_do_not_hide_duplicate_version_sections",
+        "test_literal_and_escaped_hashes_are_not_guidance_titles",
+        "test_regular_checkout",
+        "test_git_worktree"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/905580b703fdba6f9bc36cf1a21ec84cc44e7145",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "a7046a5eb7eacdf899589dbe45dde9a5ea7093a6",
+      "date": "2026-10-08T03:39:54-07:00",
+      "subject": "fix: verify SSH hosts and bind release notes to source (#89)",
+      "changed_files": [
+        ".bestpractices.json",
+        ".env.sample",
+        ".github/release-tests/test_release_control.py",
+        ".github/release-tests/test_release_notes.py",
+        ".github/workflow-tests/test_workflow_yaml_contracts.py",
+        ".github/workflows/codeql.yml",
+        ".release-policy.json",
+        "CHANGELOG.md",
+        "CONTRIBUTING.md",
+        "README.md",
+        "RELEASING.md",
+        "SECURITY.md",
+        "docker-compose.yml",
+        "docs/openssf-evidence.md",
+        "pyproject.toml",
+        "scripts/release_control.py",
+        "scripts/workflow_contracts.py",
+        "src/mcp_venus_os/__init__.py",
+        "src/mcp_venus_os/config.py",
+        "src/mcp_venus_os/ssh_client.py",
+        "tests/test_ssh_tools.py",
+        "uv.lock"
+      ],
+      "changed_tests": [
+        ".github/release-tests/test_release_control.py",
+        ".github/release-tests/test_release_notes.py",
+        ".github/workflow-tests/test_workflow_yaml_contracts.py",
+        "tests/test_ssh_tools.py"
+      ],
+      "added_test_functions": [
+        "test_invalid_candidate_notes_preserve_existing_evidence",
+        "test_separator_or_subheading_alone_is_not_release_guidance",
+        "test_empty_markdown_containers_are_not_release_guidance",
+        "test_markdown_containers_preserve_actual_guidance_and_literals",
+        "test_tabbed_containers_preserve_literal_code",
+        "test_guidance_after_separator_and_subheading_is_preserved",
+        "test_literal_markers_in_code_remain_guidance",
+        "test_indented_version_and_guidance_headings_are_supported",
+        "test_setext_appendices_cannot_supply_release_guidance",
+        "test_comments_between_text_and_setext_underlines_do_not_hide_ambiguity",
+        "test_setext_outside_selected_release_does_not_change_body",
+        "test_thematic_breaks_and_literal_setext_examples_remain_supported",
+        "test_setext_heading_inside_guidance_is_rejected",
+        "test_empty_higher_level_atx_headings_end_sections",
+        "test_higher_level_appendix_cannot_supply_version_guidance",
+        "test_valid_notes_stop_before_higher_level_appendix",
+        "test_higher_level_headings_end_raw_and_visible_guidance_sections",
+        "test_higher_level_heading_does_not_hide_later_version_selection",
+        "test_literal_and_commented_higher_level_headings_do_not_end_sections",
+        "test_comment_only_guidance_is_rejected",
+        "test_commented_headings_do_not_select_or_split_sections",
+        "test_comments_started_on_headings_keep_following_content_hidden",
+        "test_visible_text_survives_inline_multiline_and_unclosed_comments",
+        "test_comments_do_not_open_fences_or_hide_literal_code",
+        "test_empty_fences_are_not_visible_guidance",
+        "test_many_inline_comments_keep_linear_scanning_and_offsets",
+        "test_comment_only_notes_fail_before_any_remote_mutation",
+        "test_fenced_guidance_cannot_satisfy_real_sections",
+        "test_fenced_version_headings_do_not_select_or_split_sections",
+        "test_fence_closes_only_with_matching_marker_and_sufficient_length",
+        "test_longer_matching_fences_restore_heading_recognition",
+        "test_unclosed_fences_keep_following_headings_inside_example",
+        "test_real_guidance_can_contain_fenced_commands_verbatim",
+        "test_invalid_backtick_info_and_inline_markers_do_not_start_fences",
+        "test_unicode_line_separator_does_not_introduce_a_heading",
+        "test_fenced_only_notes_fail_before_any_remote_mutation",
+        "test_exact_base_and_provenance",
+        "test_crlf_notes_preserve_source_byte_verification",
+        "test_missing_or_incomplete_sections",
+        "test_rejects_invalid_source_content",
+        "test_policy_is_opt_in",
+        "test_missing_notes_abort_before_mutation",
+        "test_api_requires_commit_pinned_source",
+        "test_shared_language_producers_match_the_complete_identity",
+        "test_reusable_non_producers_cannot_reuse_an_approved_commit",
+        "test_custom_export_requires_the_upload_action_and_immutable_pin",
+        "test_lcov_has_no_shared_language_producer",
+        "test_real_ssh_connection_rejects_untrusted_host_key",
+        "test_real_ssh_selects_trusted_rsa_among_multiple_server_keys"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/a7046a5eb7eacdf899589dbe45dde9a5ea7093a6",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "e5bee275f297a8ed53dedae2269dc18840bd8341",
+      "date": "2026-10-07T17:15:55-07:00",
+      "subject": "ci: request CodeRabbit autofix after completed reviews (#88)",
+      "changed_files": [
+        ".github/workflows/coderabbit-autofix.yml"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/e5bee275f297a8ed53dedae2269dc18840bd8341",
+      "classification": "excluded_from_provisional_defect_subset",
+      "reason": "New review automation, not an identified defect fix",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "d349be52bde1d20864ed85f6336f516df1c36218",
+      "date": "2026-10-06T20:28:03-07:00",
+      "subject": "Capture bounded MQTT socket diagnostics before disconnect (#75)",
+      "changed_files": [
+        "README.md",
+        "src/mcp_venus_os/mqtt_client.py",
+        "src/mcp_venus_os/socket_diagnostics.py",
+        "tests/test_mqtt_diagnostics.py",
+        "tests/test_mqtt_socket_events.py",
+        "tests/test_socket_diagnostics.py"
+      ],
+      "changed_tests": [
+        "tests/test_mqtt_diagnostics.py",
+        "tests/test_mqtt_socket_events.py",
+        "tests/test_socket_diagnostics.py"
+      ],
+      "added_test_functions": [
+        "test_ping_attempt_is_not_output_drain",
+        "test_ping_bytes_can_finish_before_the_whole_output_queue_drains",
+        "test_closing_unregister_is_not_a_drain_even_with_an_empty_queue",
+        "test_close_metadata_is_frozen_and_duplicate_disconnect_does_not_resample",
+        "test_socket_generation_advances_even_when_next_connection_never_gets_connack",
+        "test_retired_or_stopping_callbacks_do_not_sample_or_change_diagnostics",
+        "test_event_ring_is_bounded_and_does_not_capture_secrets",
+        "test_publish_traffic_does_not_invoke_the_socket_sampler",
+        "test_native_uapi_prefix_offsets_and_integer_abi",
+        "test_only_allowlisted_metadata_is_returned",
+        "test_short_tcp_info_never_decodes_missing_fields",
+        "test_unknown_tcp_info_suffix_is_not_returned",
+        "test_tcp_info_failures_keep_queues_and_hide_details",
+        "test_closed_or_invalid_socket_is_not_inspected",
+        "test_no_socket_does_not_access_platform_apis",
+        "test_unsupported_platform_never_touches_the_socket",
+        "test_queue_failures_are_independent_and_do_not_hide_tcp_info",
+        "test_missing_optional_apis_degrade_without_inventing_zeros",
+        "test_linux_socketpair_metadata_does_not_consume_payload_or_change_socket"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/d349be52bde1d20864ed85f6336f516df1c36218",
+      "classification": "excluded_from_provisional_defect_subset",
+      "reason": "New diagnostic capability",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "9c33161c779bbbaf869ffcbcd1ed9c4a6772aa7c",
+      "date": "2026-10-04T18:32:09-07:00",
+      "subject": "Add bounded MQTT disconnect diagnostics without verbose packet logging (#70)",
+      "changed_files": [
+        ".github/workflows/ci.yml",
+        "README.md",
+        "scripts/ci.sh",
+        "src/mcp_venus_os/mqtt_client.py",
+        "tests/test_mqtt_client.py",
+        "tests/test_mqtt_diagnostics.py"
+      ],
+      "changed_tests": [
+        "tests/test_mqtt_client.py",
+        "tests/test_mqtt_diagnostics.py"
+      ],
+      "added_test_functions": [
+        "test_real_paho_control_events_produce_only_bounded_metadata",
+        "test_unrelated_paho_log_strings_are_not_stored_or_forwarded",
+        "test_control_metadata_ignores_unowned_or_inactive_sessions",
+        "test_reconnect_resets_only_session_diagnostics",
+        "test_full_inbox_records_receipt_and_drop_without_blocking",
+        "test_one_real_paho_keepalive_failure_can_emit_two_callbacks"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/9c33161c779bbbaf869ffcbcd1ed9c4a6772aa7c",
+      "classification": "excluded_from_provisional_defect_subset",
+      "reason": "New diagnostic capability",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "dbf955f3235665c5d1fc179d19fd85d0cd47a7f5",
+      "date": "2026-10-04T16:51:04-07:00",
+      "subject": "fix: use Paho managed network thread for MQTT writes (#69)",
+      "changed_files": [
+        "README.md",
+        "src/mcp_venus_os/mqtt_client.py",
+        "tests/test_mqtt_client.py"
+      ],
+      "changed_tests": [
+        "tests/test_mqtt_client.py"
+      ],
+      "added_test_functions": [
+        "test_native_loop_serializes_partial_writes_from_other_threads",
+        "test_native_loop_start_failure_keeps_worker_owned_until_retired"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/dbf955f3235665c5d1fc179d19fd85d0cd47a7f5",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "de589cec36c56a18eba93caeeff54e61e42874af",
+      "date": "2026-10-04T14:34:57-07:00",
+      "subject": "fix: share SSH connections safely across concurrent tools (#68)",
+      "changed_files": [
+        "pyproject.toml",
+        "src/mcp_venus_os/__init__.py",
+        "src/mcp_venus_os/ssh_client.py",
+        "tests/test_ssh_tools.py",
+        "uv.lock"
+      ],
+      "changed_tests": [
+        "tests/test_ssh_tools.py"
+      ],
+      "added_test_functions": [
+        "test_concurrent_commands_share_connection_and_remain_parallel",
+        "test_close_waits_for_pending_connection_and_releases_it",
+        "test_cancelled_connection_does_not_block_next_command",
+        "test_failed_handshake_does_not_close_another_callers_connection",
+        "test_old_transport_error_does_not_close_replacement",
+        "test_connect_timeout_covers_native_asyncssh_transport_setup"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/de589cec36c56a18eba93caeeff54e61e42874af",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "c622f2cb2e485a43910f1dbd87eb2161c9736a5e",
+      "date": "2026-10-04T12:48:56-07:00",
+      "subject": "Bound MQTT telemetry and keep exact readings fresh (#67)",
+      "changed_files": [
+        "README.md",
+        "src/mcp_venus_os/mqtt_client.py",
+        "src/mcp_venus_os/server.py",
+        "src/mcp_venus_os/telemetry.py",
+        "tests/test_integration_mosquitto.py",
+        "tests/test_mqtt_client.py"
+      ],
+      "changed_tests": [
+        "tests/test_integration_mosquitto.py",
+        "tests/test_mqtt_client.py"
+      ],
+      "added_test_functions": [
+        "test_on_connect_success_subscribes_bounded_telemetry",
+        "test_broker_filters_preserve_47_services_without_nested_noise",
+        "test_filters_cover_all_consumed_fallbacks_and_deep_contracts",
+        "test_exact_subscriptions_do_not_duplicate_owned_broker_filters",
+        "test_maintenance_keeps_constant_values_fresh_without_full_reflood",
+        "test_no_reply_does_not_forge_freshness_and_serial_never_refloods",
+        "test_contract_serial_requires_live_suppressed_read_after_retained_replay",
+        "test_refresh_rotates_large_catalog_without_discovery_only_reads",
+        "test_refresh_batches_are_bounded_and_dynamic_removal_stops_reads",
+        "test_maintenance_retries_failures_and_stops_with_owned_worker",
+        "test_reconnect_resubscribes_explicit_filters_and_resets_read_schedule"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/c622f2cb2e485a43910f1dbd87eb2161c9736a5e",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "823fba48df163e2a893d7af916e1e5272bba1214",
+      "date": "2026-10-04T11:43:01-07:00",
+      "subject": "Fix MQTT reconnect ownership and bounded shutdown (#66)",
+      "changed_files": [
+        "README.md",
+        "src/mcp_venus_os/mqtt_client.py",
+        "tests/test_mqtt_client.py",
+        "tests/test_server.py"
+      ],
+      "changed_tests": [
+        "tests/test_mqtt_client.py",
+        "tests/test_server.py"
+      ],
+      "added_test_functions": [
+        "test_concurrent_startup_and_reconnect_readers_share_one_transport",
+        "test_repeated_timeouts_keep_the_reconnecting_transport",
+        "test_retired_callbacks_and_queued_messages_cannot_change_current_state",
+        "test_dead_network_loop_is_retired_before_retry",
+        "test_initial_network_failure_can_retry_without_orphan_workers",
+        "test_disconnect_full_inbox_is_bounded_and_keeps_live_worker_owned",
+        "test_disconnect_retires_pending_connection_without_replacement",
+        "test_cancelled_reader_leaves_one_owned_reconnect_loop",
+        "test_slow_network_shutdown_cannot_spawn_same_id_replacement"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/823fba48df163e2a893d7af916e1e5272bba1214",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "7da2cd1cb5a862db96be53b0b8d720855b7e152f",
+      "date": "2026-10-04T09:36:06-07:00",
+      "subject": "Correct Victron mode codes and align the MP MCP endpoint (#65)",
+      "changed_files": [
+        ".mcp.json",
+        "README.md",
+        "src/mcp_venus_os/server.py",
+        "tests/conftest.py",
+        "tests/test_hardware_contracts.py",
+        "tests/test_server.py",
+        "tests/test_write_tools.py"
+      ],
+      "changed_tests": [
+        "tests/conftest.py",
+        "tests/test_hardware_contracts.py",
+        "tests/test_server.py",
+        "tests/test_write_tools.py"
+      ],
+      "added_test_functions": [
+        "test_get_inverter_status_decodes_enums",
+        "test_mode_codes_are_specific_to_the_device_service"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/7da2cd1cb5a862db96be53b0b8d720855b7e152f",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "434887712339ea1aead6cb517102d36606d01b2e",
+      "date": "2026-10-04T05:08:52-07:00",
+      "subject": "fix: preserve MQTT callback delivery across subscription changes (#64)",
+      "changed_files": [
+        "pyproject.toml",
+        "src/mcp_venus_os/__init__.py",
+        "src/mcp_venus_os/mqtt_client.py",
+        "tests/test_mqtt_client.py",
+        "uv.lock"
+      ],
+      "changed_tests": [
+        "tests/test_mqtt_client.py"
+      ],
+      "added_test_functions": [
+        "test_callback_filter_semantics",
+        "test_callback_dispatch_preserves_filter_and_callback_registration_order",
+        "test_callback_subscription_changes_apply_to_next_message",
+        "test_subscription_from_another_thread_does_not_block_running_callback"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/434887712339ea1aead6cb517102d36606d01b2e",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "4d2c67b88e85965e93ab582a205cedbe7932306d",
+      "date": "2026-10-03T14:28:16-07:00",
+      "subject": "fix: pin Python build image by digest (#61)",
+      "changed_files": [
+        "Dockerfile",
+        "pyproject.toml",
+        "src/mcp_venus_os/__init__.py",
+        "uv.lock"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/4d2c67b88e85965e93ab582a205cedbe7932306d",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "88e603dbde5247dc4430aee1a406e4907384ac94",
+      "date": "2026-10-03T14:19:11-07:00",
+      "subject": "security: harden code-scanning workflows and CI permissions (#63)",
+      "changed_files": [
+        ".github/requirements-bandit-1.9.2.in",
+        ".github/requirements-bandit-1.9.2.txt",
+        ".github/requirements-build.in",
+        ".github/requirements-build.txt",
+        ".github/requirements-workflow-contracts.txt",
+        ".github/workflow-tests/contract_test_helpers.py",
+        ".github/workflow-tests/test_metadata_events.py",
+        ".github/workflow-tests/test_scorecard_workflow.py",
+        ".github/workflow-tests/test_workflow_yaml_contracts.py",
+        ".github/workflows/auto-approve.yml",
+        ".github/workflows/auto-merge.yml",
+        ".github/workflows/quality-gate.yml",
+        ".github/workflows/release-build.yml",
+        ".github/workflows/release-security.yml",
+        ".github/workflows/scorecards.yml",
+        "MANIFEST.in",
+        "SECURITY.md",
+        "scripts/validate_scorecard_json.py",
+        "scripts/workflow_contracts.py",
+        "tests/test_validate_scorecard_json.py"
+      ],
+      "changed_tests": [
+        ".github/workflow-tests/contract_test_helpers.py",
+        ".github/workflow-tests/test_metadata_events.py",
+        ".github/workflow-tests/test_scorecard_workflow.py",
+        ".github/workflow-tests/test_workflow_yaml_contracts.py",
+        "tests/test_validate_scorecard_json.py"
+      ],
+      "added_test_functions": [
+        "test_body_title_edits_never_allocate_metadata_jobs",
+        "test_retarget_and_other_state_events_remain_eligible",
+        "test_ignored_edits_cannot_cancel_or_replace_meaningful_runs",
+        "test_trust_draft_and_dependabot_routing_are_preserved",
+        "test_publishing_and_guarded_upload_contract",
+        "test_custom_run_in_publishing_job_is_rejected",
+        "test_global_write_permissions_are_rejected",
+        "test_validation_job_cannot_mint_publication_identity",
+        "test_artifact_must_be_from_this_workflow_run",
+        "test_upload_cannot_run_without_successful_completeness_guard",
+        "test_scan_must_preserve_both_original_formats",
+        "test_duplicate_top_level_and_nested_keys_are_rejected",
+        "test_yaml_trigger_keys_and_scalars_remain_strings",
+        "test_non_string_mapping_keys_are_rejected",
+        "test_mutable_or_unknown_generated_actions_are_rejected",
+        "test_local_steps_and_matching_manifest_are_supported",
+        "test_consumers_without_manifest_still_require_sha_and_marker",
+        "test_canonical_generator_requires_its_manifest",
+        "test_manifest_mismatch_is_rejected",
+        "test_reusable_workflows_require_immutable_matching_references",
+        "test_non_generated_workflows_require_sha_without_manifest_membership",
+        "test_complete_clean_and_failing_checks_pass",
+        "test_upstream_packaging_not_applicable_is_preserved",
+        "test_packaging_runtime_errors_and_other_inconclusive_results_fail",
+        "test_invalid_or_incomplete_checks_fail",
+        "test_missing_duplicate_unknown_and_malformed_checks_fail",
+        "test_repository_commit_and_version_are_bound_to_the_run",
+        "test_missing_run_identity_and_invalid_root_fail",
+        "test_failed_guard_removes_stale_sarif",
+        "test_successful_guard_preserves_original_sarif"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/88e603dbde5247dc4430aee1a406e4907384ac94",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "9210a1a2ffdcac39e6efc7a2cc9d182acd245383",
+      "date": "2026-10-03T03:34:35-07:00",
+      "subject": "fix(release): keep CI active after stable and prepare next cycle (#62)",
+      "changed_files": [
+        ".github/release-tests/test_release_control.py",
+        ".github/workflows/release-pipeline.yml",
+        "pyproject.toml",
+        "scripts/release_control.py",
+        "src/mcp_venus_os/__init__.py",
+        "uv.lock"
+      ],
+      "changed_tests": [
+        ".github/release-tests/test_release_control.py"
+      ],
+      "added_test_functions": [
+        "test_existing_stable_tag_closes_only_push_cycle",
+        "test_missing_tag_continues_but_api_errors_cannot_authorize_skip",
+        "test_malformed_or_wrong_tag_response_fails_closed",
+        "test_upload_parse_failure_keeps_draft_and_reports_safe_asset_context"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/9210a1a2ffdcac39e6efc7a2cc9d182acd245383",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "787a661c708a9786634fe534fcff6d74e5291373",
+      "date": "2026-10-02T04:44:39-07:00",
+      "subject": "fix: prepare 0.2.6 with patched virtualenv (#58)",
+      "changed_files": [
+        "pyproject.toml",
+        "src/mcp_venus_os.egg-info/PKG-INFO",
+        "src/mcp_venus_os.egg-info/SOURCES.txt",
+        "src/mcp_venus_os.egg-info/dependency_links.txt",
+        "src/mcp_venus_os.egg-info/entry_points.txt",
+        "src/mcp_venus_os.egg-info/requires.txt",
+        "src/mcp_venus_os.egg-info/top_level.txt",
+        "src/mcp_venus_os/__init__.py",
+        "uv.lock"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/787a661c708a9786634fe534fcff6d74e5291373",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "1ab02fe489b91a3459bd2ccef3b727ab4e82b943",
+      "date": "2026-09-28T22:42:50-07:00",
+      "subject": "fix(release): pilot bounded-memory payload verification (#56)",
+      "changed_files": [
+        ".github/release-tests/test_asset_streaming.py",
+        ".github/release-tests/test_release_control.py",
+        "scripts/publish_verified.py",
+        "scripts/release_control.py"
+      ],
+      "changed_tests": [
+        ".github/release-tests/test_asset_streaming.py",
+        ".github/release-tests/test_release_control.py"
+      ],
+      "added_test_functions": [
+        "test_copy_and_hash_bounded_chunks_including_empty_and_partial_chunk",
+        "test_transport_streams_to_output_with_media_type_and_timeout",
+        "test_transport_rejects_non_asset_endpoints_before_launching_gh",
+        "test_transport_timeout_uses_the_release_error_contract",
+        "test_successful_download_returns_identity_of_the_actual_staged_bytes",
+        "test_partial_download_is_removed_on_transport_error_timeout_or_interrupt",
+        "test_existing_file_and_symlink_are_never_overwritten_or_removed",
+        "test_truncated_uploaded_bytes_leave_draft_unpublished"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/1ab02fe489b91a3459bd2ccef3b727ab4e82b943",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "2926294b926321352ec11e938427be60832fccf7",
+      "date": "2026-09-28T22:38:20-07:00",
+      "subject": "fix: preserve MQTT receive freshness and exact write scope (#55)",
+      "changed_files": [
+        "README.md",
+        "docs/CAPABILITIES.md",
+        "docs/hardware-write-contracts.md",
+        "src/mcp_venus_os/mqtt_client.py",
+        "src/mcp_venus_os/server.py",
+        "tests/test_hardware_contracts.py",
+        "tests/test_integration_mosquitto.py",
+        "tests/test_mqtt_client.py",
+        "tests/test_write_tools.py"
+      ],
+      "changed_tests": [
+        "tests/test_hardware_contracts.py",
+        "tests/test_integration_mosquitto.py",
+        "tests/test_mqtt_client.py",
+        "tests/test_write_tools.py"
+      ],
+      "added_test_functions": [
+        "test_reconnect_refreshes_telemetry_only_after_subscribing",
+        "test_queued_telemetry_keeps_its_receive_age",
+        "test_device_removal_invalidates_cached_identity_and_discovery",
+        "test_worker_drains_burst_in_order_without_one_sleep_per_message",
+        "test_queued_prewrite_message_cannot_acknowledge_a_new_write"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/2926294b926321352ec11e938427be60832fccf7",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "24db73fac6a7cd391add45cdbcd64a1db55026b7",
+      "date": "2026-09-19T19:06:08-07:00",
+      "subject": "fix: require reviewed hardware contracts before MCP writes (#52)",
+      "changed_files": [
+        ".github/workflows/release-pipeline.yml",
+        "docs/hardware-write-contracts.md",
+        "src/mcp_venus_os/config.py",
+        "src/mcp_venus_os/hardware_contracts.py",
+        "src/mcp_venus_os/mqtt_client.py",
+        "src/mcp_venus_os/server.py",
+        "tests/conftest.py",
+        "tests/test_hardware_contracts.py",
+        "tests/test_write_tools.py"
+      ],
+      "changed_tests": [
+        "tests/conftest.py",
+        "tests/test_hardware_contracts.py",
+        "tests/test_write_tools.py"
+      ],
+      "added_test_functions": [
+        "test_qualified_fixture_only_matches_its_exact_target",
+        "test_all_identity_roles_must_be_present_fresh_and_exact",
+        "test_mode_semantics_and_numeric_values_fail_closed",
+        "test_soc_contract_requires_the_qualified_range",
+        "test_contract_schema_rejects_unqualified_or_wildcard_records",
+        "test_unqualified_target_never_publishes_or_starts_keepalive",
+        "test_old_matching_readback_is_not_a_fresh_ack",
+        "test_cache_since_rejects_matching_values_received_before_a_write",
+        "test_keepalive_guard_stops_before_renewing_unqualified_hardware"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/24db73fac6a7cd391add45cdbcd64a1db55026b7",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "943d61d23d6409d9ebe8c6a8e71aa7d053a679d2",
+      "date": "2026-09-12T21:02:32-07:00",
+      "subject": "fix: pin auto-approval to merged toolkit commit (#51)",
+      "changed_files": [
+        ".github/workflows/auto-approve.yml"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/943d61d23d6409d9ebe8c6a8e71aa7d053a679d2",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "2f9fb01dc47ff4ab0802d4af46ddaa4449d8f1a6",
+      "date": "2026-09-12T12:29:46-07:00",
+      "subject": "Merge pull request #47 from 4alvit/fix/venus-os-audit-20260912",
+      "changed_files": [
+        "CHANGELOG.md",
+        "README.md",
+        "pyproject.toml",
+        "src/mcp_venus_os/__init__.py",
+        "src/mcp_venus_os/server.py",
+        "src/mcp_venus_os/ssh_client.py",
+        "tests/test_ssh_tools.py",
+        "uv.lock"
+      ],
+      "changed_tests": [
+        "tests/test_ssh_tools.py"
+      ],
+      "added_test_functions": [
+        "test_package_operations_reject_invalid_paths",
+        "test_remove_package_has_no_recursive_delete_fallback",
+        "test_install_shell_preserves_local_state_and_cleans_staging"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/2f9fb01dc47ff4ab0802d4af46ddaa4449d8f1a6",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "de512759fddf55aedeb09fb28d1318e09d73494c",
+      "date": "2026-09-11T21:40:26-07:00",
+      "subject": "ci: use corrected check ordering for auto-merge (#45)",
+      "changed_files": [
+        ".github/workflows/auto-merge.yml"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/de512759fddf55aedeb09fb28d1318e09d73494c",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "130c99d2ae732ffedf034dcac2b9535439a42b09",
+      "date": "2026-09-11T18:49:49-07:00",
+      "subject": "fix: enable trusted bot approval and checked auto-merge (#44)",
+      "changed_files": [
+        ".github/workflows/auto-approve.yml",
+        ".github/workflows/auto-merge.yml"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/130c99d2ae732ffedf034dcac2b9535439a42b09",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "450af228f24deaf26d13f545da0570dac6dff074",
+      "date": "2026-09-11T17:02:25-07:00",
+      "subject": "Fix MQTT worker lifecycle and restore Python CI validation (#43)",
+      "changed_files": [
+        ".github/workflows/ci.yml",
+        "src/mcp_venus_os/mqtt_client.py",
+        "tests/test_mqtt_client.py"
+      ],
+      "changed_tests": [
+        "tests/test_mqtt_client.py"
+      ],
+      "added_test_functions": [
+        "test_disconnect_stops_network_worker_after_connection_loss"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/450af228f24deaf26d13f545da0570dac6dff074",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "448f468100908352b83c3b231e517849c36e2810",
+      "date": "2026-08-31T13:19:02-07:00",
+      "subject": "fix(mqtt): tighten inbox sleep to 100\u00b5s; raise INBOX_MAXSIZE to 50k (#41)",
+      "changed_files": [
+        "src/mcp_venus_os/mqtt_client.py"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/448f468100908352b83c3b231e517849c36e2810",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "07e4bdcba26fc9e0a988b6a2f8b36adaeb34ffda",
+      "date": "2026-08-31T13:05:11-07:00",
+      "subject": "fix(mqtt): rate-limit inbox worker; skip empty-payload messages (#40)",
+      "changed_files": [
+        "src/mcp_venus_os/mqtt_client.py"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/07e4bdcba26fc9e0a988b6a2f8b36adaeb34ffda",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "91589b07bca3309cd67a3d9089245e0118135935",
+      "date": "2026-08-30T10:47:24-07:00",
+      "subject": "audit(p0): deny-by-default safety, write-path allowlist, ssh deny-patterns (#39)",
+      "changed_files": [
+        "README.md",
+        "SECURITY.md",
+        "src/mcp_venus_os/config.py",
+        "src/mcp_venus_os/safety.py",
+        "src/mcp_venus_os/server.py",
+        "tests/conftest.py",
+        "tests/test_safety.py",
+        "tests/test_safety_deny.py",
+        "tests/test_ssh_tools.py",
+        "tests/test_write_tools.py"
+      ],
+      "changed_tests": [
+        "tests/conftest.py",
+        "tests/test_safety.py",
+        "tests/test_safety_deny.py",
+        "tests/test_ssh_tools.py",
+        "tests/test_write_tools.py"
+      ],
+      "added_test_functions": [
+        "test_killswitch_blocks_when_disabled",
+        "test_killswitch_blocks_even_with_confirmation_disabled",
+        "test_killswitch_allows_when_enabled",
+        "test_write_path_outside_allowlist_denied",
+        "test_write_path_default_allowlist_per_operation",
+        "test_write_path_battery_other_field_denied",
+        "test_write_path_with_no_dbus_path_skips_allowlist_check",
+        "test_ssh_command_deny_patterns",
+        "test_ssh_command_allowed_patterns",
+        "test_confirm_gate_returns_error_on_killswitch",
+        "test_confirm_gate_returns_error_on_disallowed_path",
+        "test_confirm_gate_returns_none_when_all_checks_pass",
+        "test_write_tool_blocks_when_killswitch_off",
+        "test_write_tool_blocks_path_outside_allowlist",
+        "test_cerbo_ssh_exec_runs_when_confirmed",
+        "test_set_inverter_mode_mqtt_publishes_and_verifies",
+        "test_set_inverter_mode_unknown_enum_rejected_before_publish",
+        "test_set_charge_current_limit_mqtt_publishes_and_verifies",
+        "test_set_soc_limit_mqtt_publishes_to_battery_path",
+        "test_write_readback_timeout_reports_error"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/91589b07bca3309cd67a3d9089245e0118135935",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "534b4f9d67688c2962fa1101dd67ed125ab3fe23",
+      "date": "2026-08-29T14:48:25-07:00",
+      "subject": "fix(dbus_client): skip non-numeric service instances (e.g. com.victronenergy.ev22) (#38)",
+      "changed_files": [
+        "src/mcp_venus_os/dbus_client.py",
+        "tests/test_dbus_client.py"
+      ],
+      "changed_tests": [
+        "tests/test_dbus_client.py"
+      ],
+      "added_test_functions": [
+        "test_list_devices_skips_non_numeric_instance"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/534b4f9d67688c2962fa1101dd67ed125ab3fe23",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "13add2112e07f46e0d919c1e780939aca3b68624",
+      "date": "2026-08-25T09:51:44-07:00",
+      "subject": "fix(mqtt): decode messages off paho thread; healthcheck timeout 10s (#35)",
+      "changed_files": [
+        "CHANGELOG.md",
+        "docker-compose.yml",
+        "src/mcp_venus_os/mqtt_client.py",
+        "tests/test_mqtt_client.py",
+        "tests/test_server.py",
+        "tests/test_ssh_tools.py"
+      ],
+      "changed_tests": [
+        "tests/test_mqtt_client.py",
+        "tests/test_server.py",
+        "tests/test_ssh_tools.py"
+      ],
+      "added_test_functions": [
+        "test_worker_thread_processes_enqueued_messages",
+        "test_inbox_overflow_drops_without_raising",
+        "test_empty_payload_not_logged_as_warning"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/13add2112e07f46e0d919c1e780939aca3b68624",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "e836db73fd8022c4a50ef8ea5551ff71263e3d7e",
+      "date": "2026-08-24T17:19:29-07:00",
+      "subject": "fix(setuphelper): install from main branch, never hang on stdin (#34)",
+      "changed_files": [
+        "src/mcp_venus_os/ssh_client.py",
+        "tests/test_ssh_tools.py"
+      ],
+      "changed_tests": [
+        "tests/test_ssh_tools.py"
+      ],
+      "added_test_functions": [
+        "test_setuphelper_install_uses_main_branch_and_no_stdin_hang"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/e836db73fd8022c4a50ef8ea5551ff71263e3d7e",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "e2aa18b34664d17dfe0fad6381f9bcbb7d7d041c",
+      "date": "2026-08-23T19:49:14-07:00",
+      "subject": "fix(mqtt): startup warm-up + unwrap gateway {\"value\": \u2026} at cache ingest (#30)",
+      "changed_files": [
+        "src/mcp_venus_os/mqtt_client.py",
+        "src/mcp_venus_os/server.py",
+        "tests/test_server.py"
+      ],
+      "changed_tests": [
+        "tests/test_server.py"
+      ],
+      "added_test_functions": [
+        "test_on_message_unwraps_gateway_value_wrapper",
+        "test_startup_warmup_failure_is_not_fatal"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/e2aa18b34664d17dfe0fad6381f9bcbb7d7d041c",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "0230a6e9094616a03f3fb92017d11efc93523dc7",
+      "date": "2026-08-23T17:43:37-07:00",
+      "subject": "docs: correct Docker Hub namespace (alvit, not 4alvit) (#25)",
+      "changed_files": [
+        "CHANGELOG.md",
+        "README.md"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/0230a6e9094616a03f3fb92017d11efc93523dc7",
+      "classification": "excluded_from_provisional_defect_subset",
+      "reason": "Documentation correction",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "7dfe6e95efda6fd1f33457f37dd0632621ae9538",
+      "date": "2026-08-23T17:32:57-07:00",
+      "subject": "feat: Docker Hub release workflow, HTTP-primary docs, compose healthcheck fix (#23)",
+      "changed_files": [
+        ".env.sample",
+        ".github/workflows/docker-hub-release.yml",
+        ".mcp.json",
+        "CHANGELOG.md",
+        "README.md",
+        "TODO.md",
+        "docker-compose.yml",
+        "pyproject.toml"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/7dfe6e95efda6fd1f33457f37dd0632621ae9538",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "b9158a28f8e7ec61f715630c13505ebf729a4b8f",
+      "date": "2026-08-23T17:23:41-07:00",
+      "subject": "fix(mqtt): W-writes need {\"value\": \u2026} wrapper; unwrap on read-back (#22)",
+      "changed_files": [
+        "src/mcp_venus_os/server.py",
+        "tests/test_write_tools.py"
+      ],
+      "changed_tests": [
+        "tests/test_write_tools.py"
+      ],
+      "added_test_functions": [
+        "test_values_match_unwraps_gateway_value_dict"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/b9158a28f8e7ec61f715630c13505ebf729a4b8f",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "93985fea9d5c5707d33f94058fd609096ae0b10a",
+      "date": "2026-08-23T15:21:41-07:00",
+      "subject": "fix(mqtt): gate warm-up strictly on full-publish marker (#19)",
+      "changed_files": [
+        "src/mcp_venus_os/server.py",
+        "tests/test_server.py",
+        "tests/test_write_tools.py"
+      ],
+      "changed_tests": [
+        "tests/test_server.py",
+        "tests/test_write_tools.py"
+      ],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/93985fea9d5c5707d33f94058fd609096ae0b10a",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "retrospective_regression_added_2026-10-12",
+      "causal_proof": "historical_function_fails_current_function_passes",
+      "test": "tests/test_server.py::test_mqtt_ready_partial_tree_cannot_bypass_full_publish_marker",
+      "differential_evidence": "differential-2026-10-12.json"
+    },
+    {
+      "sha": "7c85b42a49e5766c79e24c8164a36c9b4c9c864b",
+      "date": "2026-08-23T14:54:02-07:00",
+      "subject": "fix(mqtt): read layouts, instance auto-discovery, gateway full-publish wait (#18)",
+      "changed_files": [
+        "TODO.md",
+        "docker-compose.yml",
+        "src/mcp_venus_os/mqtt_client.py",
+        "src/mcp_venus_os/server.py",
+        "tests/test_server.py"
+      ],
+      "changed_tests": [
+        "tests/test_server.py"
+      ],
+      "added_test_functions": [
+        "test_get_battery_soc_mqtt_auto_discovers_instance",
+        "test_get_pv_power_mqtt_pvinverter_layout",
+        "test_get_grid_status_mqtt_grid_service_layout",
+        "test_discover_instance_missing_type_returns_none",
+        "test_mqtt_ready_waits_for_full_publish_marker",
+        "test_mqtt_ready_times_out_without_marker"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/7c85b42a49e5766c79e24c8164a36c9b4c9c864b",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "new_test_functions_added",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "916d7d0b4f95b08f3f6d4ef48511180607b81f00",
+      "date": "2026-08-23T13:40:54-07:00",
+      "subject": "Merge pull request #16 from 4alvit/fix/ci-mypy-release-permissions",
+      "changed_files": [
+        ".github/workflows/release.yml",
+        "tests/test_integration_mosquitto.py"
+      ],
+      "changed_tests": [
+        "tests/test_integration_mosquitto.py"
+      ],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/916d7d0b4f95b08f3f6d4ef48511180607b81f00",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "cd94f70e9bd9d3580600306f3dd6852f6076d4bb",
+      "date": "2026-08-22T16:00:12-07:00",
+      "subject": "fix(ci): repair mangled workflow ref in auto-approve.yml",
+      "changed_files": [
+        ".github/workflows/auto-approve.yml"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/cd94f70e9bd9d3580600306f3dd6852f6076d4bb",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "5cfe13ac12f9bccb0f1bfa10271564fb064dfaaf",
+      "date": "2026-08-22T15:28:02-07:00",
+      "subject": "fix(tests): align mqtt_subscribe test with documented stub contract (#9)",
+      "changed_files": [
+        "tests/test_server.py"
+      ],
+      "changed_tests": [
+        "tests/test_server.py"
+      ],
+      "added_test_functions": [
+        "test_mqtt_subscribe_unsupported"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/5cfe13ac12f9bccb0f1bfa10271564fb064dfaaf",
+      "classification": "excluded_from_provisional_defect_subset",
+      "reason": "Test expectation correction, not a production defect",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "d995abc8a6f8fe61c9227552bec433dbde03ecfb",
+      "date": "2026-08-22T13:26:37-07:00",
+      "subject": "ci: bump venus-os-ci-toolkit pins to description-key fix (#8)",
+      "changed_files": [
+        ".github/workflows/auto-approve.yml",
+        ".github/workflows/ci.yml"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/d995abc8a6f8fe61c9227552bec433dbde03ecfb",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "54dbfcd1088e58fce99a473610345bef3cc6ca4d",
+      "date": "2026-08-16T15:13:06-07:00",
+      "subject": "ci: fix workflow GITHUB_TOKEN and invalid permissions",
+      "changed_files": [
+        ".github/workflows/auto-approve.yml"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/54dbfcd1088e58fce99a473610345bef3cc6ca4d",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "288cc224819a359b5f04bcfb2a2b5bbb0f47867b",
+      "date": "2026-08-14T22:31:30-07:00",
+      "subject": "P0: Fix CI by removing GITHUB_TOKEN from reusable workflow and update pin; fix MCP write tools to return failure for not implemented operations",
+      "changed_files": [
+        ".github/workflows/ci.yml",
+        "src/mcp_venus_os/server.py"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/288cc224819a359b5f04bcfb2a2b5bbb0f47867b",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "d70037ad1d38c72d0a264c145e2e20cf6f7accc8",
+      "date": "2026-08-14T11:39:08-07:00",
+      "subject": "Fix CI quality checks: mypy, ruff, and pytest (#3)",
+      "changed_files": [
+        "src/mcp_venus_os/config.py",
+        "src/mcp_venus_os/dbus_client.py",
+        "src/mcp_venus_os/mqtt_client.py",
+        "src/mcp_venus_os/safety.py",
+        "src/mcp_venus_os/server.py",
+        "tests/test_safety.py"
+      ],
+      "changed_tests": [
+        "tests/test_safety.py"
+      ],
+      "added_test_functions": [
+        "test_validate_charge_current",
+        "test_validate_discharge_current",
+        "test_validate_soc_limit",
+        "test_validate_mode",
+        "test_validate_write_operation",
+        "test_confirmation_required_error"
+      ],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/d70037ad1d38c72d0a264c145e2e20cf6f7accc8",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "added_general_tests_not_proven_to_reproduce_ci_defect",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "b31808cc988f4b516deb8d91d3e895ec992b21a0",
+      "date": "2026-08-11T08:48:02-07:00",
+      "subject": "fix release workflow: add permissions and allow unsecure node version",
+      "changed_files": [
+        ".github/workflows/release.yml"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/b31808cc988f4b516deb8d91d3e895ec992b21a0",
+      "classification": "candidate_defect_fix",
+      "reason": "Defect/security-correction commit; see linked source diff. One commit can address multiple defects, so commit counts are not yet a complete defect denominator.",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    },
+    {
+      "sha": "e85e14a3941ee6899d5a72a964bd0fc0b0a179e0",
+      "date": "2026-07-30T23:43:09-07:00",
+      "subject": "docs: fix installation instructions - not on PyPI yet",
+      "changed_files": [
+        "README.md"
+      ],
+      "changed_tests": [],
+      "added_test_functions": [],
+      "commit_url": "https://github.com/4alvit/mcp-venus-os/commit/e85e14a3941ee6899d5a72a964bd0fc0b0a179e0",
+      "classification": "excluded_from_provisional_defect_subset",
+      "reason": "Documentation correction",
+      "test_evidence": "no_new_test_function_identified_in_same_commit",
+      "causal_proof": "source_diff_and_test_review_needed"
+    }
+  ],
+  "other_changes": [
+    {
+      "sha": "621c64321bf4870615d74eea31ddfcd17568e6a5",
+      "date": "2026-10-09T15:23:53-07:00",
+      "subject": "Merge pull request #96 from 4alvit/dependabot/github_actions/github-actions-90b5f5df74",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "b3533489c0c6bde2df621ab929305a6ea06317fb",
+      "date": "2026-10-09T04:42:55-07:00",
+      "subject": "chore(deps): bump the github-actions group with 6 updates (#95)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "43bc867dbbcdcf5d57f0c4318c3969d9a3f8b7ff",
+      "date": "2026-10-08T07:14:21-07:00",
+      "subject": "chore(deps): bump the github-actions group across 1 directory with 15 updates (#90)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "6f8041ffd16e3d2f747da8c8891d483a0567caa4",
+      "date": "2026-10-08T04:08:24-07:00",
+      "subject": "Validate locked Python dependencies in shared CI (#78)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "55e9e13651db00005eeb7fd12be9f28953950486",
+      "date": "2026-10-08T02:44:39-07:00",
+      "subject": "chore(deps): bump victron-venus/venus-os-ci-toolkit/.github/workflows/python-ci.yml (#83)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "6af9f9017dc901968dbb6f4f123b62f74c2c9219",
+      "date": "2026-10-07T15:59:17-07:00",
+      "subject": "[StepSecurity] Apply security best practices (#77)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "609925c12675f89f340c0d4474287051b312af6d",
+      "date": "2026-10-06T20:35:47-07:00",
+      "subject": "chore: remove tracked Python bytecode (#76)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "e40cb0b5a0786e9e25c20d3d5b77ebf0df77e210",
+      "date": "2026-10-06T16:29:25-07:00",
+      "subject": "docs: clarify portable MCP deployment guidance (#74)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "49e53182e74b1f284b253f3b5423eea709a68a99",
+      "date": "2026-10-05T17:33:59-07:00",
+      "subject": "ci: prepare optional runner reserve without enabling it (#73)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "dcfabc8eeb0b06d075d9a1ad5f21d1df5dc5a3c7",
+      "date": "2026-10-05T09:28:07-07:00",
+      "subject": "ci: publish coverage through shared OIDC workflow (#72)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "ec9b9f91ee24146ae4ba378b5e9e0910de0665c5",
+      "date": "2026-10-05T01:18:08-07:00",
+      "subject": "chore(release): prepare 0.2.11 (#71)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "382814a563016395200b74fb1632f06cb508610d",
+      "date": "2026-10-02T21:09:16-07:00",
+      "subject": "chore(deps): bump pyjwt from 2.14.0 to 2.15.0 (#59)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "41027e891ded404e700dba99980df766f1bdc68e",
+      "date": "2026-10-02T16:27:06-07:00",
+      "subject": "chore(ci): enable quiet CodeRabbit reviews (#60)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "84be5aff34e04f1a854e724a9d08054d29a2eaed",
+      "date": "2026-09-30T07:42:07-07:00",
+      "subject": "ci: adopt verified release lifecycle toolkit (#57)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "e55362c1a55328d015c5cfb8ef0114092b14c69b",
+      "date": "2026-09-22T09:19:20-07:00",
+      "subject": "ci: consolidate required validation and use protected native auto-merge (#54)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "161140608469a53e355c4d47bf2e4bdaf9c7a790",
+      "date": "2026-09-22T06:17:34-07:00",
+      "subject": "ci: approve Dependabot PRs with GITHUB_TOKEN (#53)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "87538588486cbae41dfb7e5766bfef7e5b6c8961",
+      "date": "2026-09-12T20:36:19-07:00",
+      "subject": "ci: approve trusted PRs without the automerge label (#50)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "02962a108ff73a6682bbd431294822cac962f877",
+      "date": "2026-09-12T20:20:56-07:00",
+      "subject": "chore: prepare 0.2.5 prerelease base (#49)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "317a532e5ac9964483833749c5a2e963d8ffe2b2",
+      "date": "2026-09-12T17:34:37-07:00",
+      "subject": "ci: gate releases through nightly, candidates and verified promotion (#48)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "2f3003bc3d24f379cbce2148a3cb1af3f686b27e",
+      "date": "2026-09-11T22:26:37-07:00",
+      "subject": "ci: refresh stale approvals after base changes (#46)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "b862fe1bb3fb5e27e9883e4f84de3a80213352f4",
+      "date": "2026-09-02T10:59:30-07:00",
+      "subject": "Update ci.yml",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "f4bae66ee351260f3aff17d769a9f58eb3fea4f8",
+      "date": "2026-08-31T21:26:30Z",
+      "subject": "perf(mqtt): replace loop_start with custom 5s loop_forever (#42)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "7b5fecb82cd8c82be75bbddddd5d86a642edb5cf",
+      "date": "2026-08-27T22:43:59-07:00",
+      "subject": "chore: add *.backup to .gitignore (#37)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "ac831e36f1f073d51711c3f2f29dbf53ce9bfedd",
+      "date": "2026-08-25T12:43:53-07:00",
+      "subject": "ci: add auto-merge pipeline (#36)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "c0b64a4fdfd2a6e927c08c747186b9c0e2bafcdc",
+      "date": "2026-08-23T20:58:43-07:00",
+      "subject": "feat(inverter): decode vebus Mode/State enums in read output (#33)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "91aae345f52146dfb16fd69b0120ef7b0084d428",
+      "date": "2026-08-23T20:27:13-07:00",
+      "subject": "feat(compose): mount SSH key for Cerbo management tools in Docker (#32)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "ba8181e865f9a69fcf77722d40912d602ec3716e",
+      "date": "2026-08-23T20:10:44-07:00",
+      "subject": "chore(todo): \u00a711 complete \u2014 capabilities expansion verified live (#31)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "cc834c3b48e798ddb80b852755c2ea24ad898d01",
+      "date": "2026-08-23T19:36:05-07:00",
+      "subject": "docs+feat: capability map for clients (resource, instructions, CAPABILITIES.md) (#29)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "33363d8b273b90977498be820d1b710720d197ba",
+      "date": "2026-08-23T19:30:02-07:00",
+      "subject": "feat(ssh): Cerbo management toolkit over asyncssh (#28)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "e3cf4a16d545a111ddf59ff0d3fe75cfc47ec8c5",
+      "date": "2026-08-23T19:03:13-07:00",
+      "subject": "feat(tools): conditional companion-service tools via broker detection (#27)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "777a69273df49ffb63bf0667d3d3dd688f066272",
+      "date": "2026-08-23T18:47:07-07:00",
+      "subject": "feat(reads): instance=0 fans out to every device of a type (#26)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "eff5c445fe7281684b7e8d9d84e6c7a9c8f7beef",
+      "date": "2026-08-23T17:37:14-07:00",
+      "subject": "chore(todo): \u00a710 done \u2014 live write test passed, v0.2.0 tagged (#24)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "1f1c87f9e220aeef64282a570c7440742a6def3d",
+      "date": "2026-08-23T15:52:08-07:00",
+      "subject": "chore(todo): \u00a75 transport tests verified (stdio client + HTTP handshake) (#21)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "7a7aa0346482b9047bede183c67ce8625c36ccec",
+      "date": "2026-08-23T15:32:15-07:00",
+      "subject": "docs: Synology deployment notes (port remap, no-scp, .env on NAS) (#20)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "582b6bd091818e504fcd723d3ad7233fac9be179",
+      "date": "2026-08-23T14:54:36-07:00",
+      "subject": "chore(todo): mark docs & release checklist items done (#17)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "51789c481128668cef8dc302730eeb7a468d1505",
+      "date": "2026-08-23T14:25:13-07:00",
+      "subject": "docs: remove stars/forks badges from README",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "f47ebac7faeeca7e5c3f76c7e7796b9a506f5bf2",
+      "date": "2026-08-23T13:15:31-07:00",
+      "subject": "docs: deployment matrix, MQTT topic map, safety model, changelog (#14)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "9f169eaffd6511bdb68b03fdf6bc46bc01c00f69",
+      "date": "2026-08-23T20:05:19Z",
+      "subject": "test: mosquitto integration test for Venus topic layout (#15)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "4ddf814ec7f78d5f9cefba9e9664aee158c445c0",
+      "date": "2026-08-23T12:39:43-07:00",
+      "subject": "feat: container packaging \u2014 Dockerfile, compose, CI image build (#13)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "80ef0f49f9001b4bac82aa1f5d07bba5f79a0fc3",
+      "date": "2026-08-23T19:26:13Z",
+      "subject": "feat: add HTTP transport with optional bearer-token auth (#12)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "5b56acc1f83a2851633e5ba64e21f490e6548a75",
+      "date": "2026-08-23T19:15:00Z",
+      "subject": "feat: implement write tools over W/<portalId> topics with keepalives (#11)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "6b845b5203de89cd55c5b733c4b094a5e08fe3bf",
+      "date": "2026-08-23T11:45:35-07:00",
+      "subject": "feat: pivot read path to Venus OS MQTT gateway cache (#10)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "74d083e1393fd5df7156c4783b0dc706ddeec3cc",
+      "date": "2026-08-22T15:57:04-07:00",
+      "subject": "chore(ci): bump auto-approve reusable workflow pin to 23d5d85",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "7dda773b4b8e67d84d896398308412bfdcd44126",
+      "date": "2026-08-22T00:10:53-07:00",
+      "subject": "ci: bump venus-os-ci-toolkit workflow pins to 2f679e8",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "f238947912715d0fd5fa0c403c4966768ff60387",
+      "date": "2026-08-21T15:45:10-07:00",
+      "subject": "ci: bump auto-approve reusable SHA (default authors incl. 4alvit) (#7)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "c1657bd00b3a0ab267b3653ec031b13937b36637",
+      "date": "2026-08-21T14:19:17-07:00",
+      "subject": "ci: bump auto-approve reusable workflow to bots-only revision (#6)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "0e427fd8abaf78c5f89de63e01194416b5bd8bc2",
+      "date": "2026-08-21T11:18:50-07:00",
+      "subject": "ci: bump auto-approve reusable workflow SHA (fromJSON author filter)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "b8be09c3f81b9957fd607412906d29234e62fe15",
+      "date": "2026-08-21T10:58:42-07:00",
+      "subject": "ci: bump auto-approve reusable workflow SHA, drop unused inputs",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "76ef9040879f8a48ae8f07a131052b642be8b8dd",
+      "date": "2026-08-19T17:21:11-07:00",
+      "subject": "Update ci.yml",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "497ae38f96a6c0f6fd2647c5bb09a705915d7b06",
+      "date": "2026-08-19T08:11:29-07:00",
+      "subject": "chore: revert auto-approve workflow to use reusable workflow with GITHUB_TOKEN",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "730061676c90977b341e6b11dfb624215c7025a0",
+      "date": "2026-08-18T15:59:38-07:00",
+      "subject": "env sample",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "c9a9ce2c1f9e92e36c9cbaec078d70507a144242",
+      "date": "2026-08-18T08:19:05-07:00",
+      "subject": "ci: use BOT_PAT secret for auto-approve workflows",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "ee4b6b11eb9e3532ad432bc181fddfc3f7efcc98",
+      "date": "2026-08-17T20:56:52-07:00",
+      "subject": "ci: allow Node 20 for auto-approve-action compatibility",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "d4fcd247fcaeac7f4cae4c51c9bf44cf2670749f",
+      "date": "2026-08-17T03:32:33-07:00",
+      "subject": "ci: use shared reusable auto-approve workflow from toolkit",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "54330709338a31ac9e073f382918797d20e15090",
+      "date": "2026-08-15T11:29:13-07:00",
+      "subject": "feat: add write tools test and update MCP Venus OS server (#4)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "24277655712c6a6ac31dbe68ba126b331597f76d",
+      "date": "2026-08-14T22:18:28-07:00",
+      "subject": "Update ci.yml",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "4d1b2ebd3d829d5bc03c1af62a4a0233ef501731",
+      "date": "2026-08-14T16:30:26-07:00",
+      "subject": "update venus-os-ci-toolkit SHA to latest",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "6c67df5d055bd6f1af01ea773e7107b05c933832",
+      "date": "2026-08-14T11:58:04-07:00",
+      "subject": "Update auto-approve.yml",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "8dcf4f6a26a4a3d6cf6f8a0fc3090f12c96ad77e",
+      "date": "2026-08-13T17:06:02-07:00",
+      "subject": "Create .mcp.json",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "fa60ce83d025537de72cc8a7c4c75c4644a58b7b",
+      "date": "2026-08-12T05:41:58-07:00",
+      "subject": "chore: pin GitHub Actions to full commit SHA (supply-chain safety)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "2af6d4ffec93f0fe2476d97d151a07a989a298cd",
+      "date": "2026-08-11T22:09:09-07:00",
+      "subject": "ci",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "dc852a4600023619ab8f272c9ee5cebdf80950bd",
+      "date": "2026-08-11T09:00:37-07:00",
+      "subject": "chore: revert version to 0.1.0 after testing",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "c7d099afe05372203304544c060c771b1fdbaa06",
+      "date": "2026-08-11T08:50:49-07:00",
+      "subject": "chore: bump version to 0.1.1 for testing release workflow",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "24f0439a117d3fcb6ca513c7843a3a6cfa864fe7",
+      "date": "2026-08-11T08:14:51-07:00",
+      "subject": "chore: add release workflow",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "976a4c94c87eae8ab074938e3598367c10acdc92",
+      "date": "2026-08-10T00:47:34-07:00",
+      "subject": "Add MIT LICENSE",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "d2d7b9bbc6b335e6367b1b7fb0a16d265ecb7ffc",
+      "date": "2026-08-09T19:43:24-07:00",
+      "subject": "Update README.md",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "79e40eff4d46741d4dcd795ccb13845389755210",
+      "date": "2026-08-05T20:17:15-07:00",
+      "subject": "chore: stop tracking logs folder",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "3406fb046d02b5cbdbffa798ca7b056c3306d14f",
+      "date": "2026-08-05T20:08:04-07:00",
+      "subject": "chore(deps): bump cryptography from 49.0.0 to 50.0.0 (#2)",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "3d52c7fa2fa7dc908a4e32279d5bcf088f871ba0",
+      "date": "2026-07-31T00:48:46-07:00",
+      "subject": "docs: add mermaid architecture diagram",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "ac62b87ca062ee4b0eeb5f4fc7e69f492a05efed",
+      "date": "2026-07-30T23:41:27-07:00",
+      "subject": "Merge pull request #1 from step-security-bot/chore/GHA-310640-stepsecurity-remediation",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "42beeb3dca32fa6ec5cb23aa52d2d13202d0fe33",
+      "date": "2026-07-30T23:35:27-07:00",
+      "subject": "chore: add .gitignore",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    },
+    {
+      "sha": "91f8d09a81c5e26013e52e90ced78da431dc9dcd",
+      "date": "2026-07-30T23:35:07-07:00",
+      "subject": "feat: initial mcp-venus-os MCP server",
+      "classification": "not_in_keyword_candidate_subset",
+      "review_status": "not_classified_as_defect_or_nondefect"
+    }
+  ],
+  "remaining_work": [
+    "Classify non-keyword changes, including CI/workflow corrections.",
+    "Split multi-defect commits where necessary and verify each fix-to-test mapping.",
+    "Retain missing regressions in the denominator; do not infer compliance from test-file changes or project-wide coverage."
+  ]
+}

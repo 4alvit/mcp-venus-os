@@ -33,7 +33,12 @@ def build_package(root: Path, version: str, channel: str, output: Path) -> list[
         committed = (root / policy["version_file"]).read_text().strip()
     else:
         committed = policy.get("version")
-    if committed and (
+    if policy.get("versioning"):
+        # Validate the reviewed plan before accepting its PEP 440 source overlay.
+        from release_version_adapter import checked_version
+
+        version = checked_version(root, version.removeprefix("v"), channel)
+    elif committed and (
         version.removeprefix("v").split("-")[0]
         != committed.removeprefix("v").split("-")[0]
     ):

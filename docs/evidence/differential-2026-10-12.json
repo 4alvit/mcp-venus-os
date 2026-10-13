@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "run_date": "2026-10-12",
+  "repository": "4alvit/mcp-venus-os",
+  "base_head": "f7421f68325711b334ea446a7aaab600db0238bc",
+  "environment": "CPython 3.12.14; locked project development dependencies",
+  "method": "A pytest plugin replaced only the named AST function/class definitions from git show in the current module namespace. The current test suite/dependencies remained unchanged. This is function-level differential evidence, not a complete historical-build claim.",
+  "historical_definitions": [
+    {
+      "commit": "582b6bd091818e504fcd723d3ad7233fac9be179",
+      "path": "src/mcp_venus_os/server.py",
+      "definition": "_mqtt_ready",
+      "fix_commit": "93985fea9d5c5707d33f94058fd609096ae0b10a"
+    },
+    {
+      "commit": "f7421f68325711b334ea446a7aaab600db0238bc",
+      "path": "src/mcp_venus_os/safety.py",
+      "definition": "SafetyValidator"
+    }
+  ],
+  "tests": [
+    "tests/test_server.py::test_mqtt_ready_partial_tree_cannot_bypass_full_publish_marker",
+    "tests/test_safety.py::test_write_gate_rejects_nonfinite_or_boolean_current",
+    "tests/test_safety.py::test_validation_log_does_not_disclose_operator_arguments"
+  ],
+  "historical_result": {
+    "failed": 12,
+    "passed": 0
+  },
+  "current_result": {
+    "failed": 0,
+    "passed": 12
+  },
+  "interpretation": "NaN and boolean inputs, sensitive log parameters and the early MQTT marker detect the corresponding behavior regression. Infinite inputs were already denied by ordinary bounds but now receive the finite-number diagnostic; their four cases are diagnostic consistency checks, not four additional permission-bypass defects.",
+  "test_sha256": {
+    "tests/test_server.py": "fdd0178ca2d2356fa51e86cf6a59402b7b7d9868041d019b0f546ddf4345a384",
+    "tests/test_safety.py": "20ebba616133198101610e5d9a08fec88619d75ecd5e741932bd9fd8936c1b68"
+  },
+  "logs_sha256": {
+    "before.log": "65ffd3312b7ed5f078f24f46de14e53820b8479b9b6ef6dc45becac6e6ad7ee6",
+    "after.log": "bea8ed1ee123d92a389788a16caf76705214fbea0df32001373ed4fc6d365f94"
+  }
+}

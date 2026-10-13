@@ -5,7 +5,13 @@ cd "$(dirname "$0")/.."
 [[ -f release-dist/SHA256SUMS ]] || { echo 'Build package assets first.' >&2; exit 1; }
 asset="mcp-venus-os-container.oci.tar"
 [[ ! -e "release-dist/$asset" ]] || { echo 'Container output already exists.' >&2; exit 1; }
-docker buildx build --platform linux/amd64,linux/arm64 --output "type=oci,dest=release-dist/$asset" .
+python_bin="${RELEASE_PYTHON:-python3}"
+identity="$("$python_bin" scripts/release_container_labels.py --shell)"
+read -r package_version source_revision <<< "$identity"
+docker buildx build --platform linux/amd64,linux/arm64 \
+  --label "org.opencontainers.image.version=$package_version" \
+  --label "org.opencontainers.image.revision=$source_revision" \
+  --output "type=oci,dest=release-dist/$asset" .
 python3 - "$asset" <<'CHECKSUM'
 import hashlib
 import sys

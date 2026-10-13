@@ -62,9 +62,19 @@ docstring-code-format = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["tests", ".github/release-tests", ".github/workflow-tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
+
+[tool.coverage.run]
+source = ["src", "scripts"]
+
+[tool.coverage.report]
+# The shared workflow records --cov=.; report only production code, including
+# every owned/vendored operational script, never test fixtures or test bodies.
+include = ["src/*", "scripts/*"]
+fail_under = 80
+show_missing = true
 
 [tool.mypy]
 python_version = "3.11"

@@ -1,6 +1,7 @@
 """Safety constraints and validation for write operations."""
 
 import logging
+import math
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -113,6 +114,12 @@ class SafetyValidator:
 
     def validate_charge_current(self, current: float) -> SafetyCheckResult:
         """Validate charge current parameter."""
+        if (
+            isinstance(current, bool)
+            or not isinstance(current, (int, float))
+            or not math.isfinite(current)
+        ):
+            return SafetyCheckResult(False, "Charge current must be a finite number")
         if current < 0:
             return SafetyCheckResult(False, "Charge current cannot be negative")
         if current > self.config.max_charge_current:
@@ -124,6 +131,12 @@ class SafetyValidator:
 
     def validate_discharge_current(self, current: float) -> SafetyCheckResult:
         """Validate discharge current parameter."""
+        if (
+            isinstance(current, bool)
+            or not isinstance(current, (int, float))
+            or not math.isfinite(current)
+        ):
+            return SafetyCheckResult(False, "Discharge current must be a finite number")
         if current < 0:
             return SafetyCheckResult(False, "Discharge current cannot be negative")
         if current > self.config.max_discharge_current:
@@ -136,6 +149,8 @@ class SafetyValidator:
 
     def validate_soc_limit(self, soc: int) -> SafetyCheckResult:
         """Validate state of charge limit."""
+        if isinstance(soc, bool) or not isinstance(soc, int):
+            return SafetyCheckResult(False, "SoC limit must be an integer")
         if soc < self.config.min_soc_limit:
             return SafetyCheckResult(
                 False, f"SoC limit {soc}% below minimum {self.config.min_soc_limit}%"
@@ -176,7 +191,8 @@ class SafetyValidator:
         3. Per-operation parameter range/enum validation.
         4. Confirmation gate.
         """
-        logger.info("Validating write operation: %s with params: %s", operation, params)
+        # SSH arguments and other operator inputs may contain credentials.
+        logger.info("Validating write operation: %s", operation)
 
         # 1. Killswitch — even confirmed=True is not enough.
         if not self.config.enable_writes:

@@ -1,0 +1,23 @@
+{
+  "source_revision": "de4013a2d48879ac9d77afbbf9267a0486c09272",
+  "tests": [
+    {
+      "upstream": "https://github.com/victron-venus/venus-os-ci-toolkit/blob/de4013a2d48879ac9d77afbbf9267a0486c09272/tests/test_change_scope.py",
+      "source_sha256": "b63d83fd8077972b16553514d7a124d8fadf41428ec3ad48647a027a66a6981e",
+      "local": ".github/release-tests/test_change_scope.py",
+      "adaptation": "Relative scripts path uses parents[2]; release client includes only ClientTest (generator is upstream-only). Added vendor lint markers."
+    },
+    {
+      "upstream": "https://github.com/victron-venus/venus-os-ci-toolkit/blob/de4013a2d48879ac9d77afbbf9267a0486c09272/tests/test_release_client.py",
+      "source_sha256": "ee5ec40e64c7cea6b50870c99b8d629912e61e5f466bdacb873e390c55750811",
+      "local": ".github/release-tests/test_release_client_consumer.py",
+      "adaptation": "Relative scripts path uses parents[2]; release client includes only ClientTest (generator is upstream-only). Added vendor lint markers."
+    },
+    {
+      "upstream": "https://github.com/victron-venus/venus-os-ci-toolkit/blob/de4013a2d48879ac9d77afbbf9267a0486c09272/tests/test_verified_publication.py",
+      "source_sha256": "adaab70d547ad1362d26bc4e522440a745b7081db3f8d953fa1c6983008cd1d7",
+      "local": ".github/release-tests/test_verified_publication.py",
+      "adaptation": "Relative scripts path uses parents[2]; release client includes only ClientTest (generator is upstream-only). Added vendor lint markers."
+    }
+  ]
+}

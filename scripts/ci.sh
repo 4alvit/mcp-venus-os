@@ -21,4 +21,4 @@ fi
 "$python_bin" -m ruff check .
 "$python_bin" -m ruff format --check .
 "$python_bin" -m mypy .
-"$python_bin" -m pytest tests/ --cov=. --cov-report=term-missing --cov-fail-under=80
+"$python_bin" -m pytest --cov=. --cov-report=term-missing --cov-fail-under=80

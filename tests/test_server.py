@@ -418,6 +418,23 @@ async def test_mqtt_ready_waits_for_full_publish_marker() -> None:
 
 
 @pytest.mark.asyncio
+async def test_mqtt_ready_partial_tree_cannot_bypass_full_publish_marker() -> None:
+    """Regression for #19: a few early values are not a complete device tree."""
+    client = _mqtt_read_client({"N/<portal>/system/0/Serial": "fixture"})
+    client._cache.pop("N/testportal/full_publish_completed", None)
+    with patch("mcp_venus_os.server.get_mqtt_client", return_value=client):
+        readiness = asyncio.create_task(server._mqtt_ready())
+        try:
+            await asyncio.sleep(0)
+            assert not readiness.done()
+            _feed(client, "N/testportal/full_publish_completed", b'{"value":1}')
+            assert await asyncio.wait_for(readiness, timeout=2) is client
+        finally:
+            readiness.cancel()
+            await asyncio.gather(readiness, return_exceptions=True)
+
+
+@pytest.mark.asyncio
 async def test_mqtt_ready_times_out_without_marker(monkeypatch: pytest.MonkeyPatch) -> None:
     """No marker (old firmware) → proceed after the timeout instead of hanging."""
     monkeypatch.setattr(server, "MQTT_WARMUP_TIMEOUT_S", 0.1)

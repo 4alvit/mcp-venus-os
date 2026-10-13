@@ -1,6 +1,8 @@
+import logging
 from unittest.mock import patch
 
 import pytest
+from pydantic import ValidationError
 
 from mcp_venus_os.config import SafetyConfig, ServerConfig
 from mcp_venus_os.safety import (
@@ -29,6 +31,71 @@ def test_validate_charge_current() -> None:
     assert result.allowed
     result = validator.validate_charge_current(10.0)
     assert isinstance(result, SafetyCheckResult)
+
+
+@pytest.mark.parametrize("current", [float("nan"), float("inf"), -float("inf"), True, False])
+@pytest.mark.parametrize("parameter", ["charge_current", "discharge_current"])
+def test_write_gate_rejects_nonfinite_or_boolean_current(current: float, parameter: str) -> None:
+    """Explicit confirmation cannot turn an unordered/boolean value into amperes."""
+    validator = _writable_validator()
+    result = validator.validate_write_operation("test_op", {parameter: current}, confirmed=True)
+    assert not result.allowed
+    assert "finite number" in (result.reason or "")
+
+
+@pytest.mark.parametrize("soc", [float("nan"), float("inf"), 50.5, True, False])
+def test_write_gate_rejects_noninteger_soc(soc: object) -> None:
+    """Range comparisons alone must not admit NaN or coerce boolean percentages."""
+    validator = _writable_validator()
+    result = validator.validate_write_operation("test_op", {"soc_limit": soc}, confirmed=True)
+    assert not result.allowed
+    assert "integer" in (result.reason or "")
+
+
+@pytest.mark.parametrize("field", ["max_charge_current", "max_discharge_current"])
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -1, True])
+def test_safety_configuration_rejects_invalid_current_limits(field: str, value: float) -> None:
+    """Invalid limits must fail at startup instead of disabling range comparisons."""
+    with pytest.raises(ValidationError):
+        SafetyConfig.model_validate({field: value})
+
+
+@pytest.mark.parametrize(
+    "limits",
+    [
+        {"min_soc_limit": -1},
+        {"max_soc_limit": 101},
+        {"min_soc_limit": True},
+        {"max_soc_limit": False},
+        {"min_soc_limit": 90, "max_soc_limit": 50},
+    ],
+)
+def test_safety_configuration_rejects_invalid_soc_limits(limits: dict[str, int]) -> None:
+    with pytest.raises(ValidationError):
+        SafetyConfig.model_validate(limits)
+
+
+def test_safety_limits_accept_environment_numbers(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Normal string-valued environment configuration remains supported."""
+    monkeypatch.setenv("SAFETY_MAX_CHARGE_CURRENT", "42.5")
+    monkeypatch.setenv("SAFETY_MIN_SOC_LIMIT", "20")
+    monkeypatch.setenv("SAFETY_MAX_SOC_LIMIT", "80")
+    config = SafetyConfig()
+    assert config.max_charge_current == 42.5
+    assert (config.min_soc_limit, config.max_soc_limit) == (20, 80)
+
+
+def test_validation_log_does_not_disclose_operator_arguments(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Even a rejected or permitted SSH command may carry a private credential."""
+    validator = _writable_validator()
+    with caplog.at_level(logging.INFO, logger="mcp_venus_os.safety"):
+        validator.validate_write_operation(
+            "cerbo_ssh_exec", {"command": "printf fixture-private-token"}, confirmed=True
+        )
+    assert "cerbo_ssh_exec" in caplog.text
+    assert "fixture-private-token" not in caplog.text
 
 
 def test_validate_discharge_current() -> None:

@@ -1,6 +1,6 @@
 # OpenSSF Best Practices evidence
 
-This is an evidence index for the OpenSSF Best Practices Passing self-assessment. It is not an assertion that a badge has been awarded or that every criterion is satisfied. The public badge service is the authority for an awarded status.
+This is an evidence index for the OpenSSF Best Practices Passing and Silver self-assessment. It is not an assertion that a badge has been awarded or that every criterion is satisfied. The public badge service is the authority for an awarded status.
 
 ## Project and participation
 
@@ -48,3 +48,23 @@ this deliberately limited parser does not implement all CommonMark structure.
 Fenced examples and HTML comments cannot supply the required guidance; normal
 blank-separated thematic breaks remain supported. The published release body
 preserves the original source text after validation.
+
+## Current application and Silver evidence
+
+The [public application](https://www.bestpractices.dev/projects/15439) is the
+authority for badge progress; the README badge follows that application.
+[Governance and roles](../GOVERNANCE.md), [conduct](../CODE_OF_CONDUCT.md),
+[the one-year roadmap](../ROADMAP.md), [security assurance](security-assurance.md),
+and [quality and regression evidence](quality-evidence.md) are independently
+reviewable. They do not assert that Silver has been awarded.
+
+On 12 October 2026, the primary maintainer confirmed secure-design/common-
+vulnerability knowledge for this project and no outside-GitHub bug, suggestion
+or vulnerability reports during the preceding 12 months. The GitHub issue
+inventory reviewed that day contained no ordinary issues. These project-specific
+statements are recorded as owner attestations, not inferred from another repo.
+The primary maintainer also confirmed that repository access continuity is
+not arranged: `access_continuity` remains **Unmet**. Regression-history
+classification, successful complete-scope coverage, repeat-build results and a
+real signed publication must each be verified before claiming their respective
+criteria. Passing is a prerequisite for Silver.
