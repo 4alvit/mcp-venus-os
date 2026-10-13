@@ -218,15 +218,23 @@
       "corrected_path": "Dockerfile",
       "denominator_weight_upper_bound": 1,
       "regression_credit_used_in_lower_bound": false
+    },
+    {
+      "id": "PR103-17",
+      "behavior": "Draft Docker context did not exclude the actual temporary platform archive directory after its path moved under build/.",
+      "corrected_path": ".dockerignore",
+      "denominator_weight_upper_bound": 1,
+      "regression_credit_used_in_lower_bound": false
     }
   ],
   "method": "Preserve the complete original six-month inventory. Add eight PR101 fixes whose existing published function-level parent/current differential runs prove regression behavior. Split distinct packaging nondeterminism causes. Include draft-only integration/fixture failures conservatively although they were never shipped. Give this phase no additional regression credit, including new feature contract tests. The result is a lower bound, not an exact unique-defect percentage.",
   "summary": {
     "credited": 76,
-    "denominator_upper_bound": 149,
-    "lower_bound_percent": 51.006711409395976,
-    "formula": "76 / (130 + 19)",
+    "denominator_upper_bound": 150,
+    "lower_bound_percent": 50.666666666666664,
+    "formula": "76 / (130 + 20)",
     "qualifies_at_least_50_percent": true
   },
-  "validation_run": "https://github.com/4alvit/mcp-venus-os/actions/runs/38337908962"
+  "validation_run": "https://github.com/4alvit/mcp-venus-os/actions/runs/38337908962",
+  "qualification_note": "The through_head identifies the last qualified functional source. This inventory also conservatively counts the subsequent Docker-context ignore correction in the same PR; the final required gate must pass before merge."
 }

@@ -110,10 +110,10 @@ and retrospective additions remain explicit.
 
 The [subsequent reviewed inventory](evidence/regression-repeatable-2026-10-12.json)
 retains that history and credits eight merged PR101 regressions backed by the
-already published parent/current differential results. It adds 19 further
+already published parent/current differential results. It adds 20 further
 possible behavior units with no new regression credit, including separately
 counted packaging nondeterminism causes and unshipped draft integration failures.
-The resulting reviewed-inventory lower bound is **76 / 149 = 51.01%**. This is
+The resulting reviewed-inventory lower bound is **76 / 150 = 50.67%**. This is
 not an exact defect universe; the extra denominator intentionally overcounts
 possible overlaps. Test-addition dates do not establish bug-introduction dates.
 
