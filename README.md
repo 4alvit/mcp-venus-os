@@ -94,8 +94,15 @@ Or for development:
 ```bash
 git clone https://github.com/4alvit/mcp-venus-os
 cd mcp-venus-os
-uv sync
+uv sync --locked --extra dev
 ```
+
+Python installations use the selected virtual environment; pip also supports
+its normal `--prefix` and `--target` installation locations. To remove an
+installation, run `python -m pip uninstall mcp-venus-os` with that environment's
+interpreter, or remove the dedicated virtual environment after stopping the
+service. Keep deployment secrets outside the environment. For contributor tests
+and build-tool installation, follow [Contributing](CONTRIBUTING.md).
 
 ### Prerequisites (Cerbo GX)
 

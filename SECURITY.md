@@ -132,6 +132,16 @@ and [Python SSL contexts](https://docs.python.org/3.12/library/ssl.html#ssl.SSLC
 
 ## Credential rotation
 
+Keep passwords and tokens in a separate service-account-readable credentials
+file, for example `/run/secrets/mcp-credentials.env`, containing only the required
+`HTTP_AUTH_TOKEN`, `MQTT_PASSWORD` and/or `SSH_PASSWORD` entries. Supply that file
+through the service manager's `EnvironmentFile` or a separate Compose `env_file`;
+keep ordinary settings in another file. Do not commit either deployment file.
+SSH private keys already use the separate `SSH_KEY_PATH` file. Restrict parent
+directory and file permissions and use a read-only secret mount where available.
+The application accepts the resulting environment values, so rotation does not
+require changing code or rebuilding packages.
+
 HTTP bearer tokens, MQTT credentials and SSH credentials are deployment inputs,
 not permanent identities embedded in the program. To rotate them, provision a
 replacement at the issuer/broker/device, update the protected environment or

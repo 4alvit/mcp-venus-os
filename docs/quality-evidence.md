@@ -23,13 +23,15 @@ Prepare the locked application/test environment, then run:
 
 ```sh
 uv sync --locked --extra dev --python 3.12
-uv run --locked --extra dev python -m pytest --cov=. \
+uv pip install --python .venv/bin/python --require-hashes --only-binary=:all: \
+  -r .github/requirements-bandit-1.9.2.txt
+.venv/bin/python -m pytest --cov=. \
   --cov-report=term-missing --cov-report=xml --cov-report=json
 ```
 
-The security boundary tests also require the repository's pinned Bandit tool.
-The CI security job installs it explicitly; prepare it before running those
-tests locally. Record interpreter, tool versions, source hashes, executed/skipped
+The security boundary tests also require the repository's pinned Bandit tool,
+installed by the commands above and by the separate CI security job. Record
+interpreter, tool versions, source hashes, executed/skipped
 tests and the report's actual numerator/denominator alongside the result. A
 failed run is diagnostic evidence, not a successful coverage qualification.
 Broker integration tests require the isolated Mosquitto fixture described in
