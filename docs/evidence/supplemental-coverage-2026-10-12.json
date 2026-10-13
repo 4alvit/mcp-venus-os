@@ -1,0 +1,574 @@
+{
+  "schema": 1,
+  "source_revision": "92daf35a2f9bf7e7f953e12d482a20e8ff590955",
+  "date": "2026-10-12",
+  "scope": "Every tracked non-Python shebang source, actual workflow step run block, Dockerfile and Compose executable healthcheck. Embedded Python in these fragments is included here because coverage.py does not trace these subprocess fragments. Declarative YAML settings and GitHub expressions are configuration, not extra program statements. Test source is not production scope.",
+  "method": "Manually review the complete fragments for executable syntax, then conservatively count every physical line including comments, blanks and continuations, plus every semicolon, &&, ||, command-substitution opener and backtick pair as an additional possible statement. No fragment uses additional uncounted one-line command forms. This is a source-inventory upper bound for this reviewed revision, not a general-purpose shell parser and not measured shell coverage.",
+  "fragments": [
+    {
+      "path": "release.sh",
+      "fragment": "whole non-Python shebang file (including embedded Python)",
+      "source_sha256": "18c32118fd9e7748ea2bb6b673588b23f5bbe59205317b56a4bcb158e04c4cc6",
+      "physical_lines_including_blanks_comments_and_continuations": 5,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 1,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 6
+    },
+    {
+      "path": "scripts/ci.sh",
+      "fragment": "whole non-Python shebang file (including embedded Python)",
+      "source_sha256": "3f1797dab6a1a3956541b6d98ae206e57577136fe2b8e3e04f32126f4ef3ff99",
+      "physical_lines_including_blanks_comments_and_continuations": 24,
+      "additional_possible_statement_boundaries": {
+        ";": 5,
+        "&&": 0,
+        "||": 1,
+        "$(": 1,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 31
+    },
+    {
+      "path": "scripts/package-container.sh",
+      "fragment": "whole non-Python shebang file (including embedded Python)",
+      "source_sha256": "16d53226bc98ca4e86e660fdc611cb7d23d66918b938ccb3479eef93552cf2e5",
+      "physical_lines_including_blanks_comments_and_continuations": 26,
+      "additional_possible_statement_boundaries": {
+        ";": 4,
+        "&&": 0,
+        "||": 2,
+        "$(": 2,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 34
+    },
+    {
+      "path": "scripts/package-release.sh",
+      "fragment": "whole non-Python shebang file (including embedded Python)",
+      "source_sha256": "602f3edc2f807a9884aaf062b551fcaf323743875314a51e1cf6da724a8a322a",
+      "physical_lines_including_blanks_comments_and_continuations": 5,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 1,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 6
+    },
+    {
+      "path": ".github/workflows/dependency-review.yml",
+      "fragment": "jobs.dependency-review.steps[3].run",
+      "source_sha256": "c864842e188b58ae57c2747fb98a3d9755f6a691f50b42155b0901dbbd56bccb",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 1,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 2
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.scope.steps[2].run",
+      "source_sha256": "922b5a23ad736b42aa2bcd1f9e213f0afd030a12617f59b861002f7604ebe585",
+      "physical_lines_including_blanks_comments_and_continuations": 3,
+      "additional_possible_statement_boundaries": {
+        ";": 2,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 5
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.workflow-contracts.steps[3].run",
+      "source_sha256": "922b5a23ad736b42aa2bcd1f9e213f0afd030a12617f59b861002f7604ebe585",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.workflow-contracts.steps[4].run",
+      "source_sha256": "922b5a23ad736b42aa2bcd1f9e213f0afd030a12617f59b861002f7604ebe585",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.workflow-contracts.steps[5].run",
+      "source_sha256": "922b5a23ad736b42aa2bcd1f9e213f0afd030a12617f59b861002f7604ebe585",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.release-contracts.steps[3].run",
+      "source_sha256": "922b5a23ad736b42aa2bcd1f9e213f0afd030a12617f59b861002f7604ebe585",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.release-contracts.steps[4].run",
+      "source_sha256": "922b5a23ad736b42aa2bcd1f9e213f0afd030a12617f59b861002f7604ebe585",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.release-contracts.steps[5].run",
+      "source_sha256": "922b5a23ad736b42aa2bcd1f9e213f0afd030a12617f59b861002f7604ebe585",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "fragment": "jobs.gate.steps[1].run",
+      "source_sha256": "922b5a23ad736b42aa2bcd1f9e213f0afd030a12617f59b861002f7604ebe585",
+      "physical_lines_including_blanks_comments_and_continuations": 23,
+      "additional_possible_statement_boundaries": {
+        ";": 1,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 24
+    },
+    {
+      "path": ".github/workflows/release-build.yml",
+      "fragment": "jobs.package.steps[4].run",
+      "source_sha256": "c25890daa732b3edf77340d32f0a3e95bf8b1cc2629c8bd7c37dccd129a80182",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-build.yml",
+      "fragment": "jobs.package.steps[5].run",
+      "source_sha256": "c25890daa732b3edf77340d32f0a3e95bf8b1cc2629c8bd7c37dccd129a80182",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-build.yml",
+      "fragment": "jobs.package.steps[6].run",
+      "source_sha256": "c25890daa732b3edf77340d32f0a3e95bf8b1cc2629c8bd7c37dccd129a80182",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-build.yml",
+      "fragment": "jobs.package.steps[9].run",
+      "source_sha256": "c25890daa732b3edf77340d32f0a3e95bf8b1cc2629c8bd7c37dccd129a80182",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-build.yml",
+      "fragment": "jobs.package.steps[10].run",
+      "source_sha256": "c25890daa732b3edf77340d32f0a3e95bf8b1cc2629c8bd7c37dccd129a80182",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-build.yml",
+      "fragment": "jobs.package.steps[11].run",
+      "source_sha256": "c25890daa732b3edf77340d32f0a3e95bf8b1cc2629c8bd7c37dccd129a80182",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.scope.steps[2].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 3,
+      "additional_possible_statement_boundaries": {
+        ";": 2,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 5
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.prepare.steps[2].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.gate.steps[1].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 11,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 11
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.candidate.steps[5].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.candidate.steps[6].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.stable.steps[3].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.final.steps[5].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.final.steps[6].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[5].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[7].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 3,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 3
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[8].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[9].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[10].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[11].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 4,
+      "additional_possible_statement_boundaries": {
+        ";": 1,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 5
+    },
+    {
+      "path": ".github/workflows/release-pipeline.yml",
+      "fragment": "jobs.sign.steps[12].run",
+      "source_sha256": "9d5bbb9ab533f67159747bf275286c8edcc66f583fcaacd3196d243653254289",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-security.yml",
+      "fragment": "jobs.security.steps[3].run",
+      "source_sha256": "29c94ebfaf656f9f81489833c6c2eafb795ccc5127c1962e9687d7b7ba2bc0fa",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-security.yml",
+      "fragment": "jobs.security.steps[4].run",
+      "source_sha256": "29c94ebfaf656f9f81489833c6c2eafb795ccc5127c1962e9687d7b7ba2bc0fa",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/release-security.yml",
+      "fragment": "jobs.security.steps[5].run",
+      "source_sha256": "29c94ebfaf656f9f81489833c6c2eafb795ccc5127c1962e9687d7b7ba2bc0fa",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": ".github/workflows/scorecards.yml",
+      "fragment": "jobs.analysis.steps[3].run",
+      "source_sha256": "8689e25c94e52b67bfcd67bb35e746881669796bc1af85994b007f8b6abac2ef",
+      "physical_lines_including_blanks_comments_and_continuations": 1,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 1
+    },
+    {
+      "path": "Dockerfile",
+      "fragment": "whole Dockerfile; counts declarative lines too",
+      "source_sha256": "6303a3e21d33ccc00a5208a5fee247002334d7f774d81b293f6412dc7eabc2da",
+      "physical_lines_including_blanks_comments_and_continuations": 32,
+      "additional_possible_statement_boundaries": {
+        ";": 2,
+        "&&": 2,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 36
+    },
+    {
+      "path": "docker-compose.yml",
+      "fragment": "services.mcp-venus-os.healthcheck.test",
+      "source_sha256": "8e141446b16146a3e5473b49f8693c1c2912c9c0aea2150ce6807bbe2bcee7b1",
+      "physical_lines_including_blanks_comments_and_continuations": 9,
+      "additional_possible_statement_boundaries": {
+        ";": 0,
+        "&&": 0,
+        "||": 0,
+        "$(": 0,
+        "backtick_pairs": 0
+      },
+      "statement_upper_bound": 9
+    }
+  ],
+  "reviewed_statement_upper_bound": 204,
+  "rounding_safety_margin": 52,
+  "supplemental_denominator_used": 256,
+  "supplemental_covered_statements_credited": 0,
+  "invalidation": "Recompute and review after changing or adding executable fragments. Shared action implementations are third-party dependencies; vendored Python implementations remain in the instrumented denominator."
+}

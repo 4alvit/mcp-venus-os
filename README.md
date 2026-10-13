@@ -23,6 +23,7 @@ still replace same-named tracked files, so keep local secrets in the package's
 documented external configuration files and retain a backup before upgrades.
 
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15439/badge)](https://www.bestpractices.dev/projects/15439)
 [![CodeQL](https://github.com/4alvit/mcp-venus-os/actions/workflows/codeql.yml/badge.svg)](https://github.com/4alvit/mcp-venus-os/actions/workflows/codeql.yml)
 [![Scorecards](https://github.com/4alvit/mcp-venus-os/actions/workflows/scorecards.yml/badge.svg)](https://github.com/4alvit/mcp-venus-os/actions/workflows/scorecards.yml)
 [![Dependency Review](https://github.com/4alvit/mcp-venus-os/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/4alvit/mcp-venus-os/actions/workflows/dependency-review.yml)
@@ -35,6 +36,13 @@ documented external configuration files and retain a backup before upgrades.
 [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-blueviolet)](https://modelcontextprotocol.io/)
 
 MCP (Model Context Protocol) server for Victron Venus OS management. Primary transport is the **Venus OS MQTT gateway** (`N/<portalId>/…` reads, `W/<portalId>/…` writes) so the server can run off-device; direct D-Bus remains available for on-device installs.
+
+Project decisions and participation are described in [Governance](GOVERNANCE.md),
+[Contributing](CONTRIBUTING.md), the [Code of conduct](CODE_OF_CONDUCT.md), and
+the [roadmap](ROADMAP.md). The [security assurance case](docs/security-assurance.md)
+and [quality evidence](docs/quality-evidence.md) explain the checks and their limits.
+The [OpenSSF evidence index](docs/openssf-evidence.md) separates verified evidence
+from criteria that remain open, including repository access continuity.
 
 <!-- ci-release-process:start -->
 ## Release process
@@ -86,8 +94,15 @@ Or for development:
 ```bash
 git clone https://github.com/4alvit/mcp-venus-os
 cd mcp-venus-os
-uv sync
+uv sync --locked --extra dev
 ```
+
+Python installations use the selected virtual environment; pip also supports
+its normal `--prefix` and `--target` installation locations. To remove an
+installation, run `python -m pip uninstall mcp-venus-os` with that environment's
+interpreter, or remove the dedicated virtual environment after stopping the
+service. Keep deployment secrets outside the environment. For contributor tests
+and build-tool installation, follow [Contributing](CONTRIBUTING.md).
 
 ### Prerequisites (Cerbo GX)
 

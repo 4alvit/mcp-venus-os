@@ -5,6 +5,7 @@ import gzip
 import hashlib
 import io
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -13,6 +14,39 @@ import tarfile
 import tomllib
 from pathlib import Path
 from tempfile import TemporaryDirectory
+
+
+def normalize_sdist(path: Path, epoch: int) -> None:
+    """Remove host/user and wall-clock metadata without changing package contents."""
+    with TemporaryDirectory(prefix="normalize-", dir=path.parent) as temporary:
+        normalized = Path(temporary) / path.name
+        with tarfile.open(path, "r:gz") as source, normalized.open("wb") as output:
+            with gzip.GzipFile(
+                filename="", mode="wb", fileobj=output, mtime=epoch
+            ) as compressed:
+                with tarfile.open(fileobj=compressed, mode="w") as target:
+                    for member in sorted(
+                        source.getmembers(), key=lambda item: item.name
+                    ):
+                        if not (member.isfile() or member.isdir()):
+                            message = (
+                                "Source distribution contains a non-regular member"
+                            )
+                            raise ValueError(message)
+                        contents = (
+                            source.extractfile(member) if member.isfile() else None
+                        )
+                        member.uid = member.gid = 0
+                        member.uname = member.gname = ""
+                        member.mtime = epoch
+                        member.pax_headers = {}
+                        member.mode = (
+                            0o755 if member.isdir() or member.mode & 0o111 else 0o644
+                        )
+                        target.addfile(member, contents)
+                        if contents is not None:
+                            contents.close()
+        normalized.replace(path)
 
 
 def build_package(root: Path, version: str, channel: str, output: Path) -> list[Path]:
@@ -33,7 +67,12 @@ def build_package(root: Path, version: str, channel: str, output: Path) -> list[
         committed = (root / policy["version_file"]).read_text().strip()
     else:
         committed = policy.get("version")
-    if committed and (
+    if policy.get("versioning"):
+        # Validate the reviewed plan before accepting its PEP 440 source overlay.
+        from release_version_adapter import checked_version
+
+        version = checked_version(root, version.removeprefix("v"), channel)
+    elif committed and (
         version.removeprefix("v").split("-")[0]
         != committed.removeprefix("v").split("-")[0]
     ):
@@ -89,6 +128,12 @@ def build_package(root: Path, version: str, channel: str, output: Path) -> list[
                         package.addfile(entry, io.BytesIO(content))
         assets.append(archive)
     if config.get("wheel", False):
+        build_environment = os.environ.copy()
+        build_environment.setdefault("SOURCE_DATE_EPOCH", "0")
+        epoch = int(build_environment["SOURCE_DATE_EPOCH"])
+        if not 0 <= epoch <= 2**32 - 1:
+            message = "SOURCE_DATE_EPOCH must fit an unsigned 32-bit timestamp"
+            raise ValueError(message)
         # Backends may update tracked egg-info files; isolate all build writes.
         with TemporaryDirectory(prefix="release-build-") as directory:
             project = Path(directory) / config["name"]
@@ -106,8 +151,15 @@ def build_package(root: Path, version: str, channel: str, output: Path) -> list[
             subprocess.run(
                 [sys.executable, "-m", "build", "--outdir", str(output), str(project)],
                 check=True,
+                env=build_environment,
             )
         distributions = sorted(output.glob("*.whl")) + sorted(output.glob("*.tar.gz"))
+        for distribution in distributions:
+            if (
+                distribution.suffixes[-2:] == [".tar", ".gz"]
+                and distribution not in assets
+            ):
+                normalize_sdist(distribution, epoch)
         subprocess.run(
             [
                 sys.executable,

@@ -19,6 +19,13 @@ bash scripts/ci.sh
 
 The local gate runs Ruff, mypy, pytest and coverage checks. Tests cover safety denies, hardware write contracts, MQTT reconnects, D-Bus, SSH tool boundaries and server startup. Broker integration tests require their documented local fixtures. Do not point unit tests at a live controller.
 
+The default pytest suite also executes the offline release and workflow contracts.
+Coverage includes all Python modules in `src/` and all operational scripts in
+`scripts/`, including currently unimported files. Tests and test fixtures are not
+part of its denominator. The minimum statement coverage is 80%; adding a new
+production directory requires updating this inventory, not omitting the code.
+See [quality evidence](docs/quality-evidence.md) for the measurement procedure.
+
 For a bug fix, add a regression test that fails before the fix and passes afterward. For new functionality, test normal behavior, invalid input and relevant authorization/error paths. Preserve existing checks; do not lower coverage gates or ignore findings merely to obtain a green build. Python code follows the configured formatter/linter where present and normal PEP 8 conventions otherwise. Keep shell, YAML and generated examples compatible with their declared tools.
 
 ## Review and compatibility
@@ -36,6 +43,13 @@ Use `RELEASING.md`, `docs/release-packaging.md` and the release workflow. For ea
 - [`RELEASING.md`](RELEASING.md)
 
 See the [OpenSSF evidence index](docs/openssf-evidence.md) for the current assessment scope and outstanding verification.
+
+Participation follows the [Code of Conduct](CODE_OF_CONDUCT.md). The
+[governance and roles](GOVERNANCE.md), [one-year roadmap](ROADMAP.md), and
+[security assurance case](docs/security-assurance.md) explain how proposals
+are decided and which guarantees need evidence. Review relevant documentation
+with each behavior change; update the roadmap at least annually and the
+assurance case whenever a trust boundary changes.
 
 Release changes must update `CHANGELOG.md` under a unique `## [X.Y.Z]`
 base-version heading, including nonempty `### Upgrade` and `### Security`

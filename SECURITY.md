@@ -2,17 +2,25 @@
 
 ## Threat Model
 
-**Trust boundary**: the Cerbo GX LAN interface (MQTT :1883) and the SSH port
-(:22). Anything reachable from those interfaces is inside the threat model.
+**Trust boundaries**: the MCP client connection, the Cerbo GX MQTT gateway
+(typically LAN port 1883), SSH (typically port 22), and the host configuration.
+MCP authentication and device authentication are separate boundaries.
 
 **Attack surface**: every tool exposed by this MCP server is a potential target.
 
 | Tool group | What it changes | Who can call it |
 |---|---|---|
-| Read tools (battery, PV, grid, inverter) | Nothing — MQTT subscribe only | Anyone on LAN |
-| MQTT write tools (`set_*`) | W/… MQTT topics → Venus device state | Anyone on LAN |
-| SSH tools (`cerbo_*`, `setuphelper_*`) | Shell commands on Cerbo | Anyone with SSH credentials |
-| `cerbo_ssh_exec` | Arbitrary shell on Cerbo | Anyone with SSH credentials |
+| Read tools (battery, PV, grid, inverter) | Nothing — MQTT subscribe only | A connected MCP client; HTTP bearer authentication when configured |
+| MQTT write tools (`set_*`) | W/… MQTT topics → Venus device state | A connected MCP client, subject to all write gates |
+| SSH tools (`cerbo_*`, `setuphelper_*`) | Shell commands on Cerbo | A connected MCP client when the server has operator-configured SSH credentials; write-shaped tools also require write gates |
+| `cerbo_ssh_exec` | Arbitrary shell on Cerbo | A connected MCP client when SSH is configured and all write gates pass |
+
+Without HTTP bearer authentication, any client that can reach the HTTP listener
+can call its tools. A client does not need to possess the server's SSH credentials
+to request an enabled SSH tool. Restrict listener access and configure
+authentication before sharing it. Anyone reaching a separately unauthenticated
+MQTT broker can bypass MCP entirely; the MCP write gates cannot secure that
+broker or other device clients.
 
 **Control plane posture: deny-by-default.** No write or control tool can mutate
 device state unless all three gates pass:
@@ -52,6 +60,12 @@ coordinating with the maintainers.
 ## Support and response
 
 Security fixes target the current default branch and the latest maintained release, where releases exist. Older versions are not promised backports. Maintainers aim to acknowledge private reports within 14 days, investigate and communicate status within 60 days, and coordinate disclosure with the reporter. Confirmed vulnerabilities with a practical fix receive priority over feature work; publish an advisory and release notes that identify affected versions, mitigation and the fixed version. If a fix takes longer, keep the reporter informed without exposing confidential details.
+
+Ask the reporter how they wish to be credited. Credit confirmed vulnerability
+reports in the advisory or release notes with consent; respect requests for
+anonymity and do not publish identifying details or private reports without
+permission. Record the report, response, fix and disclosure dates privately so
+that the response history can be reviewed without disclosing confidential data.
 
 ## Deployment trust boundaries
 
@@ -115,3 +129,33 @@ smaller certificate keys. That option does not change system-wide settings.
 
 References: [OpenSSL security levels](https://docs.openssl.org/3.5/man3/SSL_CTX_set_security_level/)
 and [Python SSL contexts](https://docs.python.org/3.12/library/ssl.html#ssl.SSLContext).
+
+## Credential rotation
+
+Keep passwords and tokens in a separate service-account-readable credentials
+file, for example `/run/secrets/mcp-credentials.env`, containing only the required
+`HTTP_AUTH_TOKEN`, `MQTT_PASSWORD` and/or `SSH_PASSWORD` entries. Supply that file
+through the service manager's `EnvironmentFile` or a separate Compose `env_file`;
+keep ordinary settings in another file. Do not commit either deployment file.
+SSH private keys already use the separate `SSH_KEY_PATH` file. Restrict parent
+directory and file permissions and use a read-only secret mount where available.
+The application accepts the resulting environment values, so rotation does not
+require changing code or rebuilding packages.
+
+HTTP bearer tokens, MQTT credentials and SSH credentials are deployment inputs,
+not permanent identities embedded in the program. To rotate them, provision a
+replacement at the issuer/broker/device, update the protected environment or
+secret-file input used by the deployment, restart the MCP process and verify a
+read-only operation. Then revoke the old credential. Do not assume that editing
+an environment file changes the cached configuration of a running process.
+
+For an SSH host-key change, authenticate the new fingerprint through an
+independent trusted device-management channel before updating `SSH_KNOWN_HOSTS`.
+Never bypass verification to complete a rotation. Keep private keys and `.env`
+files readable only by the service account; do not include them in command-line
+arguments, logs, source archives or public CI evidence. Test new credentials
+with writes disabled before restoring an explicitly approved control workflow.
+
+The [assurance case](docs/security-assurance.md) maps these requirements to
+implementation/tests and records the remaining limits, including hardware
+qualification and maintainer access continuity.

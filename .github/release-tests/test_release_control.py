@@ -14,7 +14,9 @@ import importlib.util
 import io
 import json
 import os
-import subprocess
+
+# Subprocess calls below use argument vectors with shell=False.
+import subprocess  # nosec B404
 import tempfile
 import unittest
 import zipfile
@@ -30,6 +32,10 @@ SPEC = importlib.util.spec_from_file_location(
 )
 rc = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(rc)
+# These fixtures model the original unsigned publication contract. Consumers may
+# opt into signatures; that boundary is exercised with enforcement enabled in
+# test_release_signing.py, rather than requiring Cosign/network access here.
+rc.RELEASE_SIGNATURES_REQUIRED = False
 
 REPO = "example/project"
 SHA = "a" * 40
@@ -49,13 +55,24 @@ class MetadataReadRetryTests(unittest.TestCase):
 
     ERROR_FORMATS = (
         "gh: Server Error (HTTP {status})",
+        "gh: Server Error (HTTP {status}) (HTTP {status})",
         "gh: HTTP {status}",
+        "gh: HTTP {status}\n",
         "gh: HTTP {status}: Gateway response",
         "gh: HTTP {status} \t\r\n",
         "gh: HTTP {status}: Gateway response\r\n",
     )
 
     response = staticmethod(http_response)
+
+    def failed_request(self, message, method="GET", path="git/ref/tags/v1.2.3", status=403):
+        """A lookup or write failure must come from the expected API request."""
+        def run(command, **_kwargs):
+            self.assertEqual(command[:2], ["gh", "api"])
+            self.assertEqual(command[command.index("--method") + 1], method)
+            self.assertEqual(command[-2:], ["--", f"repos/{REPO}/{path}"])
+            return subprocess.CompletedProcess(command, 1, self.response(status).stdout, message)
+        return run
 
     def test_transient_read_retries_and_discards_partial_pages(self):
         for status, error_format in product((500, 502, 503, 504), self.ERROR_FORMATS):
@@ -95,8 +112,8 @@ class MetadataReadRetryTests(unittest.TestCase):
         for error_format in self.ERROR_FORMATS:
             with (
                 self.subTest(error_format=error_format),
-                patch.object(rc.subprocess, "run", return_value=self.response(
-                    404, error_format=error_format
+                patch.object(rc.subprocess, "run", side_effect=self.failed_request(
+                    self.response(404, error_format=error_format).stderr, status=404,
                 )) as run,
                 patch.object(rc.time, "sleep") as sleep,
             ):
@@ -113,14 +130,18 @@ class MetadataReadRetryTests(unittest.TestCase):
             (b"other tool: HTTP 404", 1),
             (b"gh: HTTP 404: Gateway reported (HTTP 502)", 1),
             (b"gh: HTTP 502: Gateway reported (HTTP 404)", 1),
+            (b"gh: Forbidden (HTTP 403) (HTTP 404)", 1),
+            (b"gh: Not Found (HTTP 404) (HTTP 403)", 1),
+            (b"gh: Untrusted message (HTTP 404) with more text", 1),
+            (b"other tool: Not Found (HTTP 404)", 1),
             (b"gh: HTTP 404\ngh: HTTP 403", 1),
             (b"gh: HTTP 502: upstream returned HTTP 404", 3),
         )
         for message, attempts in cases:
             with (
                 self.subTest(message=message),
-                patch.object(rc.subprocess, "run", return_value=subprocess.CompletedProcess(
-                    [], 1, http_response(502 if attempts == 3 else 403).stdout, message,
+                patch.object(rc.subprocess, "run", side_effect=self.failed_request(
+                    message, status=502 if attempts == 3 else 403,
                 )) as run,
                 patch.object(rc.time, "sleep"),
                 self.assertRaises(rc.GitHubError) as error,
@@ -132,14 +153,43 @@ class MetadataReadRetryTests(unittest.TestCase):
     def test_failed_write_uses_the_same_exact_missing_status(self):
         gh = rc.GitHub(REPO)
         with (
-            patch.object(rc.subprocess, "run", return_value=subprocess.CompletedProcess(
-                [], 1, http_response(403).stdout, b"gh: Authorization error mentions HTTP 404 (HTTP 403)",
+            patch.object(rc.subprocess, "run", side_effect=self.failed_request(
+                b"gh: Authorization error mentions HTTP 404 (HTTP 403)",
+                method="POST", path="releases",
             )) as run,
             self.assertRaises(rc.GitHubError) as error,
         ):
             gh.api("releases", "POST", {"tag_name": RC_TAG})
         self.assertFalse(error.exception.not_found)
         run.assert_called_once()
+
+    def test_multiline_diagnostics_cannot_override_forbidden_http_status(self):
+        gh = rc.GitHub(REPO)
+        for message in (
+            b"gh: HTTP 404: upstream\nfailure (HTTP 502)\n",
+            b"gh: HTTP 404: upstream\r\nfailure (HTTP 403)\r\n",
+            b"gh: HTTP 404: upstream\rfailure (HTTP 502)\r",
+            b"gh: HTTP 502: upstream\nfailure (HTTP 403)\n",
+            b"gh: HTTP 404\ngh: HTTP 404\n",
+            b"gh: HTTP 404\n\n",
+            b"\ngh: HTTP 404\n",
+            b"gh: HTTP 502\nadditional diagnostic\n",
+            b"gh: Not Found\nadditional detail (HTTP 404)\n",
+        ):
+            for operation in (
+                lambda: gh.optional("git/ref/tags/v1.2.3"),
+                lambda: rc.ensure_absent(gh, "v1.2.3"),
+            ):
+                with self.subTest(message=message, operation=operation):
+                    with (
+                        patch.object(rc.subprocess, "run", side_effect=self.failed_request(message)) as run,
+                        patch.object(rc.time, "sleep") as sleep,
+                        self.assertRaises(rc.GitHubError) as error,
+                    ):
+                        operation()
+                    self.assertFalse(error.exception.not_found)
+                    run.assert_called_once()
+                    sleep.assert_not_called()
 
     def test_timeouts_are_bounded_and_do_not_expose_partial_output(self):
         gh = rc.GitHub(REPO)
@@ -180,6 +230,9 @@ class MetadataReadRetryTests(unittest.TestCase):
             b"gh: HTTP 403: Gateway reported (HTTP 502)",
             b"gh: HTTP 502: Gateway reported (HTTP 403)",
             b"gh: HTTP 502: Gateway reported (HTTP 503)",
+            b"gh: Forbidden (HTTP 403) (HTTP 502)",
+            b"gh: Bad Gateway (HTTP 502) (HTTP 403)",
+            b"gh: Untrusted message (HTTP 502) with more text",
             b"gh: HTTP 502-not-status",
             b"gh: HTTP 502.5",
             b"gh: HTTP 5020: invalid status",
@@ -189,7 +242,7 @@ class MetadataReadRetryTests(unittest.TestCase):
             with (
                 self.subTest(message=message),
                 patch.object(rc.subprocess, "run", return_value=subprocess.CompletedProcess(
-                    [], 1, http_response(403).stdout, message,
+                    [], 1, self.response(403).stdout, message,
                 )) as run,
                 patch.object(rc.time, "sleep") as sleep,
                 self.assertRaises(rc.GitHubError),
@@ -1110,7 +1163,8 @@ class PublicationPermissionTests(unittest.TestCase):
                 patch.dict(
                     os.environ,
                     {
-                        "GH_TOKEN": "test-secret",
+                        # Deliberate test credential, never used for authentication.
+                        "GH_TOKEN": "test-secret",  # nosec B105
                         "RELEASE_REQUIRE_WORKFLOW_SCOPE": "true",
                     },
                 ),
@@ -1154,7 +1208,8 @@ class PublicationPermissionTests(unittest.TestCase):
                 patch.dict(
                     os.environ,
                     {
-                        "GH_TOKEN": "test-secret",
+                        # Deliberate test credential, never used for authentication.
+                        "GH_TOKEN": "test-secret",  # nosec B105
                         "RELEASE_REQUIRE_WORKFLOW_SCOPE": "true",
                     },
                 ),
@@ -1169,7 +1224,9 @@ class PublicationPermissionTests(unittest.TestCase):
         """An empty selected Actions secret must fail before gh can fall back."""
         with (
             patch.dict(
-                os.environ, {"GH_TOKEN": "", "RELEASE_REQUIRE_WORKFLOW_SCOPE": "true"}
+                # Deliberate test credential, never used for authentication.
+                os.environ,
+                {"GH_TOKEN": "", "RELEASE_REQUIRE_WORKFLOW_SCOPE": "true"},  # nosec B105
             ),
             patch.object(rc.subprocess, "run") as command,
             self.assertRaises(rc.ReleaseError),
@@ -1182,7 +1239,8 @@ class PublicationPermissionTests(unittest.TestCase):
         with (
             patch.dict(
                 os.environ,
-                {"GH_TOKEN": "test-secret", "RELEASE_REQUIRE_WORKFLOW_SCOPE": "true"},
+                # Deliberate test credential, never used for authentication.
+                {"GH_TOKEN": "test-secret", "RELEASE_REQUIRE_WORKFLOW_SCOPE": "true"},  # nosec B105
             ),
             patch.object(rc.subprocess, "run", return_value=self.probe()) as command,
         ):
@@ -1200,7 +1258,8 @@ class PublicationPermissionTests(unittest.TestCase):
         with (
             patch.dict(
                 os.environ,
-                {"GH_TOKEN": "test-secret", "RELEASE_REQUIRE_WORKFLOW_SCOPE": "true"},
+                # Deliberate test credential, never used for authentication.
+                {"GH_TOKEN": "test-secret", "RELEASE_REQUIRE_WORKFLOW_SCOPE": "true"},  # nosec B105
             ),
             patch.object(rc.subprocess, "run", return_value=response),
             self.assertRaises(rc.ReleaseError) as error,
@@ -1500,10 +1559,11 @@ class TransportTests(unittest.TestCase):
             asset = Path(temp) / rc.MANIFEST
             asset.write_bytes(b"private package bytes")
             with (
-                patch.dict(os.environ, {"GH_TOKEN": "private-token-fixture"}),
+                # Deliberate test credential, never used for authentication.
+                patch.dict(os.environ, {"GH_TOKEN": "private-token-fixture"}),  # nosec B105
                 patch.object(
                     gh, "upload", side_effect=accepted_upload_then_failed_response
-                ),
+                ) as upload,
                 patch.object(
                     rc.subprocess,
                     "run",
@@ -1523,6 +1583,7 @@ class TransportTests(unittest.TestCase):
             self.assertEqual(len(gh.assets[release_id]), 1)
             self.assertEqual(sum(write[0] == "upload" for write in gh.writes), 1)
             self.assertFalse(any(write[1] == "PATCH" for write in gh.writes))
+            upload.assert_called_once_with(tag, asset)
             command.assert_called_once()
             self.assertNotIn("--clobber", command.call_args.args[0])
             self.assertNotIn(temp, str(error.exception))

@@ -13,7 +13,7 @@
   ],
   "notes": [
     "Hardware-free checks do not validate a live Venus OS device, D-Bus firmware ABI, physical sensors or in-place device upgrades.",
-    "Candidate packaging preserves committed runtime version metadata. Nightly/beta/RC identity is recorded by the release manifest.",
+    "Candidate packaging applies the reviewed frozen plan to pyproject.toml, the runtime version and the owned uv.lock entry. Stable uses a separately checked final build from the accepted RC source.",
     "OCI container assets are verified and promoted with the GitHub release. Registry and PyPI deployment must use a separately reviewed promotion adapter; CI does not update latest."
   ],
   "version_file": "pyproject.toml",
@@ -25,7 +25,7 @@
   "visibility": "public",
   "single_entry_ci": true,
   "coverage": {
-    "toolkit_ref": "5892b68cf18ac330b76773532ca28bb716492fe9",
+    "toolkit_ref": "7282a18bd5975975ec323ac765557cf0aec6e11d",
     "reports": [
       {
         "name": "python",
@@ -37,5 +37,59 @@
       }
     ]
   },
-  "release_notes": "CHANGELOG.md"
+  "release_notes": "CHANGELOG.md",
+  "sign_releases": true,
+  "versioning": {
+    "schema": 1,
+    "promotion": "final-build",
+    "files": [
+      {
+        "path": "pyproject.toml",
+        "format": "toml",
+        "field": "project.version",
+        "value": "package",
+        "ecosystem": "pep440"
+      },
+      {
+        "path": "src/mcp_venus_os/__init__.py",
+        "format": "python",
+        "field": "__version__",
+        "value": "package",
+        "ecosystem": "pep440"
+      },
+      {
+        "path": "uv.lock",
+        "format": "uv-lock",
+        "package": "mcp-venus-os",
+        "value": "package",
+        "ecosystem": "pep440"
+      }
+    ],
+    "artifacts": [
+      {
+        "path": "*.whl",
+        "format": "wheel",
+        "package": "mcp-venus-os",
+        "value": "package",
+        "ecosystem": "pep440"
+      },
+      {
+        "path": "mcp_venus_os-*.tar.gz",
+        "format": "sdist",
+        "package": "mcp-venus-os",
+        "value": "package",
+        "ecosystem": "pep440"
+      },
+      {
+        "path": "mcp-venus-os-container.oci.tar",
+        "format": "oci",
+        "field": [
+          "config",
+          "Labels",
+          "org.opencontainers.image.version"
+        ],
+        "value": "package"
+      }
+    ]
+  }
 }

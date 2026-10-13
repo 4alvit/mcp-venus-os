@@ -22,4 +22,12 @@ htmlcov/
 # Local validation and candidate packaging
 .venv-ci/
 release-dist/
+release-assets/
+.release-plan.json
+.release-inputs.json
+.release-download/
+.release-assets/
+.release-evidence/
+coverage.xml
+coverage.json
 bandit-results.json

@@ -2,6 +2,7 @@ import json
 from unittest.mock import Mock, patch
 
 import pytest
+from fastmcp.exceptions import ValidationError as ToolValidationError
 
 from mcp_venus_os import server as server_module
 from mcp_venus_os.safety import SafetyCheckResult
@@ -11,6 +12,52 @@ from mcp_venus_os.server import (
     set_inverter_mode,
     set_soc_limit,
 )
+
+
+@pytest.mark.parametrize(
+    ("tool", "parameter", "value"),
+    [
+        ("set_charge_current_limit", "current", True),
+        ("set_charge_current_limit", "current", False),
+        ("set_charge_current_limit", "current", float("nan")),
+        ("set_charge_current_limit", "current", float("inf")),
+        ("set_charge_current_limit", "current", "12"),
+        ("set_soc_limit", "soc_limit", True),
+        ("set_soc_limit", "soc_limit", False),
+        ("set_soc_limit", "soc_limit", 50.5),
+        ("set_soc_limit", "soc_limit", "50"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_mcp_dispatch_does_not_coerce_invalid_control_numbers(
+    tool: str, parameter: str, value: object
+) -> None:
+    """Exercise the real MCP argument validator before any write gate/backend."""
+    with patch.object(server_module, "_confirm_gate") as gate:
+        with pytest.raises(ToolValidationError, match="validation error"):
+            await server_module.mcp.call_tool(tool, {parameter: value, "confirmed": True})
+        gate.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("tool", "parameter", "value"),
+    [
+        ("set_charge_current_limit", "current", 12),
+        ("set_charge_current_limit", "current", 12.5),
+        ("set_soc_limit", "soc_limit", 50),
+    ],
+)
+@pytest.mark.asyncio
+async def test_mcp_dispatch_preserves_valid_control_numbers(
+    tool: str, parameter: str, value: float
+) -> None:
+    """Valid numbers still reach the safety gate; the fixture stops before IO."""
+    with patch.object(
+        server_module, "_confirm_gate", return_value={"success": False, "error": "fixture stop"}
+    ) as gate:
+        await server_module.mcp.call_tool(tool, {parameter: value, "confirmed": True})
+        assert gate.call_count == 1
+        assert value in gate.call_args.args[1].values()
 
 
 @pytest.mark.asyncio
@@ -262,6 +309,47 @@ def test_values_match_unwraps_gateway_value_dict() -> None:
     assert not _values_match({"max": 52.0}, 52.0)
     assert _values_match(3, 3)
     assert _values_match("50", 50.0)
+
+
+@pytest.mark.parametrize(
+    ("received", "expected"),
+    [
+        (True, 1),
+        (False, 0),
+        ({"value": True}, 1),
+        ({"value": False}, 0),
+        (float("inf"), float("inf")),
+        ("-inf", float("-inf")),
+        (float("nan"), 0),
+        ("not numeric", "not numeric"),
+        (10**1000, 1),
+    ],
+)
+def test_readback_rejects_non_finite_or_non_numeric_values(
+    received: Payload, expected: Payload
+) -> None:
+    assert not _values_match(received, expected)
+
+
+@pytest.mark.asyncio
+async def test_boolean_echo_cannot_acknowledge_numeric_mode(enable_writes: None) -> None:
+    client = _mqtt_client()
+    transport = Mock()
+    client.client = cast(Any, transport)
+    client._connected = True
+    transport.publish.side_effect = lambda *_args, **_kwargs: _seed_cache(
+        client, "N/testportal/vebus/256/Mode", True
+    )
+    with (
+        patch("mcp_venus_os.server.get_mqtt_client", return_value=client),
+        patch("mcp_venus_os.server.WRITE_VERIFY_TIMEOUT_S", 0.001),
+    ):
+        result = await set_inverter_mode(mode="charger_only", instance=256, confirmed=True)
+    transport.publish.assert_called_once_with(
+        "W/testportal/vebus/256/Mode", '{"value": 1}', retain=False
+    )
+    assert result["success"] is False
+    assert "did not reflect" in result["error"]
 
 
 def test_cache_since_rejects_matching_values_received_before_a_write() -> None:

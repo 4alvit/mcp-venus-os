@@ -58,9 +58,12 @@ def _check_verified_keys(connection: ssl.SSLSocket) -> None:
 
 class _VerifiedSocket(ssl.SSLSocket):
     def do_handshake(self, block: bool = False) -> None:
-        super().do_handshake(block)
         try:
+            super().do_handshake(block)
             _check_verified_keys(self)
+        except (ssl.SSLWantReadError, ssl.SSLWantWriteError):
+            # Nonblocking negotiation is still in progress and must be retried.
+            raise
         except Exception:
             self.close()
             raise

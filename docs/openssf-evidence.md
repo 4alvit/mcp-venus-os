@@ -1,6 +1,6 @@
 # OpenSSF Best Practices evidence
 
-This is an evidence index for the OpenSSF Best Practices Passing self-assessment. It is not an assertion that a badge has been awarded or that every criterion is satisfied. The public badge service is the authority for an awarded status.
+This is an evidence index for the OpenSSF Best Practices Passing and Silver self-assessment. It is not an assertion that a badge has been awarded or that every criterion is satisfied. The public badge service is the authority for an awarded status.
 
 ## Project and participation
 
@@ -48,3 +48,38 @@ this deliberately limited parser does not implement all CommonMark structure.
 Fenced examples and HTML comments cannot supply the required guidance; normal
 blank-separated thematic breaks remain supported. The published release body
 preserves the original source text after validation.
+
+## Current application and Silver evidence
+
+The [public application](https://www.bestpractices.dev/projects/15439) is the
+authority for badge progress; the README badge follows that application.
+[Governance and roles](../GOVERNANCE.md), [conduct](../CODE_OF_CONDUCT.md),
+[the one-year roadmap](../ROADMAP.md), [security assurance](security-assurance.md),
+and [quality and regression evidence](quality-evidence.md) are independently
+reviewable. They do not assert that Silver has been awarded.
+
+On 12 October 2026, the primary maintainer confirmed secure-design/common-
+vulnerability knowledge for this project and no outside-GitHub bug, suggestion
+or vulnerability reports during the preceding 12 months. The GitHub issue
+inventory reviewed that day contained no ordinary issues. These project-specific
+statements are recorded as owner attestations, not inferred from another repo.
+The primary maintainer also confirmed that repository access continuity is
+not arranged: `access_continuity` remains **Unmet**. Regression-history
+classification, complete multi-platform repeatability and a real signed
+publication still require verification. Complete-scope Python coverage and
+Python distribution repeatability have measured evidence linked from the
+quality page. Passing is a prerequisite for Silver.
+
+## Provider authentication and security-fix credit
+
+GitHub hosts the project site, repository and downloads. Its published
+[account-security explanation](https://github.blog/news-insights/product-news/new-improvements-and-best-practices-for-account-security-and-recoverability/)
+states that account passwords use bcrypt. The project does not operate a
+separate user-password database. This is provider documentation, not access to
+GitHub internal systems.
+
+The owner reports no external vulnerability reports in the preceding twelve
+months. Internally discovered security corrections retain contributor attribution
+in their public commits and pull requests; no additional external reporter is
+implied. SECURITY.md requires credit with the reporter’s consent for future
+reports.

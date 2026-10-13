@@ -674,6 +674,11 @@ class MQTTClient:
         if self._loop_thread is not None and not self._loop_thread.is_alive():
             self._loop_thread = None
         if self._worker is None and self._loop_thread is None:
+            if self.client is not None:
+                # Paho 2.1 only closes its wake-up socketpair in its destructor
+                # or this helper. Do not leave descriptors to cyclic GC, and
+                # never close them while either owned worker is still alive.
+                self.client._reset_sockets()
             with self._state_lock:
                 self.client = None
                 self._diagnostic_socket = None

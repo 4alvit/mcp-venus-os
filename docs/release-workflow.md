@@ -53,8 +53,8 @@ pushes request beta builds through the same validation and build gates. Publicat
 also requires the opt-in variable and an eligible unreleased base version. GitHub can delay
 scheduled runs; schedule timing is not an SLA. A committed base version (`X.Y.Z`)
 is required. Version changes go through PR review, including any native companion
-version files. Native binaries keep that base version; the release manifest records
-the beta/RC/nightly channel and exact source SHA.
+version files. The frozen release plan supplies full candidate versions to declared
+format adapters before compilation; the manifest binds the plan and build receipts.
 
 From a clean checkout matching GitHub's default-branch HEAD:
 
@@ -74,7 +74,7 @@ branch; `package` builds locally, `status` reads run history, and `--dry-run` on
 displays the request.
 
 If the base version already has a stable release, bump the committed version through
-a PR before beta/RC publication. Nightly builds may still use that existing base.
+a PR before beta/RC publication. Nightly builds may still use that existing base. After every fresh check and platform build passes, an automatic nightly skips duplicate GitHub publication if retained immutable evidence qualifies an existing beta/RC/stable at the same source, policy and base. It reports `reused` with that tag, retains its Actions build artifacts, and does not advance the publication floor or create new promotion evidence. Reserved counters may have gaps. Mutable build inputs and current security databases are still exercised. Manual nightly requests, new sources and missing/expired/unverifiable evidence retain full publication.
 Automatic push betas skip packaging/publication with `version-required` when their
 committed base already has a stable tag. Quality and security checks still run.
 Prepare the next version through a PR; manual beta/RC requests still fail strictly.
@@ -107,8 +107,7 @@ python3 scripts/release.py stable --rc v1.2.3-rc.1
 Approve the pending `release` environment in GitHub Actions. The publisher checks
 that reviewers are configured, verifies the RC's successful run/attempt, default
 branch ancestry, Release gate, immutable evidence and every payload checksum.
-Stable `vX.Y.Z` copies the tested RC bytes without rebuilding. No override or
-force-tag option exists. Expired/missing evidence requires a new RC. A partial
+Stable `vX.Y.Z` is a new build of the accepted RC's exact source, locks and recipe. The RC must match current HEAD. All checks and builds run again; approve the new final artifacts after acceptance. The manifest records new hashes and `derived_from_rc`. No override or force-tag option exists. Expired/missing evidence requires a new RC. A partial
 upload remains an unpublished draft; inspect it before any manual recovery.
 
 GitHub releases do not deploy production. Existing push/tag/CI deployment hooks
@@ -128,7 +127,7 @@ retrying. The tool refuses to overwrite them. Never rebuild an image for stable.
 ## Project limits and rollout requirements
 
 - Hardware-free checks do not validate a live Venus OS device, D-Bus firmware ABI, physical sensors or in-place device upgrades.
-- Candidate packaging preserves committed runtime version metadata. Nightly/beta/RC identity is recorded by the release manifest.
+- Candidate packaging applies the reviewed frozen plan to pyproject.toml, the runtime version and the owned uv.lock entry. Stable uses a separately checked final build from the accepted RC source.
 - OCI container assets are verified and promoted with the GitHub release. Registry and PyPI deployment must use a separately reviewed promotion adapter; CI does not update latest.
 
 For public repositories, merge and verify the workflows before enabling the
@@ -152,3 +151,9 @@ into consumer repositories.
 References: [GitHub schedules](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule),
 [protected environments](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments),
 [artifact provenance](https://docs.github.com/en/rest/actions/artifacts).
+
+## Automatic version preparation
+
+Run `python3 scripts/release.py prepare-version --pr` from the clean default-branch HEAD. The command refreshes tags and opens a PR with synchronized owned version fields. An existing unreleased base is retained; use `--bump minor`, `--bump major`, or `--version X.Y.Z` for explicit intent. See [version plans](VERSIONING.md) for build overlays, the dedicated allocation ledger and recovery.
+
+A local candidate package also needs the saved `.release-plan.json` at its exact source commit. Restore the `version_plan` object from the published `release-manifest.json` into a disposable checkout before `release.py package`; do not invent a tag or native counter locally. Ordinary development builds can use the project's native build command and explicitly local version identity.

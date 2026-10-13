@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "date": "2026-10-12",
+  "source_revision": "d4d08545ae58bab9a379c4d66da571a215d875a0",
+  "kind": "local repeat-build evidence, not a published release",
+  "release_plan": "Isolated final-build fixture, rc allocation1, synchronized pyproject.toml/__init__.py/uv.lock to0.2.12rc1. Not a public tag or reserved version.",
+  "environment": {
+    "platform": "macOS arm64",
+    "python": "3.12.14",
+    "setuptools": "84.0.0",
+    "build": "1.2.2.post1",
+    "SOURCE_DATE_EPOCH": "0"
+  },
+  "method": "Built from the same clean source checkout twice into distinct empty output directories, using scripts/package_release.py after sync-versions. Validated the resulting actual wheel/sdist metadata with scripts/stage_release_assets.py --target python.",
+  "files": [
+    {
+      "name": "SHA256SUMS",
+      "first_sha256": "948c5e55d87abf45f8275981931950f121322d0737653d302889f6b77741bbff",
+      "second_sha256": "948c5e55d87abf45f8275981931950f121322d0737653d302889f6b77741bbff",
+      "identical": true
+    },
+    {
+      "name": "mcp_venus_os-0.2.12rc1-py3-none-any.whl",
+      "first_sha256": "653d689bde53672f13b6f0c21e9a89cef2c27d137520d34aaef9eaa5aa8339d5",
+      "second_sha256": "653d689bde53672f13b6f0c21e9a89cef2c27d137520d34aaef9eaa5aa8339d5",
+      "identical": true
+    },
+    {
+      "name": "mcp_venus_os-0.2.12rc1.tar.gz",
+      "first_sha256": "6b0d02322d4b15ae0f458687016360bbd0a497323843a3714ae29512e8a46d5f",
+      "second_sha256": "6b0d02322d4b15ae0f458687016360bbd0a497323843a3714ae29512e8a46d5f",
+      "identical": true
+    }
+  ],
+  "receipt_validation": "passed",
+  "limitations": [
+    "Multi-platform OCI reproducibility has not been measured; this evidence does not establish full build_repeatable compliance.",
+    "Third-party build/virtualenv emits a deprecation warning about --wheel/--no-wheel; build succeeds and package metadata validation passes."
+  ]
+}

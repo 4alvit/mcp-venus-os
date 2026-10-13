@@ -1,8 +1,9 @@
 """Configuration management for MCP Venus OS."""
 
 from functools import lru_cache
+from typing import Self
 
-from pydantic import Field
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .hardware_contracts import HardwareWriteContract
@@ -115,13 +116,20 @@ class SafetyConfig(BaseSettings):
         description="Reviewed per-device firmware/BMS contracts; no target is qualified by default",
     )
     max_charge_current: float = Field(
-        default=100.0, description="Maximum allowed charge current (A)"
+        default=100.0, ge=0, allow_inf_nan=False, description="Maximum allowed charge current (A)"
     )
     max_discharge_current: float = Field(
-        default=100.0, description="Maximum allowed discharge current (A)"
+        default=100.0,
+        ge=0,
+        allow_inf_nan=False,
+        description="Maximum allowed discharge current (A)",
     )
-    min_soc_limit: int = Field(default=10, description="Minimum allowed SoC limit (%)")
-    max_soc_limit: int = Field(default=100, description="Maximum allowed SoC limit (%)")
+    min_soc_limit: int = Field(
+        default=10, ge=0, le=100, description="Minimum allowed SoC limit (%)"
+    )
+    max_soc_limit: int = Field(
+        default=100, ge=0, le=100, description="Maximum allowed SoC limit (%)"
+    )
     allowed_modes: list[str] = Field(
         default=["on", "off", "charger_only", "inverter_only", "eco"],
         description="Allowed inverter modes",
@@ -160,6 +168,29 @@ class SafetyConfig(BaseSettings):
             "request is denied, even with confirmed=True."
         ),
     )
+
+    @field_validator(
+        "max_charge_current",
+        "max_discharge_current",
+        "min_soc_limit",
+        "max_soc_limit",
+        mode="before",
+    )
+    @classmethod
+    def reject_boolean_limits(cls, value: object) -> object:
+        """Do not interpret JSON true/false as a numeric safety limit."""
+        if isinstance(value, bool):
+            message = "Safety limits must be numbers, not booleans"
+            raise ValueError(message)  # noqa: TRY004 - Pydantic wraps ValueError, not TypeError.
+        return value
+
+    @model_validator(mode="after")
+    def validate_soc_range(self) -> Self:
+        """Refuse a contradictory safety policy before opening any connection."""
+        if self.min_soc_limit > self.max_soc_limit:
+            message = "Minimum SoC limit must not exceed maximum SoC limit"
+            raise ValueError(message)
+        return self
 
 
 class ServerConfig(BaseSettings):

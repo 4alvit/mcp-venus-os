@@ -3,13 +3,15 @@
 import asyncio
 import contextlib
 import logging
+import math
 import time
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Annotated, Any
 
 from fastmcp import FastMCP
 from fastmcp.server.auth import StaticTokenVerifier
+from pydantic import Field
 
 from .capabilities import detect_capabilities
 from .config import get_config
@@ -71,7 +73,7 @@ def get_confirmation_manager() -> ConfirmationManager:
 
 
 @asynccontextmanager
-async def lifespan(app: FastMCP) -> AsyncIterator[None]:
+async def lifespan(app: FastMCP) -> AsyncIterator[None]:  # noqa: ARG001 - FastMCP callback contract.
     """Server lifespan handler."""
     config = get_config()
     logging.basicConfig(level=config.log_level)
@@ -590,10 +592,12 @@ def _values_match(received: Payload, expected: Payload) -> bool:
     """
     if isinstance(received, dict):
         received = received.get("value")
-    if received == expected:
-        return True
-    with contextlib.suppress(TypeError, ValueError):
-        return float(received) == float(expected)  # type: ignore[arg-type]
+    if isinstance(received, bool) or isinstance(expected, bool):
+        return False
+    with contextlib.suppress(TypeError, ValueError, OverflowError):
+        actual = float(received)  # type: ignore[arg-type]
+        target = float(expected)  # type: ignore[arg-type]
+        return math.isfinite(actual) and math.isfinite(target) and actual == target
     return False
 
 
@@ -836,7 +840,9 @@ async def set_inverter_mode(
 
 @mcp.tool()
 async def set_charge_current_limit(
-    current: float, instance: int = 0, confirmed: bool = False
+    current: Annotated[float, Field(strict=True, allow_inf_nan=False)],
+    instance: int = 0,
+    confirmed: bool = False,
 ) -> dict[str, Any]:
     """Set maximum charge current limit in Amps.
 
@@ -862,7 +868,7 @@ async def set_charge_current_limit(
 
 @mcp.tool()
 async def set_soc_limit(
-    soc_limit: int, instance: int = 0, confirmed: bool = False
+    soc_limit: Annotated[int, Field(strict=True)], instance: int = 0, confirmed: bool = False
 ) -> dict[str, Any]:
     """Set battery SoC limit percentage.
 
@@ -907,7 +913,7 @@ async def mqtt_disconnect() -> dict[str, Any]:
 
 
 @mcp.tool()
-async def mqtt_subscribe(topic_pattern: str) -> dict[str, Any]:
+async def mqtt_subscribe(topic_pattern: str) -> dict[str, Any]:  # noqa: ARG001 - Public stub schema.
     """Subscribe to MQTT topic pattern.
 
     Not yet implemented - returns an error.

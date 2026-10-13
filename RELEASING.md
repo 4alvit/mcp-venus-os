@@ -21,7 +21,7 @@ The committed base version comes from `pyproject.toml`. A release preparation PR
 updates that version and any required native/package companion versions together.
 Version numbers are explicit; a commit message does not automatically select one.
 
-
+Use `python3 scripts/release.py prepare-version --pr` to synchronize the declared source fields. A saved release plan fixes the full candidate version before compilation. See [version plans](docs/VERSIONING.md) for adapters, counters, retries and provenance. Automatic nightlies keep all checks and builds but skip duplicate publication when retained evidence qualifies a beta/RC/stable with the same source, policy and base. Manual nightly requests still publish.
 
 Use [Semantic Versioning](https://semver.org/): patch for compatible fixes, minor
 for compatible functionality and major for incompatible changes. State changes to
@@ -41,14 +41,13 @@ The `v` prefix belongs to the Git tag, not the numeric base version.
 - **Release candidate (RC)** is an explicit maintainer request for a version ready
   for acceptance testing. Tags are `vX.Y.Z-rc.N`. Each RC reruns the required checks
   and build matrix. A code, dependency or packaging change requires a new RC.
-- **Stable** is a separate manual promotion of one accepted RC to `vX.Y.Z`.
-  Promotion copies the verified RC payloads byte for byte; it never rebuilds them.
-  Stable publication must not be inferred from a successful branch build.
+- **Stable** creates final-version packages from the accepted RC's exact source and recipe. It repeats all checks and platform builds, then waits for acceptance of these new bytes in the protected release environment. It records `derived_from_rc`; it does not claim unchanged RC payloads.
 
 Nightly and beta are previews; neither is directly promotable to stable. An RC
 may be requested without a previous beta. Channel order is a workflow policy,
-not a comparison of tag strings. Native binaries/packages retain the committed
-base version; the release tag and manifest identify their channel and source.
+not a comparison of tag strings. Declared adapters map the saved full version to each package format. Native OS fields may retain the numeric base while the application embeds its full identity. RC packages under promote-bytes already use the final base; their original candidate identity remains provenance.
+
+
 
 Once the committed base has a stable tag, automatic push betas report
 `version-required`: quality and security checks still run, while packaging and
@@ -57,7 +56,7 @@ Explicit beta/RC requests still reject an occupied base; nightlies are unchanged
 
 ## Required validation and evidence
 
-1. The aggregate **CI gate** requires every workflow declared in the policy to
+1. The aggregate **CI gate** requires every workflow selected by the source policy to
    succeed. Failed, missing, canceled or skipped required checks block the gate.
 2. Candidate publication additionally requires the complete platform build matrix
    and **Release gate**. Artifacts from a partially successful matrix are not a
@@ -80,12 +79,9 @@ The maintainer requesting the RC owns its release notes and acceptance evidence.
 Before requesting stable, the maintainer must:
 
 - Review the changes, compatibility impact, known issues and upgrade/recovery
-  instructions. Commit the release notes in `CHANGELOG.md` at the package source
-  revision, with one `## [X.Y.Z]` section matching the release version and nonempty
-  `### Upgrade` and `### Security` guidance. Release preparation fails if those
-  source notes are absent or ambiguous; a PR description cannot substitute.
-  The categories in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
-  are a useful format.
+  instructions. Update the existing changelog when present; otherwise include a
+  human-readable summary in the release preparation PR. The categories in
+  [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) are a useful format.
 - Test the exact RC assets on the intended targets, including applicable hardware,
   operating systems, integrations and configuration/data migrations. Record the
   tested RC tag, source SHA, results and limitations in the PR or linked issue.
@@ -94,12 +90,6 @@ Before requesting stable, the maintainer must:
 - Request the exact RC's stable promotion and approve the pending release job.
   Publish user-facing notes alongside the generated provenance without replacing
   any payload or manifest.
-
-Release headings use ATX syntax (leading `#` characters). A heading at the
-same or a higher level ends its section. Setext (underlined) headings inside
-the selected release are rejected; fenced examples and HTML comments cannot
-supply the required guidance. Blank-separated thematic breaks remain allowed.
-Validation preserves the original source text in the published release body.
 
 The current application adapter uses the `release` environment's required reviewer
 on public repositories, where that capability is available without a paid private
@@ -141,7 +131,7 @@ does not substitute for acceptance of the selected RC.
 ## Project-specific limits
 
 - Hardware-free checks do not validate a live Venus OS device, D-Bus firmware ABI, physical sensors or in-place device upgrades.
-- Candidate packaging preserves committed runtime version metadata. Nightly/beta/RC identity is recorded by the release manifest.
+- Candidate packaging applies the reviewed frozen plan to pyproject.toml, the runtime version and the owned uv.lock entry. Stable uses a separately checked final build from the accepted RC source.
 - OCI container assets are verified and promoted with the GitHub release. Registry and PyPI deployment must use a separately reviewed promotion adapter; CI does not update latest.
 
 Local checks run all commands in `local_checks`; missing toolchains, container
@@ -156,8 +146,3 @@ Changes to the lifecycle, required gates or version/asset mappings go through PR
 review together with the corresponding workflow changes. Update the toolkit
 template and `.release-policy.json`, then regenerate and review this document and
 the runbook. The README links here rather than duplicating the release procedure.
-
-Upgrade and Security sections need visible instructions or an explicit statement
-that no changes are required. Comments, separator rules and subsection headings
-alone do not satisfy this requirement; instructions may use paragraphs, lists or
-code examples.

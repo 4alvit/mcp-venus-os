@@ -4,7 +4,7 @@ version = "0.2.12"
 description = "MCP server for Venus OS management - D-Bus, MQTT, and safety-constrained control"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "4alvit", email = "4alvit@users.noreply.github.com"}
 ]
@@ -12,7 +12,6 @@ keywords = ["mcp", "venus-os", "victron", "dbus", "mqtt", "energy", "inverter"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -43,7 +42,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["setuptools>=70.0.0"]
+requires = ["setuptools==84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.ruff]
@@ -53,7 +52,14 @@ exclude = [".venv", "dist", "build"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "ANN", "SIM", "C4", "T20", "PT", "PTH", "ERA", "ARG", "TRY", "TD", "FLY"]
-ignore = ["ANN201", "ANN202", "ANN204", "ARG001", "ARG002", "B008", "C901", "ERA001", "S101", "SIM103", "T201", "T203", "PTH118", "PTH120", "PTH123"]
+
+[tool.ruff.lint.per-file-ignores]
+# Paho callback signatures include arguments unused by this implementation.
+"src/mcp_venus_os/mqtt_client.py" = ["ARG002"]
+# Fixtures and protocol doubles deliberately accept callback-compatible inputs.
+"tests/*.py" = ["ARG001", "ARG002"]
+# Retain the exported upstream workflow-test helper signatures.
+".github/workflow-tests/*.py" = ["ANN201", "ANN202"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -62,9 +68,21 @@ docstring-code-format = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["tests", ".github/release-tests", ".github/workflow-tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["src", "scripts"]
+
+[tool.coverage.report]
+# The shared workflow records --cov=.; report only production code, including
+# every owned/vendored operational script, never test fixtures or test bodies.
+include = ["src/*", "scripts/*"]
+include_namespace_packages = true
+fail_under = 80
+show_missing = true
 
 [tool.mypy]
 python_version = "3.11"

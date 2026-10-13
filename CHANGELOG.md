@@ -5,9 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.12]
 
 ### Security
+
+- Reject boolean, non-finite and nonnumeric readbacks when confirming numeric
+  hardware writes; a fresh `true` echo no longer confirms a requested mode `1`.
+  Finite numeric strings remain compatible with device telemetry.
+
+- Close TLS sockets when native certificate verification or handshake fails,
+  while preserving nonblocking read/write retries. Strict warning tests now
+  catch leaked sockets before publication.
+
+Reject non-finite numbers and booleans before current-limit comparisons. Reject
+invalid or reversed configured safety bounds at startup and require an integer
+SoC limit. Validation logs record the operation name without its argument values,
+so SSH command arguments are no longer copied into the validation log.
 
 MQTT TLS now rejects undersized keys in the entire verified broker chain before
 sending CONNECT or credentials, including RSA 2047-bit trust anchors. Normal CA
@@ -20,7 +33,21 @@ remain active. Only explicit raw-key/password authentication is used; implicit
 agents, default identities, hardware tokens, GSS/host-based authentication and
 SSH/X.509 certificates cannot bypass the policy.
 
+SSH management verifies the remote host key instead of accepting any key.
+Unknown or changed hosts fail closed. An optional `SSH_KNOWN_HOSTS` file allows
+an explicit trust store; otherwise standard AsyncSSH known-host files apply.
+SSH negotiation also excludes SHA-1 signatures/MACs and non-ephemeral key
+exchange. Algorithm selection keeps the trusted `known_hosts` preference order,
+so a server offering several keys can still use its trusted RSA/SHA-2 key.
+Update obsolete SSH server software instead of disabling verification.
+
 ### Upgrade
+
+Keep current limits finite and non-negative, and keep SoC bounds within 0–100
+with the minimum no greater than the maximum. Existing normal numeric environment
+values remain supported. Remove secrets from old log archives according to the
+operator's retention policy and rotate a credential if it appeared in a command
+argument that was logged. This change does not modify device configuration.
 
 For `MQTT_TLS=true`, replace broker or CA keys below the documented minimum before
 upgrading. Use supported CPython 3.11+ with the existing `cryptography` dependency;
@@ -36,20 +63,6 @@ variables unset to keep SSH management tools disabled. No device, credential or
 trust-store change is performed automatically. The security documentation also
 describes the verified Python and release-helper TLS profiles.
 
-## [0.2.12]
-
-### Security
-
-SSH management verifies the remote host key instead of accepting any key.
-Unknown or changed hosts fail closed. An optional `SSH_KNOWN_HOSTS` file allows
-an explicit trust store; otherwise standard AsyncSSH known-host files apply.
-SSH negotiation also excludes SHA-1 signatures/MACs and non-ephemeral key
-exchange. Algorithm selection keeps the trusted `known_hosts` preference order,
-so a server offering several keys can still use its trusted RSA/SHA-2 key.
-Update obsolete SSH server software instead of disabling verification.
-
-### Upgrade
-
 Before using SSH tools, independently verify the Cerbo host-key fingerprint
 and install its trusted record. Compose installations must provide
 `keys/known_hosts`, mounted read-only with the existing key directory. Existing
@@ -60,6 +73,18 @@ trust-store modification is performed automatically by this release.
 
 The release also adds contributor instructions and a source-linked OpenSSF
 assessment, without claiming a badge before the assessment is completed.
+
+### Changed
+
+Release candidates use a frozen version plan for wheel, source package, runtime
+version and container labels. Stable publication validates a new final build
+against an accepted RC from the same source. Signed inventories bind all release
+payloads to the reviewed source and publisher identity. Historical unsigned
+releases remain unsigned; signing configuration alone does not award a badge.
+
+Expanded tests measure all Python production modules, including operational
+scripts. Governance, contributor conduct, a one-year roadmap and security
+assurance are documented. Access continuity remains explicitly unresolved.
 
 ## [0.2.4] - 2026-09-12
 

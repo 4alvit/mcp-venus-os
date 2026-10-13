@@ -2,6 +2,9 @@ name: Build Release Candidate
 on:
   workflow_call:
     inputs:
+      release_plan_artifact:
+        required: true
+        type: string
       version:
         required: true
         type: string
@@ -10,6 +13,7 @@ on:
         type: string
 permissions:
   contents: read
+  actions: read
 jobs:
   package:
     runs-on: ${{ fromJSON((vars.CI_RUNNER_MODE == 'self-hosted' || vars.CI_RUNNER_MODE == 'k3s') && (contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) && (vars.CI_RUNNER_RELEASE_LABELS || '[]') || '["ubuntu-latest"]') }}
@@ -26,6 +30,13 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.11'
+      - name: Download frozen version plan
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: ${{ inputs.release_plan_artifact }}
+          path: .
+      - name: Apply frozen version plan
+        run: python3 scripts/version_plan.py sync --plan .release-plan.json
       - name: Install package build tools
         run: >-
           python3 -m pip install --require-hashes --only-binary=:all: -r .github/requirements-build.txt
@@ -43,9 +54,11 @@ jobs:
       - name: Verify all packaged checksums
         working-directory: release-dist
         run: sha256sum --check SHA256SUMS
+      - name: Verify metadata and bind all payloads to the build inputs
+        run: python3 scripts/stage_release_assets.py --target package --pattern "release-dist/*"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: release-assets
-          path: release-dist/*
+          path: release-assets/package/*
           if-no-files-found: error
           retention-days: 30
