@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.12]
 
 ### Security
 
@@ -24,6 +24,14 @@ closed. Trusted host matching, revocations and key verification during rekeying
 remain active. Only explicit raw-key/password authentication is used; implicit
 agents, default identities, hardware tokens, GSS/host-based authentication and
 SSH/X.509 certificates cannot bypass the policy.
+
+SSH management verifies the remote host key instead of accepting any key.
+Unknown or changed hosts fail closed. An optional `SSH_KNOWN_HOSTS` file allows
+an explicit trust store; otherwise standard AsyncSSH known-host files apply.
+SSH negotiation also excludes SHA-1 signatures/MACs and non-ephemeral key
+exchange. Algorithm selection keeps the trusted `known_hosts` preference order,
+so a server offering several keys can still use its trusted RSA/SHA-2 key.
+Update obsolete SSH server software instead of disabling verification.
 
 ### Upgrade
 
@@ -47,20 +55,6 @@ variables unset to keep SSH management tools disabled. No device, credential or
 trust-store change is performed automatically. The security documentation also
 describes the verified Python and release-helper TLS profiles.
 
-## [0.2.12]
-
-### Security
-
-SSH management verifies the remote host key instead of accepting any key.
-Unknown or changed hosts fail closed. An optional `SSH_KNOWN_HOSTS` file allows
-an explicit trust store; otherwise standard AsyncSSH known-host files apply.
-SSH negotiation also excludes SHA-1 signatures/MACs and non-ephemeral key
-exchange. Algorithm selection keeps the trusted `known_hosts` preference order,
-so a server offering several keys can still use its trusted RSA/SHA-2 key.
-Update obsolete SSH server software instead of disabling verification.
-
-### Upgrade
-
 Before using SSH tools, independently verify the Cerbo host-key fingerprint
 and install its trusted record. Compose installations must provide
 `keys/known_hosts`, mounted read-only with the existing key directory. Existing
@@ -71,6 +65,18 @@ trust-store modification is performed automatically by this release.
 
 The release also adds contributor instructions and a source-linked OpenSSF
 assessment, without claiming a badge before the assessment is completed.
+
+### Changed
+
+Release candidates use a frozen version plan for wheel, source package, runtime
+version and container labels. Stable publication validates a new final build
+against an accepted RC from the same source. Signed inventories bind all release
+payloads to the reviewed source and publisher identity. Historical unsigned
+releases remain unsigned; signing configuration alone does not award a badge.
+
+Expanded tests measure all Python production modules, including operational
+scripts. Governance, contributor conduct, a one-year roadmap and security
+assurance are documented. Access continuity remains explicitly unresolved.
 
 ## [0.2.4] - 2026-09-12
 

@@ -190,5 +190,3 @@ class ClientTest(unittest.TestCase):
             self.assertRaises(ValueError),
         ):
             client.dispatch(args, {"repository": "owner/repo"})
-
-

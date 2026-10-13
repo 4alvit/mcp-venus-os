@@ -43,7 +43,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["setuptools>=70.0.0"]
+requires = ["setuptools==84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.ruff]
@@ -73,6 +73,7 @@ source = ["src", "scripts"]
 # The shared workflow records --cov=.; report only production code, including
 # every owned/vendored operational script, never test fixtures or test bodies.
 include = ["src/*", "scripts/*"]
+include_namespace_packages = true
 fail_under = 80
 show_missing = true
 

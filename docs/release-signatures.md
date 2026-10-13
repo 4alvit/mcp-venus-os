@@ -55,9 +55,10 @@ signs the inventory, verifies it and checks that a wrong source identity fails.
 The publication gate also requires the signing job, and the publisher verifies
 the downloaded signature before changing release/tag state.
 
-Stable promotion retains the RC bytes and original source identity. An unsigned
-historical RC cannot be promoted after signing is enabled: create a new signed
-candidate first. Historical unsigned releases remain distinguishable by the
+For `promote-bytes` policies, stable promotion retains the RC bytes and original
+source identity. For `final-build` policies, the checked final artifacts receive
+a new signed inventory before publication. An unsigned historical RC cannot be
+promoted after signing is enabled: create a new signed candidate first. Historical unsigned releases remain distinguishable by the
 absence of the two signature files. A successful workflow configuration alone
 does not prove a signed release exists; publish and independently verify an
 applicable release before making that claim. This authenticates published bytes;

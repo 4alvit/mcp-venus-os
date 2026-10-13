@@ -2,6 +2,7 @@
 
 import hashlib
 import importlib.util
+import io
 import json
 import subprocess
 import tarfile
@@ -139,9 +140,13 @@ def test_wheel_backend_operates_on_isolated_tracked_copy(source: Path, tmp_path:
     (source / "private.env").write_text("not for distribution")
     output = tmp_path / "output"
 
-    def backend(command: list[str], *, check: bool) -> subprocess.CompletedProcess[str]:
+    def backend(
+        command: list[str], *, check: bool, env: dict[str, str] | None = None
+    ) -> subprocess.CompletedProcess[str]:
         assert check
         if command[2] == "build":
+            assert env is not None
+            assert env["SOURCE_DATE_EPOCH"] == "0"
             isolated = Path(command[-1])
             assert isolated != source
             assert not (isolated / "private.env").exists()
@@ -215,3 +220,38 @@ def test_versioned_packaging_checks_the_real_frozen_overlay(
         package.build_package(source, "1.2.3", "rc", tmp_path / "changed-input")
     assert not (tmp_path / "wrong-channel").exists()
     assert not (tmp_path / "changed-input").exists()
+
+
+def test_sdist_normalization_preserves_content_and_removes_host_metadata(tmp_path: Path) -> None:
+    paths = [tmp_path / "first.tar.gz", tmp_path / "second.tar.gz"]
+    for count, path in enumerate(paths, start=1):
+        with tarfile.open(path, "w:gz", format=tarfile.PAX_FORMAT) as archive:
+            entry = tarfile.TarInfo("fixture/run.py")
+            entry.uid = entry.gid = count
+            entry.uname = entry.gname = f"builder-{count}"
+            entry.mtime = count + 0.5
+            entry.mode = 0o755
+            entry.size = len(b"content\n")
+            archive.addfile(entry, io.BytesIO(b"content\n"))
+        package.normalize_sdist(path, 0)
+    assert paths[0].read_bytes() == paths[1].read_bytes()
+    with tarfile.open(paths[0]) as archive:
+        entry = archive.getmember("fixture/run.py")
+        assert (entry.uid, entry.gid, entry.uname, entry.gname, entry.mtime) == (0, 0, "", "", 0)
+        assert entry.mode == 0o755
+        member = archive.extractfile(entry)
+        assert member is not None
+        assert member.read() == b"content\n"
+
+
+def test_sdist_normalization_rejects_links_without_replacing_original(tmp_path: Path) -> None:
+    path = tmp_path / "source.tar.gz"
+    with tarfile.open(path, "w:gz") as archive:
+        entry = tarfile.TarInfo("fixture/link")
+        entry.type = tarfile.SYMTYPE
+        entry.linkname = "/outside"
+        archive.addfile(entry)
+    original = path.read_bytes()
+    with pytest.raises(ValueError, match="non-regular member"):
+        package.normalize_sdist(path, 0)
+    assert path.read_bytes() == original

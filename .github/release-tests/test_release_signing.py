@@ -6,6 +6,7 @@
 """Release signatures authenticate all payloads before any downloaded data is trusted."""
 
 import json
+from contextlib import chdir
 import subprocess
 import sys
 import tempfile
@@ -15,6 +16,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 import release_signing as signing
+import release_control
 import version_plan
 import version_receipt
 
@@ -56,6 +58,30 @@ class ReleaseSignatureTests(unittest.TestCase):
         with patch.object(signing.subprocess, "run") as process:
             signing.verify(self.assets, self.policy, self.sha)
             return process.call_args.args[0]
+
+    def test_publisher_enforces_authentication_before_any_api_write(self):
+        class NoWrites:
+            repo = "example/project"
+            def api(self, *_args, **_kwargs):
+                raise AssertionError("Publication must not write before authentication")
+        with chdir(self.root), patch.object(release_control, "RELEASE_SIGNATURES_REQUIRED", True):
+            with patch.object(signing, "verify", side_effect=ValueError("invalid signature")) as verify:
+                with self.assertRaisesRegex(ValueError, "invalid signature"):
+                    release_control._publish_prepared(
+                        NoWrites(), "v1.2.3", self.sha, self.assets, False, "notes")
+                verify.assert_called_once_with(self.assets, self.policy, self.sha)
+
+    def test_required_signature_cannot_be_disabled_by_missing_or_changed_policy(self):
+        with chdir(self.root), patch.object(release_control, "RELEASE_SIGNATURES_REQUIRED", True):
+            with patch.object(signing, "verify") as verify:
+                for update in ({"repository": "different/repo"}, {"sign_releases": False}):
+                    (self.root / ".release-policy.json").write_text(json.dumps({**self.policy, **update}))
+                    with self.assertRaises(release_control.ReleaseError):
+                        release_control.verify_required_signatures(self.assets, "example/project", self.sha)
+                (self.root / ".release-policy.json").unlink()
+                with self.assertRaises(ValueError):
+                    release_control.verify_required_signatures(self.assets, "example/project", self.sha)
+                verify.assert_not_called()
 
     def test_complete_inventory_authenticates_source_and_build_receipt(self):
         self.prepare()
