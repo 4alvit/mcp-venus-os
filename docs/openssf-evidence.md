@@ -67,10 +67,28 @@ The primary maintainer also confirmed that repository access continuity is
 not arranged: `access_continuity` remains **Unmet**. Passing was awarded by the
 public application. [The quality page](quality-evidence.md) now links the reviewed
 regression inventory, complete-source coverage and measured repeatability of
-Python distributions and full multi-platform runnable OCI archives. Signed
-prereleases have been verified, but the currently advertised stable release still
-requires signed publication and the normal release acceptance; `signed_releases`
-remains **Unmet** until then. A Silver badge has not been awarded.
+Python distributions and full multi-platform runnable OCI archives.
+
+The signed stable [v0.2.12](https://github.com/4alvit/mcp-venus-os/releases/tag/v0.2.12)
+was published by the successful
+[release run](https://github.com/4alvit/mcp-venus-os/actions/runs/38342648208)
+from source `a62cd87d68dc15f3650989781178d7d0460d1760`. Its
+[final-byte acceptance](https://github.com/4alvit/mcp-venus-os/pull/103#issuecomment-6137765183)
+preceded the normal protected release approval. The exact final wheel and original
+OCI images passed MCP CLI read-only integration against Venus OS v3.75 on macOS
+ARM64, Linux ARM64, and emulated Linux amd64; the wheel also passed HTTP bearer
+authentication checks. No device writes, on-device D-Bus, migrations, physical
+actuator tests or production deployment are claimed. The linked RC record
+documents initial telemetry availability limits.
+
+[Recipient verification after publication](https://github.com/4alvit/mcp-venus-os/pull/103#issuecomment-6137801896)
+checked all 11 public assets, Cosign publisher/source identity, the complete
+signed inventory and both original OCI provenance graphs. The 10 accepted staged
+assets were unchanged; publication added only `release-manifest.json`. This is
+evidence for `signed_releases` **Met**; historical unsigned releases remain
+unsigned. Follow the [recipient verification instructions](release-signatures.md)
+for every release. A Silver badge has not been awarded, and the confirmed
+`access_continuity` gap remains open.
 
 ## Provider authentication and security-fix credit
 

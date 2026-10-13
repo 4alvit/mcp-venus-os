@@ -65,31 +65,38 @@ See the [release strategy](RELEASING.md) for validation, nightly, beta, RC and s
 ### Installation
 
 The supported release channel is [GitHub Releases](https://github.com/4alvit/mcp-venus-os/releases).
-There is no `mcp-venus-os` distribution on PyPI as of 12 October 2026. Install the
-wheel from an explicitly selected stable release; installing the default Git
-branch instead selects unreleased development code.
+There is no `mcp-venus-os` distribution on PyPI as of 12 October 2026. The signed
+stable release below is [v0.2.12](https://github.com/4alvit/mcp-venus-os/releases/tag/v0.2.12).
+Use Python 3.11+, Git, the GitHub CLI, and
+[Cosign 3.1.3 or newer](docs/release-signatures.md). Review the pinned
+[source revision](https://github.com/4alvit/mcp-venus-os/tree/a62cd87d68dc15f3650989781178d7d0460d1760)
+and [acceptance record](https://github.com/4alvit/mcp-venus-os/pull/103#issuecomment-6137765183)
+before trusting its verifier. Run these commands in a new directory:
 
 ```bash
-python -m venv .venv
+set -e
+git clone --no-checkout https://github.com/4alvit/mcp-venus-os.git release-verifier
+git -C release-verifier checkout --detach a62cd87d68dc15f3650989781178d7d0460d1760
+gh release download v0.2.12 --repo 4alvit/mcp-venus-os --dir release-v0.2.12
+python3 release-verifier/scripts/release_signing.py verify release-v0.2.12 \
+  --source-sha a62cd87d68dc15f3650989781178d7d0460d1760
+python3 -m venv .venv
 source .venv/bin/activate
-curl --fail --location --output mcp_venus_os-0.2.11-py3-none-any.whl \
-  'https://github.com/4alvit/mcp-venus-os/releases/download/v0.2.11/mcp_venus_os-0.2.11-py3-none-any.whl'
-printf '%s  %s\n' \
-  '7347a79ace876721e8b9a02acee87f276c39381746e17122b0c919f3edd19632' \
-  'mcp_venus_os-0.2.11-py3-none-any.whl' | shasum -a 256 -c - && \
-  python -m pip install ./mcp_venus_os-0.2.11-py3-none-any.whl
+python -m pip install ./release-v0.2.12/mcp_venus_os-0.2.12-py3-none-any.whl
 ```
 
-`v0.2.11` is the stable example above. `v0.2.12-*` nightly/beta/RC releases remain
-prereleases. Each release includes `SHA256SUMS` and `release-manifest.json` for
-artifact integrity and source/workflow provenance. GitHub release publication
-does not publish to PyPI, update a GHCR tag, or deploy a running server.
+Download the complete asset set, including the OCI archive and its provenance
+sidecar, even when installing only the wheel: verification requires the complete
+signed inventory. The verified wheel SHA-256 is
+`9269ef3bae8683d97f95733b326a44da774d3ed0d8364afa273c914e53a4ef4e`.
+The [publication verification](https://github.com/4alvit/mcp-venus-os/pull/103#issuecomment-6137801896)
+confirmed that the public assets match the accepted final build.
 
-Take the pinned digest above from a reviewed copy of this documentation that
-you trust. It was checked against the original release workflow's immutable
-artifact and the stable wheel. A checksum downloaded alongside a replacement
-wheel alone cannot authenticate its publisher; these checks rely on the trusted
-repository and workflow, not an independent publisher signature.
+Historical `v0.2.11` remains unsigned, and nightly/beta/RC releases remain
+prereleases. The final build uses the accepted RC's source and recipe with its
+own final version and signed inventory. Installing the default Git branch selects
+development code. GitHub release publication does not publish to PyPI, update a
+GHCR tag, or deploy a running server.
 
 Or for development:
 
