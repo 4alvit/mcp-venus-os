@@ -19,7 +19,8 @@ is historical implementation context rather than a future commitment.
    reproducible from documented inputs.
 5. Make installation, upgrade, credential rotation and recovery procedures
    easier to reproduce with local fixtures and clearly separated target-device
-   acceptance. Add signed-release verification evidence as it becomes available.
+   acceptance. Repeat the signed-release recipient verification and exact final-
+   artifact acceptance demonstrated by v0.2.12 for each new release.
 6. Establish real maintainer succession/access recovery, improve contribution
    onboarding, and close the remaining OpenSSF evidence gaps honestly.
 
