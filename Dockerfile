@@ -33,9 +33,10 @@ ENV PATH="/app/.venv/bin:$PATH" \
     HOME=/app
 
 USER app
-# Exercise the final interpreter, metadata, non-root identity and real CLI.
-RUN python -c "import os,pwd; assert os.geteuid() != 0; assert pwd.getpwuid(os.geteuid()).pw_dir == '/app'" && \
-    mcp-venus-os --help
+# Exercise the real CLI without persisting timestamped import-hook caches.
+# The flag is scoped to these build commands; runtime behavior is unchanged.
+RUN PYTHONDONTWRITEBYTECODE=1 python -c "import os,pwd; assert os.geteuid() != 0; assert pwd.getpwuid(os.geteuid()).pw_dir == '/app'" && \
+    PYTHONDONTWRITEBYTECODE=1 mcp-venus-os --help
 
 EXPOSE 8000
 
