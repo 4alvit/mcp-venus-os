@@ -102,5 +102,9 @@
         "linux/arm64"
       ]
     }
-  ]
+  ],
+  "fuzzing": {
+    "toolkit_ref": "d1c3848e874d06a44681e1fbdd58b75c85443df0"
+  },
+  "toolkit_revision": "d1c3848e874d06a44681e1fbdd58b75c85443df0"
 }

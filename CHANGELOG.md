@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.13] - Development line
+
+### Maintenance
+
+- Require bounded fuzzing on public release candidates, with source-bound reports and retained diagnostics; beta and ordinary CI do not run mutation campaigns.
+- Reject numeric hardware-contract and write values that exceed the finite hardware range.
+
+### Upgrade
+
+Use the documented update procedure and retain local configuration. Automated tests do not establish target-device acceptance.
+
+### Security
+
+Release qualification now requires isolated fuzzing against the candidate source. Report findings through SECURITY.md.
+
 ## [0.2.12]
 
 ### Changed
