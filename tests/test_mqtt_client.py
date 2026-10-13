@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import json
+import socket
 import threading
 from typing import cast
 from unittest.mock import AsyncMock, Mock, patch
@@ -1256,3 +1257,31 @@ async def test_native_loop_start_failure_keeps_worker_owned_until_retired() -> N
         await client.disconnect()
         assert client.client is None
         assert client._worker is None
+
+
+@pytest.mark.parametrize("worker_alive", [False, True])
+async def test_retirement_closes_paho_socketpair_only_after_workers_stop(
+    worker_alive: bool,
+) -> None:
+    client = _make_client()
+    transport = mqtt.Client(CallbackAPIVersion.VERSION2)
+    reader, writer = socket.socketpair()
+    transport._sockpairR, transport._sockpairW = reader, writer
+    client.client = transport
+    worker = Mock()
+    worker.is_alive.return_value = worker_alive
+    client._loop_thread = worker
+    try:
+        await client.disconnect()
+        assert (reader.fileno() == -1) is not worker_alive
+        assert (writer.fileno() == -1) is not worker_alive
+        if worker_alive:
+            assert client.client is transport
+        else:
+            assert client.client is None
+            assert transport._sockpairR is transport._sockpairW is None
+    finally:
+        worker.is_alive.return_value = False
+        await client.disconnect()
+        reader.close()
+        writer.close()

@@ -329,3 +329,35 @@ def test_default_trust_matches_parameterless_paho(
     assert actual.verify_flags == original.verify_flags
     assert actual.check_hostname == original.check_hostname
     assert actual.get_ciphers() == original.get_ciphers()
+
+
+@pytest.mark.parametrize(
+    ("failure", "closed"),
+    [
+        (ssl.SSLCertVerificationError("synthetic rejection"), True),
+        (TimeoutError("synthetic handshake deadline"), True),
+        (ssl.SSLWantReadError("synthetic retry"), False),
+        (ssl.SSLWantWriteError("synthetic retry"), False),
+    ],
+)
+def test_native_handshake_failure_closes_socket_unless_retryable(
+    monkeypatch: pytest.MonkeyPatch, failure: Exception, closed: bool
+) -> None:
+    """Paho cannot close a wrapped socket it has not received yet."""
+
+    def reject(_connection: ssl.SSLSocket, _block: bool = False) -> None:
+        raise failure
+
+    monkeypatch.setattr(ssl.SSLSocket, "do_handshake", reject)
+    context = mqtt_context()
+    raw, peer = socket.socketpair()
+    with (
+        raw,
+        peer,
+        context.wrap_socket(
+            raw, server_hostname="localhost", do_handshake_on_connect=False
+        ) as connection,
+    ):
+        with pytest.raises(type(failure), match="synthetic"):
+            connection.do_handshake()
+        assert (connection.fileno() == -1) == closed

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Close TLS sockets when native certificate verification or handshake fails,
+  while preserving nonblocking read/write retries. Strict warning tests now
+  catch leaked sockets before publication.
+
 Reject non-finite numbers and booleans before current-limit comparisons. Reject
 invalid or reversed configured safety bounds at startup and require an integer
 SoC limit. Validation logs record the operation name without its argument values,

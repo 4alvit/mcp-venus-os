@@ -52,7 +52,14 @@ exclude = [".venv", "dist", "build"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "ANN", "SIM", "C4", "T20", "PT", "PTH", "ERA", "ARG", "TRY", "TD", "FLY"]
-ignore = ["ANN201", "ANN202", "ANN204", "ARG001", "ARG002", "B008", "C901", "ERA001", "S101", "SIM103", "T201", "T203", "PTH118", "PTH120", "PTH123"]
+
+[tool.ruff.lint.per-file-ignores]
+# Paho callback signatures include arguments unused by this implementation.
+"src/mcp_venus_os/mqtt_client.py" = ["ARG002"]
+# Fixtures and protocol doubles deliberately accept callback-compatible inputs.
+"tests/*.py" = ["ARG001", "ARG002"]
+# Retain the exported upstream workflow-test helper signatures.
+".github/workflow-tests/*.py" = ["ANN201", "ANN202"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -64,6 +71,7 @@ asyncio_mode = "auto"
 testpaths = ["tests", ".github/release-tests", ".github/workflow-tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
+filterwarnings = ["error"]
 
 [tool.coverage.run]
 source = ["src", "scripts"]

@@ -20,7 +20,7 @@ class SafetyError(Exception):
 class ConfirmationRequiredError(SafetyError):
     """Raised when user confirmation is required for an operation."""
 
-    def __init__(self, message: str, operation: str, params: dict[str, Any]):
+    def __init__(self, message: str, operation: str, params: dict[str, Any]) -> None:
         super().__init__(message)
         self.operation = operation
         self.params = params

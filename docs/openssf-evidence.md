@@ -69,3 +69,17 @@ classification, complete multi-platform repeatability and a real signed
 publication still require verification. Complete-scope Python coverage and
 Python distribution repeatability have measured evidence linked from the
 quality page. Passing is a prerequisite for Silver.
+
+## Provider authentication and security-fix credit
+
+GitHub hosts the project site, repository and downloads. Its published
+[account-security explanation](https://github.blog/news-insights/product-news/new-improvements-and-best-practices-for-account-security-and-recoverability/)
+states that account passwords use bcrypt. The project does not operate a
+separate user-password database. This is provider documentation, not access to
+GitHub internal systems.
+
+The owner reports no external vulnerability reports in the preceding twelve
+months. Internally discovered security corrections retain contributor attribution
+in their public commits and pull requests; no additional external reporter is
+implied. SECURITY.md requires credit with the reporter’s consent for future
+reports.

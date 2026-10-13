@@ -43,6 +43,25 @@ environment skips, and executed **5,655 of 6,376 statements (88.69%)** across al
 records module hashes, the complete denominator and environment limitations.
 Hosted CI remains required for Linux/container-specific validation.
 
+## Warning policy
+
+Ruff enables error, undefined-name, import, naming, modernization, bugbear,
+annotation, simplification, comprehension, print/debug, pytest, path, argument,
+exception and TODO checks. CI treats every enabled diagnostic as failure; mypy
+uses strict mode for the application. The former repository-wide warning
+ignores were removed. Exceptions are narrow and documented in `pyproject.toml`:
+unused Paho callback arguments, fixture/protocol-double arguments, and return
+annotations in retained upstream workflow test helpers. Two public callback/stub
+arguments use inline explanations. Vendored scripts keep the upstream E/F/I/UP
+policy and its line-length exception so regeneration remains byte-for-byte
+verifiable; their security behavior is covered by contract tests and Bandit.
+
+Pytest promotes all Python warnings to errors, including resource leaks and
+unraisable exceptions; there are no global warning suppressions. The pinned
+third-party build frontend emits a separate virtualenv command-line deprecation
+notice during isolated package construction. This is recorded in the build
+evidence and does not suppress runtime warnings or relax failure gates.
+
 ## Regression history
 
 [The six-month ledger](evidence/regression-history-2026-10-12.json) links candidate

@@ -72,7 +72,7 @@ def get_confirmation_manager() -> ConfirmationManager:
 
 
 @asynccontextmanager
-async def lifespan(app: FastMCP) -> AsyncIterator[None]:
+async def lifespan(app: FastMCP) -> AsyncIterator[None]:  # noqa: ARG001 - FastMCP callback contract.
     """Server lifespan handler."""
     config = get_config()
     logging.basicConfig(level=config.log_level)
@@ -910,7 +910,7 @@ async def mqtt_disconnect() -> dict[str, Any]:
 
 
 @mcp.tool()
-async def mqtt_subscribe(topic_pattern: str) -> dict[str, Any]:
+async def mqtt_subscribe(topic_pattern: str) -> dict[str, Any]:  # noqa: ARG001 - Public stub schema.
     """Subscribe to MQTT topic pattern.
 
     Not yet implemented - returns an error.
