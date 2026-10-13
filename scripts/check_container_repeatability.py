@@ -8,6 +8,7 @@ import hashlib
 import json
 import subprocess  # nosec B404
 from pathlib import Path
+from typing import Any
 
 import release_provenance
 import version_plan
@@ -15,7 +16,7 @@ import version_plan
 IMAGE = "mcp-venus-os-container.oci.tar"
 
 
-def prepare(root: Path) -> dict:
+def prepare(root: Path) -> dict[str, Any]:
     """Freeze the same diagnostic version on both isolated CI runners."""
     policy = json.loads((root / ".release-policy.json").read_text())
     # Fixed repository command, without shell evaluation.
@@ -28,13 +29,14 @@ def prepare(root: Path) -> dict:
     return plan
 
 
-def compare(root: Path, first: Path, second: Path, record: Path) -> dict:
+def compare(root: Path, first: Path, second: Path, record: Path) -> dict[str, Any]:
     """Semantic verification precedes a streaming comparison of complete tar bytes."""
     policy = json.loads((root / ".release-policy.json").read_text())
     plan = prepare(root)
     results = []
     for directory in (first, second):
-        release_provenance.verify_all(directory, policy, plan)
+        # Shared validator consumes a dynamically checked JSON contract.
+        release_provenance.verify_all(directory, policy, plan)  # type: ignore[no-untyped-call]
         image = directory / IMAGE
         with image.open("rb") as stream:
             digest = hashlib.file_digest(stream, "sha256").hexdigest()

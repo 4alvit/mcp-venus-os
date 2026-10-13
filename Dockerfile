@@ -20,16 +20,22 @@ RUN uv sync --frozen --no-dev --no-install-project && \
 FROM ${BASE_IMAGE} AS runtime
 ARG SOURCE_DATE_EPOCH
 
-# Non-root runtime user; no build tooling in the final image
+# Non-root runtime user; no build tooling in the final image. Account-tool
+# backups contain wall-clock shadow dates; keep only the active account files.
 RUN groupadd -r app && useradd -r -g app -d /app app && \
-    chage --lastday "$((SOURCE_DATE_EPOCH / 86400))" app
+    chage --lastday "$((SOURCE_DATE_EPOCH / 86400))" app && \
+    rm -f /etc/passwd- /etc/group- /etc/shadow- /etc/gshadow-
 
 WORKDIR /app
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH" \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    HOME=/app
 
 USER app
+# Exercise the final interpreter, metadata, non-root identity and real CLI.
+RUN python -c "import os,pwd; assert os.geteuid() != 0; assert pwd.getpwuid(os.geteuid()).pw_dir == '/app'" && \
+    mcp-venus-os --help
 
 EXPOSE 8000
 

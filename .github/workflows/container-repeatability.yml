@@ -37,6 +37,8 @@ jobs:
           mkdir release-dist
           touch release-dist/SHA256SUMS
       - name: Build both platforms with the shipping recipe and empty cache
+        env:
+          KEEP_CONTAINER_INPUTS: '1'
         run: bash scripts/package-container.sh
       - name: Retain full runnable bytes and unmodified per-run evidence
         if: always()
@@ -46,6 +48,14 @@ jobs:
           path: release-dist/*
           if-no-files-found: error
           retention-days: 14
+      - name: Retain original inputs for rejection diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: diagnostic-${{ matrix.repeat }}
+          path: build/container-inputs.*/*
+          if-no-files-found: warn
+          retention-days: 7
   compare:
     name: Compare full OCI archives
     needs: cold

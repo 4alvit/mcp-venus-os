@@ -10,12 +10,14 @@ python_bin="${RELEASE_PYTHON:-python3}"
 identity="$("$python_bin" scripts/release_container_labels.py --shell)"
 read -r package_version source_revision <<< "$identity"
 source_epoch="$(git show -s --format=%ct "$source_revision")"
-inputs="$(mktemp -d "$PWD/.container-inputs.XXXXXX")"
-trap 'rm -rf "$inputs"' EXIT
+mkdir -p build
+inputs="$(mktemp -d "$PWD/build/container-inputs.XXXXXX")"
+trap 'if [[ "${KEEP_CONTAINER_INPUTS:-0}" != 1 ]]; then rm -rf "$inputs"; fi' EXIT
 for architecture in amd64 arm64; do
   docker buildx build --platform "linux/$architecture" \
     --build-arg "SOURCE_DATE_EPOCH=$source_epoch" \
     --provenance=mode=max \
+    --metadata-file "$inputs/$architecture.metadata.json" \
     --label "org.opencontainers.image.version=$package_version" \
     --label "org.opencontainers.image.revision=$source_revision" \
     --output "type=oci,dest=$inputs/$architecture.oci.tar,rewrite-timestamp=true" .
