@@ -1,25 +1,25 @@
 {
   "schema": 1,
   "date": "2026-10-12",
-  "source_revision": "d4d08545ae58bab9a379c4d66da571a215d875a0",
-  "runtime_revision_tested": "c145c2e69f6ccbd537e8f0104b968f6d039fa155",
-  "note": "Later d4d0854 changes documentation and removes a deprecated packaging classifier; production Python modules are identical to the tested c145c2e revision.",
+  "source_revision": "7f0b266551f5078dc10fa83ada20d96966587fba",
+  "runtime_revision_tested": "7f0b266551f5078dc10fa83ada20d96966587fba",
+  "note": "Successful final run with all Python warnings promoted to errors; no warning filters suppress resource or unraisable exceptions.",
   "command": ".venv/bin/python -m pytest --cov=. --cov-report=term-missing --cov-report=json --cov-report=xml",
   "result": {
-    "passed": 968,
+    "passed": 974,
     "skipped": 3,
     "failed": 0,
-    "seconds": 100.27
+    "seconds": 96.87
   },
   "scope": "All 36 production Python files in src/ and scripts/, including unimported namespace scripts. Shell lines are not Python statements.",
   "totals": {
-    "covered_lines": 5655,
-    "num_statements": 6376,
-    "percent_covered": 88.69196988707654,
+    "covered_lines": 5659,
+    "num_statements": 6380,
+    "percent_covered": 88.69905956112852,
     "percent_covered_display": "89",
     "missing_lines": 721,
     "excluded_lines": 5,
-    "percent_statements_covered": 88.69196988707654,
+    "percent_statements_covered": 88.69905956112852,
     "percent_statements_covered_display": "89"
   },
   "modules": [
@@ -431,21 +431,21 @@
     },
     {
       "path": "src/mcp_venus_os/mqtt_client.py",
-      "sha256": "ac71eb9ba3383238ddbc0b089bbe42211a2a4c44f26d8edce4fe926283be6f53",
+      "sha256": "ed924e7d60bc38d17cc6d667e2aaf33b93ae715804e1464d3b560bfd6d252d58",
       "summary": {
-        "covered_lines": 448,
-        "num_statements": 456,
-        "percent_covered": 98.24561403508773,
+        "covered_lines": 450,
+        "num_statements": 458,
+        "percent_covered": 98.2532751091703,
         "percent_covered_display": "98",
         "missing_lines": 8,
         "excluded_lines": 0,
-        "percent_statements_covered": 98.24561403508773,
+        "percent_statements_covered": 98.2532751091703,
         "percent_statements_covered_display": "98"
       }
     },
     {
       "path": "src/mcp_venus_os/safety.py",
-      "sha256": "034275169f8def83f202e9810a76978afb19367a60a737dc937bc0942823af86",
+      "sha256": "f6cacbb1faed967709e7ebf4ddc59f56ca74cda2420b458d619239486ae6d692",
       "summary": {
         "covered_lines": 123,
         "num_statements": 124,
@@ -459,7 +459,7 @@
     },
     {
       "path": "src/mcp_venus_os/server.py",
-      "sha256": "b6c2c7d07dbb4eeddefd04d951a5e8cd7ca828fb5c83c0b296f0cf94e85f701c",
+      "sha256": "92dc6731aa4b075a5c603c416cb4fcf3bcd99588dd6ee5fd93cbff76782aec0e",
       "summary": {
         "covered_lines": 335,
         "num_statements": 418,
@@ -515,16 +515,16 @@
     },
     {
       "path": "src/mcp_venus_os/tls_policy.py",
-      "sha256": "3b9e43ef699a9246e4b50b71f8b897fb88e306819b15f87535d95ec6d91bfe48",
+      "sha256": "8bc0d6b17dbc5dadfef21e850c7319144c58aaf04f2e31d2e4e760f3b5fb64c7",
       "summary": {
-        "covered_lines": 49,
-        "num_statements": 65,
-        "percent_covered": 75.38461538461539,
-        "percent_covered_display": "75",
+        "covered_lines": 51,
+        "num_statements": 67,
+        "percent_covered": 76.11940298507463,
+        "percent_covered_display": "76",
         "missing_lines": 16,
         "excluded_lines": 0,
-        "percent_statements_covered": 75.38461538461539,
-        "percent_statements_covered_display": "75"
+        "percent_statements_covered": 76.11940298507463,
+        "percent_statements_covered_display": "76"
       }
     }
   ],
@@ -532,5 +532,5 @@
     "No physical inverter or live control commands were used.",
     "Optional Docker/Mosquitto/platform fixtures were skipped in this macOS run; hosted Linux CI remains required."
   ],
-  "raw_report_sha256": "810287ae0bb273e996dbce2e0978bce2c1d4aae64e75bc0b504d0b6b0f9db850"
+  "raw_report_sha256": "afd9dcd95c302c08434cb19bf977b5806c454412592cf58f4787b0680c9a9c49"
 }

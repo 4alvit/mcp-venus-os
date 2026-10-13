@@ -37,8 +37,8 @@ failed run is diagnostic evidence, not a successful coverage qualification.
 Broker integration tests require the isolated Mosquitto fixture described in
 `tests/test_integration_mosquitto.py`; a skipped fixture is not a live-device test.
 
-The successful 12 October 2026 local run passed **968 tests**, with three optional
-environment skips, and executed **5,655 of 6,376 statements (88.69%)** across all
+The successful 12 October 2026 local run passed **974 tests**, with three optional
+environment skips, and executed **5,659 of 6,380 statements (88.70%)** across all
 36 production Python modules. [The measured report](evidence/coverage-2026-10-12.json)
 records module hashes, the complete denominator and environment limitations.
 Hosted CI remains required for Linux/container-specific validation.
