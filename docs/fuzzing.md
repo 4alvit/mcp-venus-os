@@ -57,6 +57,26 @@ Use a copied corpus for local campaigns if you do not want libFuzzer to add seed
 to the working tree. The pinned Atheris wheel is Linux x86-64 specific. A local
 unit-test or seed-only replay on another platform is not an instrumented fuzz run.
 
+## Keeping the validation runtime aligned
+
+The contract target uses the Pydantic dependency versions in the production
+`uv.lock`, also consumed by the container's `uv sync --frozen`. Atheris is an
+additional testing dependency. The unit test
+`tests/test_fuzz_dependency_parity.py` rejects drift between the fuzz lock and
+the production lock, including Pydantic's transitive dependencies.
+
+After a production dependency update, regenerate the Linux Python 3.12 fuzz
+lock against those constraints and review the resulting versions and hashes:
+
+```sh
+uv export --frozen --no-dev --no-emit-project --format requirements-txt --output-file /tmp/mcp-fuzz-production-constraints.txt
+uv pip compile .github/requirements-fuzz.in --constraint /tmp/mcp-fuzz-production-constraints.txt --python-version 3.12 --python-platform x86_64-unknown-linux-gnu --only-binary :all: --generate-hashes --no-header --no-annotate --output-file .github/requirements-fuzz.txt
+```
+
+Dependency installation and deterministic seed replay do not start a timed
+mutation campaign. A changed lock still requires a fresh successful RC campaign
+before its release evidence can qualify the new source.
+
 ## Handling a failure
 
 1. Download the failing run's diagnostics and minimized/crashing input from its
