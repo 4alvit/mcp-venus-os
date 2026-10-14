@@ -31,3 +31,9 @@ release-assets/
 coverage.xml
 coverage.json
 bandit-results.json
+
+# Isolated RC fuzz runtime and local libFuzzer diagnostics
+.fuzz-venv/
+crash-*
+timeout-*
+oom-*

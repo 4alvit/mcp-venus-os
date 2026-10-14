@@ -10,6 +10,14 @@ Number = StrictInt | StrictFloat
 Role = Literal["venus_firmware", "target_product", "target_firmware", "bms_product", "bms_firmware"]
 
 
+def _finite(value: int | float) -> bool:
+    """JSON integers may exceed the floating-point range used by hardware."""
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
+
 class IdentityProbe(BaseModel):
     """An exact, fresh MQTT identity value observed during device qualification."""
 
@@ -72,8 +80,8 @@ class HardwareWriteContract(BaseModel):
             valid &= (
                 self.minimum is not None
                 and self.maximum is not None
-                and math.isfinite(self.minimum)
-                and math.isfinite(self.maximum)
+                and _finite(self.minimum)
+                and _finite(self.maximum)
                 and 0 <= self.minimum <= self.maximum
                 and (self.unit != "percent" or self.maximum <= 100)
             )
@@ -106,7 +114,7 @@ def validate_hardware_write(
     if len(matches) != 1:
         return None, "Exactly one reviewed hardware contract is required for this target and path"
     contract = matches[0]
-    if not math.isfinite(max_age) or max_age <= 0:
+    if not _finite(max_age) or max_age <= 0:
         return None, "Hardware identity freshness limit must be finite and positive"
     for probe in contract.identity:
         actual = read(probe.device_type, probe.instance, probe.path)
@@ -116,11 +124,11 @@ def validate_hardware_write(
         if (
             type(observed) is not type(probe.expected)
             or observed != probe.expected
-            or not math.isfinite(age)
+            or not _finite(age)
             or not 0 <= age <= max_age
         ):
             return None, f"Hardware contract identity changed or stale: {probe.role}"
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not _finite(value):
         return None, "Contract requires a finite numeric hardware value"
     if path == "Mode":
         if semantic_mode not in contract.mode_codes or contract.mode_codes[semantic_mode] != value:

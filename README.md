@@ -1,5 +1,7 @@
 # MCP Venus OS
 
+[![Fuzzing: RC only](https://img.shields.io/badge/Fuzzing-RC%20only-blue)](docs/fuzzing.md)
+
 ## Venus OS deployment notes
 
 Prefer the MQTT backend on a NAS, server, or workstation. It keeps the MCP/HTTP
@@ -582,3 +584,9 @@ chain with normal CA/hostname verification. No physical device is contacted.
 The helper is adapted under MIT from the reviewed
 [inverter-dashboard TLS policy](https://github.com/victron-venus/inverter-dashboard)
 and [FastAPI MQTT policy](https://github.com/4alvit/fastapi-mqtt-gateway/pull/71).
+
+## Release-candidate fuzzing
+
+The target validates the production hardware-contract schema, serializes accepted contracts, and checks that invalid numeric values and missing identity evidence are denied. Identity readings are synthetic values. It creates no D-Bus, MQTT or SSH client, and it never authorizes or sends a real write. The package namespace bypasses client-export initialization; the actual hardware_contracts module is imported and instrumented.
+
+[RC-only fuzzing policy, local reproduction and failure handling](docs/fuzzing.md).

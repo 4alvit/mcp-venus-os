@@ -1,6 +1,6 @@
 [project]
 name = "mcp-venus-os"
-version = "0.2.12"
+version = "0.2.13"
 description = "MCP server for Venus OS management - D-Bus, MQTT, and safety-constrained control"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -32,6 +32,7 @@ mcp-venus-os = "mcp_venus_os.__main__:main"
 
 [project.optional-dependencies]
 dev = [
+    "types-atheris>=3.1.0.20260630",
     "pytest>=8.2.0",
     "pytest-asyncio>=0.23.0",
     "pytest-mock>=3.12.0",
