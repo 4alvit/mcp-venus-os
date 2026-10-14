@@ -13,7 +13,7 @@ def _normalize_name(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
-def _assert_dependency_parity(runtime: dict, fuzz_lock: str) -> None:
+def _assert_dependency_parity(runtime: dict[str, list[dict[str, str]]], fuzz_lock: str) -> None:
     versions = {
         _normalize_name(package["name"]): package["version"] for package in runtime["package"]
     }
