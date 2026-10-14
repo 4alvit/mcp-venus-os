@@ -29,7 +29,24 @@
         "-max_len=4096"
       ],
       "seconds": 60,
-      "corpus": "fuzz/corpus/contract"
+      "corpus": "fuzz/corpus/contract",
+      "instrumentation": [
+        {
+          "module": "mcp_venus_os.hardware_contracts",
+          "functions": [
+            "HardwareWriteContract.validate_scope",
+            "validate_hardware_write"
+          ]
+        }
+      ]
     }
+  ],
+  "preflight-paths": [
+    ".github/requirements-fuzz.in",
+    "Dockerfile",
+    "fuzz",
+    "pyproject.toml",
+    "src",
+    "uv.lock"
   ]
 }
