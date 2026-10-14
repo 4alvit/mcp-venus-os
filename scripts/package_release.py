@@ -14,6 +14,7 @@ import tarfile
 import tomllib
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import TYPE_CHECKING
 
 
 def normalize_sdist(path: Path, epoch: int) -> None:
@@ -69,7 +70,10 @@ def build_package(root: Path, version: str, channel: str, output: Path) -> list[
         committed = policy.get("version")
     if policy.get("versioning"):
         # Validate the reviewed plan before accepting its PEP 440 source overlay.
-        from release_version_adapter import checked_version
+        if TYPE_CHECKING or __package__:
+            from .release_version_adapter import checked_version
+        else:
+            from release_version_adapter import checked_version
 
         version = checked_version(root, version.removeprefix("v"), channel)
     elif committed and (

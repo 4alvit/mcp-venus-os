@@ -91,7 +91,8 @@
         ],
         "value": "package"
       }
-    ]
+    ],
+    "toolkit_revision": "d55d9899310c9fb068fbdb36cdc42cc3f539d41c"
   },
   "detached_provenance": [
     {
@@ -102,5 +103,9 @@
         "linux/arm64"
       ]
     }
-  ]
+  ],
+  "fuzzing": {
+    "toolkit_ref": "d55d9899310c9fb068fbdb36cdc42cc3f539d41c"
+  },
+  "toolkit_revision": "d55d9899310c9fb068fbdb36cdc42cc3f539d41c"
 }

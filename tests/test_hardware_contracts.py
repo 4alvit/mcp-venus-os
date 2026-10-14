@@ -10,6 +10,19 @@ from mcp_venus_os.hardware_contracts import HardwareWriteContract, validate_hard
 from mcp_venus_os.server import _mqtt_write_and_verify
 
 
+def test_huge_json_integer_bound_fails_validation(
+    hardware_contracts: list[HardwareWriteContract],
+) -> None:
+    data = hardware_contracts[-1].model_dump()
+    data["minimum"] = 10**400
+    with pytest.raises(ValueError, match="complete target/BMS/firmware"):
+        HardwareWriteContract.model_validate(data)
+
+
+def test_huge_numeric_write_is_denied(hardware_contracts: list[HardwareWriteContract]) -> None:
+    assert validate(hardware_contracts, value=10**400)[0] is None
+
+
 def validate(
     contracts: list[HardwareWriteContract], **changes: object
 ) -> tuple[HardwareWriteContract | None, str | None]:
