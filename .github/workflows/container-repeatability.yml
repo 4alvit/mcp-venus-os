@@ -41,7 +41,7 @@ jobs:
         run: bash scripts/package-container.sh
       - name: Retain full runnable bytes and unmodified per-run evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: cold-${{ matrix.repeat }}
           path: release-dist/*
@@ -49,7 +49,7 @@ jobs:
           retention-days: 14
       - name: Retain compact validation metadata for rejection diagnostics
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: validation-metadata-${{ matrix.repeat }}
           path: build/container-inputs.*/*.validation.json
@@ -57,7 +57,7 @@ jobs:
           retention-days: 7
       - name: Retain original inputs for rejection diagnostics
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: diagnostic-${{ matrix.repeat }}
           path: build/container-inputs.*/*
@@ -78,7 +78,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.11'
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: cold-*
           path: .
@@ -86,7 +86,7 @@ jobs:
         run: python3 scripts/check_container_repeatability.py compare
       - name: Retain comparison result
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: container-repeatability-result
           path: container-repeatability.json
