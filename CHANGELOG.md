@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.15] - 2026-10-16
+
+### Security
+
+Require MCP Python SDK 1.30.0 or newer within the compatible 1.x series to fix
+unbounded stateful HTTP session retention (CVE-2026-59951 /
+[GHSA-84m7-p3x7-pcfv](https://github.com/advisories/GHSA-84m7-p3x7-pcfv)).
+The locked FastMCP version remains 3.4.5. HTTP regression tests exercise session
+capacity, deletion, expiry and rejected opening requests without device access.
+
+### Upgrade
+
+Replace the container or upgrade the Python package, preserving configuration.
+HTTP clients must reconnect after a server restart or an expired session. The
+SDK now expires idle sessions after 30 minutes and limits simultaneous sessions
+to 10,000; a full pool returns HTTP 503. Stdio operation and hardware write
+safety settings are unchanged. Continue requiring authentication and restricting
+endpoint access.
+
 ## [0.2.14] - 2026-10-14
 
 ### Changed
@@ -19,7 +38,7 @@ Use the existing installation procedure, preserve local configuration and keep t
 
 ### Security
 
-The release gate rejects absent or invalid fuzz evidence and unsafe seed inputs. No application vulnerability or new target-device acceptance is claimed by these tooling changes.
+RC publication rejects absent or invalid source-bound fuzz reports. The fuzz runner bounds corpus paths, file types and size. No application vulnerability or new target-device acceptance is claimed by these tooling changes.
 
 ## [0.2.13] - Development line
 
