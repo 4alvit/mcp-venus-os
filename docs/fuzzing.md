@@ -1,5 +1,9 @@
 # Release-candidate fuzz testing
 
+See the [illustrated RC fuzzing process and verified rollout results](https://github.com/victron-venus/venus-os-ci-toolkit/blob/main/docs/rc-fuzzing-results.md)
+for the shared release flow, evidence requirements and a dated cross-project
+snapshot. The project-specific scope and reproduction guidance below still apply.
+
 ## Scope and assertions
 
 **Reviewed hardware write contracts.** The target validates the production hardware-contract schema, serializes accepted contracts, and checks that invalid numeric values and missing identity evidence are denied. Identity readings are synthetic values. It creates no D-Bus, MQTT or SSH client, and it never authorizes or sends a real write. The package namespace bypasses client-export initialization; the actual hardware_contracts module is imported and instrumented.
