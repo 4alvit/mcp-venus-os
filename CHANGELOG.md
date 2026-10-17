@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.16] - 2026-10-17
+
+### Changed
+
+- Add illustrated RC fuzzing process and results documentation and link it from the project guides.
+
+### Upgrade
+
+This documentation release preserves runtime behavior and configuration from 0.2.15, including its MCP session-retention fix. Preserve device permissions and connection settings and retain the previous package for rollback.
+
+### Security
+
+No new runtime security fix is claimed. Existing session limits, hardware write protections and source-bound RC fuzzing remain required; physical device acceptance is separate.
+
 ## [0.2.15] - 2026-10-16
 
 ### Security
