@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Add illustrated RC fuzzing process and results documentation and link it from the project guides.
+- Link the shared illustrated RC fuzzing process and result guides; these documentation links were added after the published v0.2.15 source.
 
 ### Upgrade
 
