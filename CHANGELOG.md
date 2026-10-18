@@ -11,9 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update the grouped GitHub Actions dependencies while preserving container, security and release validation.
 
-### Upgrade and validation
+### Upgrade
 
 Preserve installation-specific configuration and retain the previous immutable release for rollback. Required CI and source-bound RC qualification remain enabled. Publishing this release does not deploy it to an installation or establish hardware acceptance.
+
+### Security
+
+Session bounds, device-write protections and mandatory security checks remain enabled. No new runtime security fix is claimed.
 
 ## [0.2.16] - 2026-10-17
 
