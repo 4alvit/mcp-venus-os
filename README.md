@@ -13,8 +13,9 @@ For an off-device HTTP deployment, configure an operator-owned HTTPS endpoint
 and bearer authentication. Start with device writes disabled and no Cerbo SSH
 credentials. Keep the deployment manifest, image pin, credentials, verification
 record and rollback plan with the operator's deployment configuration. The
-[deployment matrix](#deployment-matrix) and [HTTP authentication setup](#http-auth-token)
-below describe the supported transports and client configuration.
+[deployment matrix](#deployment-matrix), [HTTP authentication setup](#http-auth-token)
+and [HTTP session lifecycle](docs/http-session-security.md) describe the supported
+transports and client configuration.
 
 SSH package refresh downloads into a temporary `/data` staging directory and
 validates that `setup` exists before copying into the installed tree. It retains
