@@ -25,33 +25,31 @@ SHA = "a" * 40
 
 
 def complete() -> dict[str, Any]:
-    """Build a complete result, including upstream disabled checks."""
-    return {
-        "repo": {"name": f"github.com/{REPO}", "commit": SHA},
-        "scorecard": guard.VERSION.copy(),
-        "checks": [
-            {"name": name, "score": -1 if name in guard.DISABLED else 10}
-            for name in sorted(guard.CHECKS)
-        ],
-    }
+    """Load a reduced upstream report, independent of the guard's expected values."""
+    fixture = Path(__file__).parent / "fixtures" / "scorecard-v5.6.0.json"
+    result: dict[str, Any] = json.loads(fixture.read_text())
+    return result
 
 
 class ScorecardJSONTests(unittest.TestCase):
     """Preserve findings while rejecting incomplete or unrelated scans."""
 
     def test_complete_clean_and_failing_checks_pass(self) -> None:
+        """Findings remain uploadable even when their score is low."""
         for score in (0, 4, 10):
             result = complete()
             result["checks"][0]["score"] = score
             guard.validate(result, REPO, SHA)
 
     def test_upstream_packaging_not_applicable_is_preserved(self) -> None:
+        """Preserve the exact upstream non-applicable Packaging result."""
         result = complete()
         check = next(check for check in result["checks"] if check["name"] == "Packaging")
         check.update(score=-1, reason=guard.PACKAGING_ABSENT)
         guard.validate(result, REPO, SHA)
 
     def test_packaging_runtime_errors_and_other_inconclusive_results_fail(self) -> None:
+        """Do not extend the Packaging exception to errors or other checks."""
         changes = [
             {"reason": "internal error: " + guard.PACKAGING_ABSENT},
             {"reason": "Packaging workflow not detected"},
@@ -74,14 +72,54 @@ class ScorecardJSONTests(unittest.TestCase):
                     guard.validate(result, REPO, SHA)
 
     def test_invalid_or_incomplete_checks_fail(self) -> None:
-        for score in (-1, -2, 11, True, "10", None):
-            with self.subTest(score=score):
+        """Every check must reject invalid scores, including formerly disabled checks."""
+        for original in complete()["checks"]:
+            for score in (-1, -2, 11, True, "10", None):
+                with self.subTest(name=original["name"], score=score):
+                    result = complete()
+                    check = next(x for x in result["checks"] if x["name"] == original["name"])
+                    check["score"] = score
+                    with pytest.raises((TypeError, ValueError)):
+                        guard.validate(result, REPO, SHA)
+
+    def test_no_releases_is_distinct_from_signed_release_errors(self) -> None:
+        """Accept absent releases without hiding errors or malformed results."""
+        result = complete()
+        check = next(x for x in result["checks"] if x["name"] == "Signed-Releases")
+        check.update(score=-1, reason="no releases found")
+        guard.validate(result, REPO, SHA)
+        for change in (
+            {"reason": "no release found"},
+            {"reason": "internal error: no releases found"},
+            {"reason": "No releases found"},
+            {"reason": None},
+            {"error": "API failed"},
+            {"score": -1.0},
+        ):
+            with self.subTest(change=change):
+                invalid = copy.deepcopy(result)
+                check = next(x for x in invalid["checks"] if x["name"] == "Signed-Releases")
+                check.update(change)
+                with pytest.raises((TypeError, ValueError)):
+                    guard.validate(invalid, REPO, SHA)
+        invalid = complete()
+        contributor = next(x for x in invalid["checks"] if x["name"] == "Contributors")
+        contributor.update(score=-1, reason="no releases found")
+        with pytest.raises((TypeError, ValueError)):
+            guard.validate(invalid, REPO, SHA)
+
+    def test_explicit_errors_fail_even_with_valid_scores(self) -> None:
+        """Malformed payloads must not hide an error behind a numeric score."""
+        for original in complete()["checks"]:
+            with self.subTest(name=original["name"]):
                 result = complete()
-                result["checks"][0]["score"] = score
+                check = next(x for x in result["checks"] if x["name"] == original["name"])
+                check.update(score=5, error="API failed")
                 with pytest.raises((TypeError, ValueError)):
                     guard.validate(result, REPO, SHA)
 
     def test_missing_duplicate_unknown_and_malformed_checks_fail(self) -> None:
+        """Require exactly one result for each expected upstream check."""
         original = complete()
         cases = [
             None,
@@ -100,10 +138,16 @@ class ScorecardJSONTests(unittest.TestCase):
                     guard.validate(result, REPO, SHA)
 
     def test_repository_commit_and_version_are_bound_to_the_run(self) -> None:
+        """Reject reports from another repository, commit or scanner build."""
         for field, value in (
             ("repo", {"name": "github.com/other/repo", "commit": SHA}),
             ("repo", {"name": f"github.com/{REPO}", "commit": "b" * 40}),
             ("scorecard", {"version": "v9.0.0", "commit": "b" * 40}),
+            ("scorecard", {"version": "v5.6.0", "commit": "b" * 40}),
+            (
+                "scorecard",
+                {"version": "v5.5.0", "commit": "c395761df6afe1a69e476bc60a013a94bcbc153f"},
+            ),
         ):
             with self.subTest(field=field, value=value):
                 result = complete()
@@ -112,6 +156,7 @@ class ScorecardJSONTests(unittest.TestCase):
                     guard.validate(result, REPO, SHA)
 
     def test_missing_run_identity_and_invalid_root_fail(self) -> None:
+        """Require an object and a complete run identity."""
         for result, repo, sha in (
             (complete(), "", SHA),
             (complete(), REPO, ""),
@@ -121,6 +166,7 @@ class ScorecardJSONTests(unittest.TestCase):
                 guard.validate(result, repo, sha)
 
     def test_failed_guard_removes_stale_sarif(self) -> None:
+        """A failed validation must not leave a report available for upload."""
         for content in (None, "{invalid", "{}", json.dumps({"checks": []})):
             with (
                 self.subTest(content=content),
@@ -139,6 +185,7 @@ class ScorecardJSONTests(unittest.TestCase):
                 assert not (root / "results.sarif").exists()
 
     def test_successful_guard_preserves_original_sarif(self) -> None:
+        """A successful validation must not rewrite the upstream report."""
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "results.json").write_text(json.dumps(complete()))

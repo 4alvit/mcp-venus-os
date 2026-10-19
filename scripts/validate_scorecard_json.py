@@ -31,10 +31,14 @@ CHECKS = frozenset(
         "Maintained",
     }
 )
-# Preserve the pinned upstream action policy: these checks are not reported.
-DISABLED = frozenset({"Contributors", "Signed-Releases"})
-VERSION = {"version": "v5.5.0", "commit": "c395761df6afe1a69e476bc60a013a94bcbc153f"}
+# Revalidate this contract against upstream source before accepting a new version.
+# Scorecard action v2.5.0 reports all 18 checks, including Contributors and Signed-Releases.
+VERSION = {"version": "v5.6.0", "commit": "61e84743356275f6ffca23b1b2f2cb945e19eb96"}
 PACKAGING_ABSENT = "packaging workflow not detected"
+NOT_APPLICABLE = {
+    "Packaging": PACKAGING_ABSENT,
+    "Signed-Releases": "no releases found",
+}
 
 
 def validate(result: object, repository: str, commit: str) -> None:
@@ -61,23 +65,24 @@ def validate(result: object, repository: str, commit: str) -> None:
             raise ValueError("Unexpected or duplicate Scorecard check")
         seen.add(name)
         score = check.get("score")
-        # Pinned evaluation/packaging.go emits this normal not-applicable result;
-        # checks/packaging.go wraps runtime failures as prefixed internal errors.
+        # Reviewed Packaging and Signed-Releases evaluators emit these exact
+        # not-applicable results. Runtime-error reasons are different.
         # JSON2 omits Error, but preserves the exact reason and score.
         if (
-            name == "Packaging"
+            name in NOT_APPLICABLE
             and isinstance(score, int)
             and score == -1
-            and check.get("reason") == PACKAGING_ABSENT
+            and check.get("reason") == NOT_APPLICABLE[name]
             and check.get("error") is None
         ):
             continue
-        # In pinned v5.5.0 every runtime-error constructor sets score=-1;
+        # In reviewed v5.6.0 every runtime-error constructor sets score=-1;
         # JSON2 retains that score even though it omits CheckResult.Error.
-        if name not in DISABLED and (
+        if (
             not isinstance(score, int)
             or isinstance(score, bool)
             or not 0 <= score <= 10
+            or check.get("error") is not None
         ):
             raise ValueError(f"Incomplete Scorecard check: {name}")
     if seen != CHECKS:
@@ -85,6 +90,7 @@ def validate(result: object, repository: str, commit: str) -> None:
 
 
 def main() -> None:
+    """Validate the scan for this run and remove stale SARIF on failure."""
     try:
         result = json.loads((ROOT / "results.json").read_text())
         validate(
