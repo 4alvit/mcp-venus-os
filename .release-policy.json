@@ -105,7 +105,7 @@
     }
   ],
   "fuzzing": {
-    "toolkit_ref": "dad8abd50a1c6bc2d5caf37507117968ab13fcad"
+    "toolkit_ref": "6b2d99519d513d2b871d2a845ddd6134dea4af2c"
   },
   "toolkit_revision": "d55d9899310c9fb068fbdb36cdc42cc3f539d41c"
 }
