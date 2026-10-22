@@ -342,6 +342,12 @@ tank/<n>/Level                                 dbus-pump tank level
   companion capability topics, and explicit caller subscriptions are preserved.
   Unused nested settings and history stay off the receive socket. Explicit broad
   caller subscriptions can opt back into that additional traffic.
+- Tank discovery: `get_tank_level()` accepts exact `tank/<n>/Level` topics,
+  where `<n>` is a nonnegative ASCII decimal integer with no sign or leading
+  zeroes (except `0`). Malformed names and additional path segments are ignored.
+  An explicit positive instance reads its own cached topic without discovering
+  unrelated tanks. Discovery remains numerically sorted and preserves the
+  existing single-tank and multiple-tank response shapes.
 - Freshness: cache entries use actual notification receipt times; tool output
   carries `stale` + `age_seconds` (threshold `MQTT_STALE_AFTER_SECONDS`, default 60).
   Each connection requests the initial tree once, then renews Venus publication

@@ -506,6 +506,101 @@ async def test_get_tank_level_reads_cached_tanks() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("instance", [0, 21], ids=["discover", "explicit"])
+@pytest.mark.parametrize(
+    "invalid_topic",
+    [
+        "tank/not-a-device/Level",
+        "tank//Level",
+        "tank/-1/Level",
+        "tank/21/extra/Level",
+        "tank/21/Level/Level",
+        "tank/21/level",
+        "tank/21/Level/",
+        "tank/+21/Level",
+        "tank/021/Level",
+        "tank/٢١/Level",
+        "tank/2_1/Level",
+        "tank/21 /Level",
+        "tank/" + "1" * 5000 + "/Level",
+    ],
+    ids=[
+        "nonnumeric",
+        "missing",
+        "negative",
+        "extra-segment",
+        "repeated-Level",
+        "wrong-case",
+        "trailing-segment",
+        "signed",
+        "leading-zero",
+        "unicode-digits",
+        "underscore",
+        "whitespace",
+        "oversized-integer",
+    ],
+)
+async def test_get_tank_level_ignores_malformed_packet_topics(
+    invalid_topic: str, instance: int
+) -> None:
+    client = _mqtt_read_client({"tank/21/Level": 44, "tank/9/Level": 80, invalid_topic: 12})
+    # Exercise the real packet-to-cache path, not a sanitized discovery fixture.
+    assert invalid_topic in client._cache
+    with (
+        patch("mcp_venus_os.server.get_mqtt_client", return_value=client),
+        patch.object(server, "_registered_capabilities", {"pump"}),
+    ):
+        result = await server.get_tank_level(instance)
+    readings = result["readings"] if instance == 0 else [result]
+    assert result["success"] is True
+    assert [(reading["instance"], reading["level"]) for reading in readings] == (
+        [(9, 80), (21, 44)] if instance == 0 else [(21, 44)]
+    )
+    assert all(reading["stale"] is False for reading in readings)
+
+
+@pytest.mark.asyncio
+async def test_get_tank_level_malformed_only_and_missing_explicit() -> None:
+    client = _mqtt_read_client({"tank/not-a-device/Level": 12})
+    with (
+        patch("mcp_venus_os.server.get_mqtt_client", return_value=client),
+        patch.object(server, "_registered_capabilities", {"pump"}),
+    ):
+        assert await server.get_tank_level() == {"success": True, "readings": []}
+        assert await server.get_tank_level(21) == {
+            "success": True,
+            "instance": 21,
+            "level": None,
+            "stale": True,
+        }
+
+
+@pytest.mark.asyncio
+async def test_get_tank_level_zero_instance_and_stale_packet_keep_response_shape() -> None:
+    import paho.mqtt.client as paho
+
+    client = _mqtt_read_client({})
+    client.client = cast(paho.Client, Mock())
+    message = paho.MQTTMessage()
+    message._topic = b"tank/0/Level"
+    message.payload = b"44"
+    client._handle_message(client.client, message, 910.0)
+    with (
+        patch("mcp_venus_os.server.get_mqtt_client", return_value=client),
+        patch.object(server, "_registered_capabilities", {"pump"}),
+        patch.object(server, "time") as clock,
+    ):
+        clock.monotonic.return_value = 1000.0
+        result = await server.get_tank_level()
+    assert result["success"] is True
+    assert result["instance"] == 0
+    assert result["level"] == 44
+    assert result["stale"] is True
+    assert result["age_seconds"] == 90.0
+    assert "readings" not in result
+
+
+@pytest.mark.asyncio
 async def test_capabilities_resource_reflects_groups() -> None:
     with patch.object(server, "_registered_capabilities", {"control"}):
         text = server.capabilities_resource()

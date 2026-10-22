@@ -197,12 +197,26 @@ async def get_tank_level(instance: int = 0) -> dict[str, Any]:
     instance=0 returns every discovered tank as ``readings``.
     """
     client = await _mqtt_ready()
-    instances = sorted(
-        int(topic.split("/")[1])
-        for topic in client._cache.copy()
-        if topic.startswith("tank/") and topic.endswith("/Level")
-    )
-    targets = [instance] if instance > 0 else instances
+    if instance > 0:
+        targets = [instance]
+    else:
+        instances: set[int] = set()
+        for topic in client._cache.copy():
+            parts = topic.split("/")
+            if len(parts) != 3 or parts[0] != "tank" or parts[2] != "Level":
+                continue
+            identifier = parts[1]
+            if not identifier.isascii() or not identifier.isdecimal():
+                continue
+            try:
+                discovered = int(identifier)
+            except ValueError:
+                # Python also rejects decimal strings beyond its safe digit limit.
+                continue
+            if str(discovered) == identifier:
+                # Only canonical topics match the cache key used below.
+                instances.add(discovered)
+        targets = sorted(instances)
     stale_after = client.config.stale_after_seconds
     readings: list[dict[str, Any]] = []
     for inst in targets:
