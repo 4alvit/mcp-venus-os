@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.18] - 2026-10-22
+
+### Fixed
+
+- Ignore malformed MQTT tank topics during discovery so an unrelated publisher cannot break tank reads. Explicit positive instances read their own cached level directly; discovery keeps numerically sorted, unique canonical tank instances.
+
+### Upgrade
+
+Restart the server after installing the new package. No configuration change is required for canonical `tank/<instance>/Level` publishers. Tank instance identifiers must use nonnegative ASCII decimal integers without signs or leading zeroes (except `0`); malformed aliases are ignored. Freshness reporting and single/multiple-tank response shapes are unchanged. Retain the previous immutable package for rollback.
+
+### Security
+
+Malformed companion-topic identifiers no longer cause an uncaught conversion error that prevents valid tank reads. Update certifi to 2026.10.19 in the application and build-tool locks to remove a compromised CA trust chain, and virtualenv to 21.14.9 (with required packaging 26.3) to fix generated activation/launcher command injection. Hardware-write permissions and transport authentication are unchanged. Offline checks do not establish live-device acceptance.
+
 ## [0.2.17] - 2026-10-18
 
 ### Changed
