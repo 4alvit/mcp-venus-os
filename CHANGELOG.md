@@ -17,7 +17,9 @@ Restart the server after installing the new package. No configuration change is 
 
 ### Security
 
-Malformed companion-topic identifiers no longer cause an uncaught conversion error that prevents valid tank reads. Update certifi to 2026.10.19 in the application and build-tool locks to remove a compromised CA trust chain, and virtualenv to 21.14.9 (with required packaging 26.3) to fix generated activation/launcher command injection. Hardware-write permissions and transport authentication are unchanged. Offline checks do not establish live-device acceptance.
+- Update the locked development tools to filelock 4.2.1 and virtualenv 21.14.13, addressing CVE-2026-112940 and CVE-2026-115586. Application dependencies and required security checks are unchanged.
+
+Malformed companion-topic identifiers no longer cause an uncaught conversion error that prevents valid tank reads. Update certifi to 2026.10.19 in the application and build-tool locks to remove a compromised CA trust chain, and retain the earlier activation/launcher fixes through virtualenv 21.14.13 with packaging 26.3. Hardware-write permissions and transport authentication are unchanged. Offline checks do not establish live-device acceptance.
 
 ## [0.2.17] - 2026-10-18
 
