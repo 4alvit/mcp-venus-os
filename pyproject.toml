@@ -1,6 +1,6 @@
 [project]
 name = "mcp-venus-os"
-version = "0.2.18"
+version = "0.2.19"
 description = "MCP server for Venus OS management - D-Bus, MQTT, and safety-constrained control"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,6 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "fastmcp>=2.0.0",
+    "opentelemetry-api>=1.45.1",
     "mcp>=1.30.0,<2",
     "dbus-fast>=0.50.0",
     "paho-mqtt>=2.0.0",
