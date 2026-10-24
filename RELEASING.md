@@ -41,7 +41,9 @@ The `v` prefix belongs to the Git tag, not the numeric base version.
 - **Release candidate (RC)** is an explicit maintainer request for a version ready
   for acceptance testing. Tags are `vX.Y.Z-rc.N`. Each RC reruns the required checks
   and build matrix. A code, dependency or packaging change requires a new RC.
-- **Stable** creates final-version packages from the accepted RC's exact source and recipe. It repeats all checks and platform builds, then waits for acceptance of these new bytes in the protected release environment. It records `derived_from_rc`; it does not claim unchanged RC payloads.
+- **Stable** is a separate manual promotion of one accepted RC to `vX.Y.Z`.
+  Promotion copies the verified RC payloads byte for byte; it never rebuilds them.
+  Stable publication must not be inferred from a successful branch build.
 
 Nightly and beta are previews; neither is directly promotable to stable. An RC
 may be requested without a previous beta. Channel order is a workflow policy,
@@ -131,7 +133,7 @@ does not substitute for acceptance of the selected RC.
 ## Project-specific limits
 
 - Hardware-free checks do not validate a live Venus OS device, D-Bus firmware ABI, physical sensors or in-place device upgrades.
-- Candidate packaging applies the reviewed frozen plan to pyproject.toml, the runtime version and the owned uv.lock entry. Stable uses a separately checked final build from the accepted RC source.
+- Candidate packaging applies the reviewed frozen plan to pyproject.toml, the runtime version and the owned uv.lock entry. RC payloads already contain the final package version; stable promotes their exact verified bytes, signatures and original build receipts without rebuilding.
 - OCI container assets are verified and promoted with the GitHub release. Registry and PyPI deployment must use a separately reviewed promotion adapter; CI does not update latest.
 
 Local checks run all commands in `local_checks`; missing toolchains, container

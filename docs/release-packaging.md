@@ -2,8 +2,10 @@
 
 `release.sh` delegates to the shared release client. PRs validate code; nightly,
 beta and RC candidates run the listed validation workflows before building
-assets. Stable releases make a separately validated final build from an accepted
-RC's exact source and recipe, then require approval of those final artifacts.
+assets. An RC contains the final package version while its tag and manifest retain
+the RC identity. Stable promotion verifies and copies that exact accepted inventory,
+including signatures and original build receipts, after protected approval. No
+package is rebuilt or re-signed between RC acceptance and stable publication.
 The workflow and promotion commands are documented by `python3 scripts/release.py --help`.
 
 ## Local validation
@@ -38,8 +40,11 @@ The output directory `release-dist` must be empty; use `--output /path/to/empty-
 for another build. The package builder uses an explicit runtime file list, rejects
 missing files and symlinks, preserves executable bits, and writes SHA256SUMS.
 Wheel-based projects require `build` and `twine`, installed by the bootstrap above.
-Python candidate versions use PEP 440 (`0.2.12rc1`, for example); OCI labels keep
-the plan's SemVer identity. The release manifest binds the plan, source commit,
+Python beta versions use PEP 440 (`0.2.19b1`, for example). Under this
+repository's `promote-bytes` policy, RC wheel/sdist versions and OCI labels already
+use the final base (`0.2.19`); the release tag, manifest and source identity preserve
+the original `v0.2.19-rc.N` qualification. An RC must not be published to the stable
+registry channel before its explicit promotion. The release manifest binds the plan, source commit,
 actual package metadata and digests. Stage all final files with
 `python3 scripts/stage_release_assets.py --target package --pattern 'release-dist/*'`
 to verify metadata and record the build receipt. Publication also verifies a
