@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -1064,7 +1064,7 @@ wheels = [
 
 [[package]]
 name = "mcp-venus-os"
-version = "0.2.18"
+version = "0.2.19"
 source = { editable = "." }
 dependencies = [
     { name = "asyncssh" },
@@ -1072,6 +1072,7 @@ dependencies = [
     { name = "dbus-fast" },
     { name = "fastmcp" },
     { name = "mcp" },
+    { name = "opentelemetry-api" },
     { name = "paho-mqtt" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -1098,6 +1099,7 @@ requires-dist = [
     { name = "fastmcp", specifier = ">=2.0.0" },
     { name = "mcp", specifier = ">=1.30.0,<2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10.0" },
+    { name = "opentelemetry-api", specifier = ">=1.45.1" },
     { name = "paho-mqtt", specifier = ">=2.0.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7.0" },
     { name = "pydantic", specifier = ">=2.8.0" },
