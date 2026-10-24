@@ -1,5 +1,6 @@
 """Keep the repository's immutable RC promotion and owned version inputs aligned."""
 
+import importlib
 import json
 import shutil
 import sys
@@ -12,8 +13,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-import version_plan  # noqa: E402
-import version_receipt  # noqa: E402
+version_plan = importlib.import_module("version_plan")
+version_receipt = importlib.import_module("version_receipt")
 
 
 class McpPromotionTests(unittest.TestCase):
