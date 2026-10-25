@@ -108,7 +108,8 @@ python3 scripts/release.py stable --rc v1.2.3-rc.1
 Approve the pending `release` environment in GitHub Actions. The publisher checks
 that reviewers are configured, verifies the RC's successful run/attempt, default
 branch ancestry, Release gate, immutable evidence and every payload checksum.
-Stable `vX.Y.Z` is a new build of the accepted RC's exact source, locks and recipe. The RC must match current HEAD. All checks and builds run again; approve the new final artifacts after acceptance. The manifest records new hashes and `derived_from_rc`. No override or force-tag option exists. Expired/missing evidence requires a new RC. A partial
+Stable `vX.Y.Z` copies the tested RC bytes without rebuilding. No override or
+force-tag option exists. Expired/missing evidence requires a new RC. A partial
 upload remains an unpublished draft; inspect it before any manual recovery.
 
 GitHub releases do not deploy production. Existing push/tag/CI deployment hooks
@@ -128,7 +129,7 @@ retrying. The tool refuses to overwrite them. Never rebuild an image for stable.
 ## Project limits and rollout requirements
 
 - Hardware-free checks do not validate a live Venus OS device, D-Bus firmware ABI, physical sensors or in-place device upgrades.
-- Candidate packaging applies the reviewed frozen plan to pyproject.toml, the runtime version and the owned uv.lock entry. Stable uses a separately checked final build from the accepted RC source.
+- Candidate packaging applies the reviewed frozen plan to pyproject.toml, the runtime version and the owned uv.lock entry. RC payloads already contain the final package version; stable promotes their exact verified bytes, signatures and original build receipts without rebuilding.
 - OCI container assets are verified and promoted with the GitHub release. Registry and PyPI deployment must use a separately reviewed promotion adapter; CI does not update latest.
 
 For public repositories, merge and verify the workflows before enabling the
