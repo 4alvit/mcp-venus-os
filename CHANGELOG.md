@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update the locked FastMCP and FastMCP Slim runtime dependencies together from 3.4.5 to 3.4.10.
+- Require FastMCP 3.4.10 or newer and update the locked FastMCP and FastMCP Slim runtime dependencies together from 3.4.5 to 3.4.10. The wheel dependency floor also requires package installers to replace older, already-installed FastMCP versions.
 - Refresh pinned CI Actions while preserving the shared fuzz workflow's configured runner fallback. Update its workflow, runtime input and release policy together to prevent future pin drift.
 
 ### Upgrade
