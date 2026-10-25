@@ -4,6 +4,10 @@ updates:
     directory: /
     schedule:
       interval: daily
+    # The generated fuzz wrapper, runtime input and release policy share one SHA.
+    # Update them together through the release generator, not as a lone action.
+    ignore:
+      - dependency-name: victron-venus/venus-os-ci-toolkit/.github/workflows/fuzz.yml
 
     groups:
       github-actions:
