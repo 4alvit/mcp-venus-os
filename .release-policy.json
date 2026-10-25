@@ -14,7 +14,7 @@
   ],
   "notes": [
     "Hardware-free checks do not validate a live Venus OS device, D-Bus firmware ABI, physical sensors or in-place device upgrades.",
-    "Candidate packaging applies the reviewed frozen plan to pyproject.toml, the runtime version and the owned uv.lock entry. Stable uses a separately checked final build from the accepted RC source.",
+    "Candidate packaging applies the reviewed frozen plan to pyproject.toml, the runtime version and the owned uv.lock entry. RC payloads already contain the final package version; stable promotes their exact verified bytes, signatures and original build receipts without rebuilding.",
     "OCI container assets are verified and promoted with the GitHub release. Registry and PyPI deployment must use a separately reviewed promotion adapter; CI does not update latest."
   ],
   "version_file": "pyproject.toml",
@@ -42,7 +42,7 @@
   "sign_releases": true,
   "versioning": {
     "schema": 1,
-    "promotion": "final-build",
+    "promotion": "promote-bytes",
     "files": [
       {
         "path": "pyproject.toml",
