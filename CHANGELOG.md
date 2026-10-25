@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.20] - 2026-10-25
+
+### Changed
+
+- Update the locked FastMCP and FastMCP Slim runtime dependencies together from 3.4.5 to 3.4.10.
+- Refresh pinned CI Actions while preserving the shared fuzz workflow's configured runner fallback. Update its workflow, runtime input and release policy together to prevent future pin drift.
+
+### Upgrade
+
+Install the new package or container through the existing release procedure and restart the server. Preserve connection settings, credentials and hardware-write permissions, and retain the previous immutable artifacts for rollback. Publishing the beta does not deploy it or establish live-device acceptance.
+
+### Security
+
+Include the [FastMCP 3.4.10 authorization fixes](https://github.com/PrefectHQ/fastmcp/releases/tag/v3.4.10), which recheck transformed components and prevent a denied resource from being served through a matching template, together with the preceding 3.4.x security patches. Existing MCP session limits and device-write safeguards remain enabled.
+
 ## [0.2.19]
 
 ### Changed
