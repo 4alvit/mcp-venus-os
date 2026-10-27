@@ -81,8 +81,8 @@ src-tauri/Cargo.lock text eol=lf
 ## Durable allocation and retries
 
 The repository's dedicated `release-version-state` branch stores the allocator's
-logical state in `release-version-state.json`. It starts at the first source
-commit, so its tree also contains the source files inherited from that commit;
+logical state in `release-version-state.json`. It starts at the source commit
+used for the first allocation, so its tree also contains that commit's files;
 the allocator changes only the JSON ledger. GitHub's Contents API blob-SHA
 compare-and-swap serializes allocations. Conflicts fail; they never silently
 rename a compiled candidate. This metadata branch is not a release/deployment
