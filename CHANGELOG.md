@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.21]
+
+### Changed
+
+- Update the FastMCP dependency set to Authlib 1.9.1 and dnspython 2.9.0.
+- Preserve the server's existing static bearer-token authentication configuration.
+
+### Upgrade
+
+Use the existing package or container update procedure, preserving local configuration and credentials. Retain the previous immutable artifacts for rollback. Deployments that add their own Authlib OAuth integration should review its stricter client, nonce and request-object validation before upgrading. Publishing the release does not deploy it.
+
+### Security
+
+- Authlib 1.9.1 includes upstream OAuth/OIDC and JWT validation fixes. The installed dependency is updated; the application's static-token server configuration is not evidence that the affected OAuth flows were reachable here.
+- dnspython 2.9.0 fixes excessive CPU consumption when parsing untrusted DNS messages ([GHSA-45c3-73f7-pv4m](https://github.com/rthalley/dnspython/security/advisories/GHSA-45c3-73f7-pv4m)). Existing dependency, source and release checks remain required.
+
 ## [0.2.20] - 2026-10-25
 
 ### Changed
