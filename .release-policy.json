@@ -92,7 +92,11 @@
         "value": "package"
       }
     ],
-    "toolkit_revision": "d55d9899310c9fb068fbdb36cdc42cc3f539d41c"
+    "toolkit_revision": "d55d9899310c9fb068fbdb36cdc42cc3f539d41c",
+    "required_build_receipts": [
+      "release-inputs-package.json",
+      "release-inputs-signature.json"
+    ]
   },
   "detached_provenance": [
     {
