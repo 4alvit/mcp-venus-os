@@ -68,32 +68,32 @@ See the [release strategy](RELEASING.md) for validation, nightly, beta, RC and s
 ### Installation
 
 The supported release channel is [GitHub Releases](https://github.com/4alvit/mcp-venus-os/releases).
-There is no `mcp-venus-os` distribution on PyPI as of 12 October 2026. The signed
-stable release below is [v0.2.12](https://github.com/4alvit/mcp-venus-os/releases/tag/v0.2.12).
+There is no `mcp-venus-os` distribution on PyPI as of 2 November 2026. The signed
+stable release below is [v0.2.21](https://github.com/4alvit/mcp-venus-os/releases/tag/v0.2.21).
 Use Python 3.11+, Git, the GitHub CLI, and
 [Cosign 3.1.3 or newer](docs/release-signatures.md). Review the pinned
-[source revision](https://github.com/4alvit/mcp-venus-os/tree/a62cd87d68dc15f3650989781178d7d0460d1760)
-and [acceptance record](https://github.com/4alvit/mcp-venus-os/pull/103#issuecomment-6137765183)
+[source revision](https://github.com/4alvit/mcp-venus-os/tree/cb2df16965cf2032a593e7f76063f49ee130d448)
+and [release verification](https://github.com/4alvit/mcp-venus-os/actions/runs/41431013383)
 before trusting its verifier. Run these commands in a new directory:
 
 ```bash
 set -e
 git clone --no-checkout https://github.com/4alvit/mcp-venus-os.git release-verifier
-git -C release-verifier checkout --detach a62cd87d68dc15f3650989781178d7d0460d1760
-gh release download v0.2.12 --repo 4alvit/mcp-venus-os --dir release-v0.2.12
-python3 release-verifier/scripts/release_signing.py verify release-v0.2.12 \
-  --source-sha a62cd87d68dc15f3650989781178d7d0460d1760
+git -C release-verifier checkout --detach cb2df16965cf2032a593e7f76063f49ee130d448
+gh release download v0.2.21 --repo 4alvit/mcp-venus-os --dir release-v0.2.21
+python3 release-verifier/scripts/release_signing.py verify release-v0.2.21 \
+  --source-sha cb2df16965cf2032a593e7f76063f49ee130d448
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install ./release-v0.2.12/mcp_venus_os-0.2.12-py3-none-any.whl
+python -m pip install ./release-v0.2.21/mcp_venus_os-0.2.21-py3-none-any.whl
 ```
 
 Download the complete asset set, including the OCI archive and its provenance
 sidecar, even when installing only the wheel: verification requires the complete
 signed inventory. The verified wheel SHA-256 is
-`9269ef3bae8683d97f95733b326a44da774d3ed0d8364afa273c914e53a4ef4e`.
-The [publication verification](https://github.com/4alvit/mcp-venus-os/pull/103#issuecomment-6137801896)
-confirmed that the public assets match the accepted final build.
+`2ff82b7fab40b67187109ebe1066a3641dbfb8f00e126ca88374c1870c8d436c`.
+The [publication verification](https://github.com/4alvit/mcp-venus-os/actions/runs/41431013383)
+confirmed that all 13 public assets match the qualified RC bytes.
 
 Historical `v0.2.11` remains unsigned, and nightly/beta/RC releases remain
 prereleases. The final build uses the accepted RC's source and recipe with its
@@ -237,7 +237,7 @@ endpoint. Verify the existing configuration and host before enabling it again.
 
 ### Container Images
 
-The reviewed publication mapping is `ghcr.io/4alvit/mcp-venus-os`. Candidate builds produce an OCI archive; approved stable bytes are promoted separately to the registry without rebuilding. Follow the [operator runbook](docs/release-workflow.md) for the versioned tag and optional `latest` update. The former main/tag-triggered GHCR and Docker Hub publishers are retired.
+The reviewed publication mapping is `ghcr.io/4alvit/mcp-venus-os`. The published `0.2.21` image contains Linux AMD64 and ARM64 variants at immutable index digest `sha256:6cf7e9b88a1e77ab6eea17e393f4e225d9e6a152f393488738bda020c64ecd48`. Candidate builds produce an OCI archive; approved stable bytes are promoted separately to the registry without rebuilding. Follow the [operator runbook](docs/release-workflow.md) for the versioned tag and optional `latest` update. The former main/tag-triggered GHCR and Docker Hub publishers are retired.
 
 ## Available Tools
 
