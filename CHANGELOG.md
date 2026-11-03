@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.22]
+
+### Security
+
+- Require websockets 17.4 or newer and update the frozen runtime dependency to 17.4, addressing [GHSA-6m5v-9gmr-5665](https://github.com/python-websockets/websockets/security/advisories/GHSA-6m5v-9gmr-5665). FastMCP's server extra includes this dependency; the explicit floor also protects wheel and source installs that resolve dependencies without the lockfile.
+- The upstream fix bounds fragmented whole-message receives in the websockets asyncio, sync and legacy implementations. It does not add a fragment-count limit to Uvicorn's separate Sans-I/O message assembler. This application continues to expose MCP over HTTP or stdio, without adding a WebSocket endpoint.
+
+### Upgrade
+
+Use the existing package or container update procedure, preserving local configuration and credentials. Python 3.11 remains the minimum. Authentication, session limits and device-write safeguards are unchanged. Publishing this release does not deploy it or establish live-device acceptance.
+
 ## [0.2.21]
 
 ### Changed

@@ -1,6 +1,6 @@
 [project]
 name = "mcp-venus-os"
-version = "0.2.21"
+version = "0.2.22"
 description = "MCP server for Venus OS management - D-Bus, MQTT, and safety-constrained control"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -25,6 +25,7 @@ dependencies = [
     "pydantic>=2.8.0",
     "pydantic-settings>=2.4.0",
     "python-dotenv>=1.0.0",
+    "websockets>=17.4",
     "asyncssh>=2.24.0",
     "cryptography>=39.0",
 ]
