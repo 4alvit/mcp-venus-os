@@ -26,7 +26,7 @@
   "visibility": "public",
   "single_entry_ci": true,
   "coverage": {
-    "toolkit_ref": "a1068073ef4b60b52542cd48954a99b4bc0be008",
+    "toolkit_ref": "2439b9eb60cdbcd02edf43b62c551a357be3accc",
     "reports": [
       {
         "name": "python",
@@ -109,7 +109,7 @@
     }
   ],
   "fuzzing": {
-    "toolkit_ref": "a1068073ef4b60b52542cd48954a99b4bc0be008"
+    "toolkit_ref": "2439b9eb60cdbcd02edf43b62c551a357be3accc"
   },
   "toolkit_revision": "d55d9899310c9fb068fbdb36cdc42cc3f539d41c"
 }
