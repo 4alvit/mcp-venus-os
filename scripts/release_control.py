@@ -153,7 +153,8 @@ class CreateReadback:
         """Read an allowed route once, including explicit bounded list pages."""
         ordinary = any(re.fullmatch(p, path, re.ASCII) for p in API_PATHS["GET"])
         page = re.fullmatch(r"releases(?:/[1-9]\d*/assets)?\?per_page=100&page=[1-9]\d*", path)
-        require(ordinary or page, "Invalid create readback path")
+        attempt = re.fullmatch(r"actions/runs/[1-9]\d*/attempts/[1-9]\d*", path, re.ASCII)
+        require(ordinary or page or attempt, "Invalid create readback path")
         require(not any(p in {".", ".."} for p in unquote(path).split("/")),
                 "Invalid create readback path")
         self.calls += 1

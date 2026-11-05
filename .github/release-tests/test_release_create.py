@@ -94,6 +94,63 @@ class ReadbackTests(unittest.TestCase):
         self.assertEqual(self.reader.deadline, 115)
         call.assert_called_once()
 
+    def test_real_confirmation_reads_attempt_and_all_bound_identities(self):
+        run = {'id': 7, 'run_attempt': 2, 'head_sha': SHA,
+               'path': '.github/workflows/release-pipeline.yml', 'event': 'workflow_dispatch'}
+        source = {'object': {'type': 'commit', 'sha': SHA}}
+        consumed = b'{"publication":7}'
+        values = [{**run, 'status': 'in_progress', 'conclusion': None},
+                  {'default_branch': 'main'}, source,
+                  {'type': 'file', 'encoding': 'base64',
+                   'content': base64.b64encode(consumed).decode()}]
+        responses = [subprocess.CompletedProcess([], 0, wire(200, rc.json_bytes(v)), b'')
+                     for v in values]
+        with patch.object(rc.subprocess, 'run', side_effect=responses) as call:
+            lifecycle.create_confirmation(run, ('git/ref/heads/main', source), consumed)(self.reader)
+        paths = ['actions/runs/7/attempts/2', '', 'git/ref/heads/main',
+                 'contents/release-version-state.json?ref=release-version-state']
+        self.assertEqual([c.args[0][-1] for c in call.call_args_list],
+                         ['repos/' + REPO + ('/' + p if p else '') for p in paths])
+        for c in call.call_args_list:
+            self.assertEqual(c.args[0][c.args[0].index('--method') + 1], 'GET')
+            self.assertNotIn('--input', c.args[0])
+        self.assertEqual(self.reader.calls, 4)
+
+    def test_attempt_route_is_readback_only_and_rejects_malformed_routes(self):
+        routes = ['actions/runs/0/attempts/1', 'actions/runs/01/attempts/1',
+                  'actions/runs/1/attempts/0', 'actions/runs/1/attempts/01',
+                  'actions/runs/1/attempts/1?x=1', 'actions/runs/1/attempts/1/',
+                  'actions/runs/1/attempts/1/rerun', 'actions/runs/1/attempts/١']
+        for route in routes:
+            with self.subTest(route=route), patch.object(rc.subprocess, 'run') as call:
+                with self.assertRaisesRegex(rc.ReleaseError, 'Invalid create readback path'):
+                    self.reader.json(route)
+                call.assert_not_called()
+        with patch.object(rc.subprocess, 'run') as call:
+            with self.assertRaises(rc.ReleaseError):
+                rc.GitHub(REPO).api('actions/runs/7/attempts/2')
+            call.assert_not_called()
+
+    def test_attempt_read_keeps_shared_deadline_calls_and_byte_budget(self):
+        route = 'actions/runs/7/attempts/2'
+        self.reader.calls = 100
+        with patch.object(rc.subprocess, 'run') as call:
+            with self.assertRaisesRegex(rc.ReleaseError, 'request limit'):
+                self.reader.json(route)
+            call.assert_not_called()
+        self.reader.calls = 0
+        with (patch.object(rc.time, 'monotonic', return_value=self.reader.deadline),
+              patch.object(rc.subprocess, 'run') as call):
+            with self.assertRaisesRegex(rc.ReleaseError, 'deadline'):
+                self.reader.json(route)
+            call.assert_not_called()
+        self.reader.remaining = 1
+        with patch.object(rc.subprocess, 'run', return_value=
+                          subprocess.CompletedProcess([], 0, wire(200, b'{}'), b'')) as call:
+            with self.assertRaisesRegex(rc.ReleaseError, 'response limit'):
+                self.reader.json(route)
+            call.assert_called_once()
+
     def test_explicit_pagination_and_duplicate_refusal(self):
         header = f'Link: <https://api.github.com/repos/{REPO}/releases?per_page=100&page=2>; rel="next"\r\n'.encode()
         with patch.object(self.reader, 'get', side_effect=[([{'id': 1}], header), ([{'id': 2}], b'')]):
