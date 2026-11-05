@@ -68,10 +68,9 @@ in `.release-policy.json`, the generated `fuzz.uses` reference, and its
 `toolkit-ref` input in `.github/workflows/release-pipeline.yml`. Update the
 policy to a reviewed toolkit commit and regenerate the release workflows as
 described in [Release workflow](release-workflow.md). All three must match;
-`scripts/workflow_contracts.py` rejects drift. Dependabot ignores this one
-reusable workflow because updating its `uses` reference alone can select an
-older tagged commit and remove the configured runner fallback. Other Actions
-continue to receive Dependabot updates normally.
+`scripts/workflow_contracts.py` rejects drift. Renovate updates the coupled
+toolkit references and other Actions in the shared CI group. The custom managers
+keep the policy, reusable workflow reference and `toolkit-ref` input together.
 
 The contract target uses the Pydantic dependency versions in the production
 `uv.lock`, also consumed by the container's `uv sync --frozen`. Atheris is an

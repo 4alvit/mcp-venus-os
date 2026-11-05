@@ -22,7 +22,7 @@ The project is developed publicly in [Git](https://github.com/4alvit/mcp-venus-o
 - [Test suite](../tests) and [CI workflows](../.github/workflows)
 - [Local CI entry point](../scripts/ci.sh)
 - [CodeQL analysis](../.github/workflows/codeql.yml)
-- [Dependency update configuration](../.github/dependabot.yml)
+- [Dependency update configuration](../renovate.json)
 
 The local gate runs Ruff, mypy, pytest and coverage checks. Tests cover safety denies, hardware write contracts, MQTT reconnects, D-Bus, SSH tool boundaries and server startup. Broker integration tests require their documented local fixtures. Do not point unit tests at a live controller.
 
