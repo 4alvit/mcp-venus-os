@@ -111,5 +111,16 @@
   "fuzzing": {
     "toolkit_ref": "2439b9eb60cdbcd02edf43b62c551a357be3accc"
   },
-  "toolkit_revision": "d55d9899310c9fb068fbdb36cdc42cc3f539d41c"
+  "toolkit_revision": "d55d9899310c9fb068fbdb36cdc42cc3f539d41c",
+  "change_scope": {
+    "documentation_paths": ["GOVERNANCE.md", "ROADMAP.md", "TODO.md"],
+    "required_paths": [
+      "README.md",
+      "CHANGELOG.md"
+    ],
+    "always_validate_workflows": [
+      "release-security.yml",
+      "codeql.yml"
+    ]
+  }
 }
