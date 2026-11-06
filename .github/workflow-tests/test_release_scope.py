@@ -21,10 +21,7 @@ def require_full_release(workflow: dict):
         message = "Main-branch release qualification must always run in full"
         raise ValueError(message)
     command = classifier.get("run", "")
-    if (
-        "args+=(--force)" not in command
-        or 'scripts/change_scope.py "${args[@]}"' not in command
-    ):
+    if "args+=(--force)" not in command or 'scripts/change_scope.py "${args[@]}"' not in command:
         message = "Release classifier must forward the force-full argument"
         raise ValueError(message)
 
@@ -67,9 +64,7 @@ class ReleaseScopeTests(unittest.TestCase):
     def test_old_generator_documentation_skip_is_rejected(self):
         workflow = deepcopy(self.workflow)
         (classifier,) = [
-            step
-            for step in workflow["jobs"]["scope"]["steps"]
-            if step.get("id") == "scope"
+            step for step in workflow["jobs"]["scope"]["steps"] if step.get("id") == "scope"
         ]
         for value in ("false", False, None, 1, "TRUE", ""):
             with self.subTest(force_full=value):
