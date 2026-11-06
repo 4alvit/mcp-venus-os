@@ -166,13 +166,21 @@ A local candidate package also needs the saved `.release-plan.json` at its exact
 Documentation scope is maintained with the fixed CI Toolkit generator at
 [`56863cf0beed5ab97c4f27d7adb5aedb83c758d5`](https://github.com/victron-venus/venus-os-ci-toolkit/commit/56863cf0beed5ab97c4f27d7adb5aedb83c758d5).
 Use a separate toolkit checkout at that exact revision, then run from this
-repository's root (the first command updates scope; the second verifies it):
+repository's root (the first command updates scope; the second verifies it).
+The subshell stops before generation if the revision check fails or the toolkit
+has modified or untracked files, without changing your shell's options:
 
 ```sh
-TOOLKIT=/path/to/fixed/venus-os-ci-toolkit
-test "$(git -C "$TOOLKIT" rev-parse HEAD)" = 56863cf0beed5ab97c4f27d7adb5aedb83c758d5
-python3 "$TOOLKIT/scripts/install_release.py" . --change-scope-only
-python3 "$TOOLKIT/scripts/install_release.py" . --change-scope-only --check
+(
+  set -eu
+  TOOLKIT=/path/to/fixed/venus-os-ci-toolkit
+  toolkit_head=$(git -C "$TOOLKIT" rev-parse HEAD)
+  test "$toolkit_head" = 56863cf0beed5ab97c4f27d7adb5aedb83c758d5
+  toolkit_status=$(git -C "$TOOLKIT" status --porcelain=v1 --untracked-files=all)
+  test -z "$toolkit_status"
+  python3 "$TOOLKIT/scripts/install_release.py" . --change-scope-only
+  python3 "$TOOLKIT/scripts/install_release.py" . --change-scope-only --check
+)
 ```
 
 The existing `toolkit_revision` fields record historical release-engine
