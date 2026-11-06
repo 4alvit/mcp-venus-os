@@ -193,3 +193,16 @@ policy-authorized new run; never reset the ledger or mix earlier-attempt package
 Historical RC promotion keeps its accepted source policy. Keep this explicit
 inventory aligned with producer changes; it does not replace package-format,
 signature or device acceptance checks.
+
+## Coupled dependency updates
+
+Renovate updates the authoritative Python project and uv lock, then regenerates the coupled export in the same update. The runner permits only these literal uv commands with shell execution disabled. `--locked --offline --no-build` rejects a stale project/lock pair and prevents export-time build hooks. The compile step also forbids source builds. Use uv 0.13.4 and review all affected lock files together.
+
+From the repository root, the guarded regeneration commands are:
+
+```sh
+uv export --locked --offline --no-build --no-dev --no-emit-project --format requirements-txt --output-file .renovate-constraints.txt
+uv pip compile .github/requirements-fuzz.in --constraint .renovate-constraints.txt --python-version 3.12 --python-platform x86_64-unknown-linux-gnu --no-build --generate-hashes --no-header --no-annotate --output-file .github/requirements-fuzz.txt
+```
+
+`.renovate-constraints.txt` is temporary generator input; do not commit it. Fuzz-only requirement changes use the same constrained pipeline.
