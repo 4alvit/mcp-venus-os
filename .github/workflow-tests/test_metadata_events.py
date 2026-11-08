@@ -199,16 +199,22 @@ class MetadataEventsTests(unittest.TestCase):
                     event["changes"] = {"base": {"ref": {"from": "main"}}}
                     event["pull_request"]["base"]["ref"] = "other"
                 withdrawals.append(data)
-            later = [context("synchronize", run="22"), context("labeled", run="23"),
-                     context("edited", {"body": {"from": "old"}}, run="24")]
+            later = [
+                context("synchronize", run="22"),
+                context("labeled", run="23"),
+                context("edited", {"body": {"from": "old"}}, run="24"),
+            ]
             pending = {group(workflow, event): event for event in withdrawals + later}
             with self.subTest(action=action):
                 for event in withdrawals:
                     assert event in pending.values()
                     assert evaluate(workflow["jobs"]["auto-merge"]["if"], event)
                 assert group(workflow, withdrawals[0]) != group(workflow, withdrawals[1])
-                assert all(group(workflow, event) != group(workflow, following)
-                           for event in withdrawals for following in later)
+                assert all(
+                    group(workflow, event) != group(workflow, following)
+                    for event in withdrawals
+                    for following in later
+                )
 
     def test_nonwithdrawals_keep_the_positive_queue(self):
         """Unrelated label removal and a return to main are not withdrawal evidence."""
