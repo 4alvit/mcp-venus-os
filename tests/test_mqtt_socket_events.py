@@ -30,7 +30,7 @@ class ScriptedSocket:
         self.closed = False
         self.send_queue_bytes = 7
 
-    def send(self, buffer: bytes) -> int:
+    def send(self, buffer: bytes | bytearray) -> int:
         assert not self.closed
         self.send_calls += 1
         result = self.writes.popleft() if self.writes else len(buffer)
