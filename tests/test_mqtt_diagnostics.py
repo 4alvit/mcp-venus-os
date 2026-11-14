@@ -193,12 +193,12 @@ def test_one_real_paho_keepalive_failure_can_emit_two_callbacks(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     owner, transport = _owner()
-    # Offline reproduction of Paho2.1's two keepalive checks. Only its fake
+    # Offline reproduction of Paho2.2's two keepalive checks. Only its fake
     # socket/timers are arranged here; production code never mutates them.
     transport._sock = Mock()
     transport._state = _ConnectionState.MQTT_CS_CONNECTED
     transport._keepalive = 30
-    transport._last_msg_in = transport._last_msg_out = 0
+    transport._last_bytes_received = transport._last_msg_out = 0
     transport._ping_t = 1
     with patch("paho.mqtt.client.time_func", return_value=100):
         assert transport.loop_misc() == mqtt.MQTT_ERR_CONN_LOST
