@@ -17,6 +17,8 @@ record and rollback plan with the operator's deployment configuration. The
 and [HTTP session lifecycle](docs/http-session-security.md) describe the supported
 transports and client configuration.
 
+Docs index: [docs/README.md](docs/README.md).
+
 SSH package refresh downloads into a temporary `/data` staging directory and
 validates that `setup` exists before copying into the installed tree. It retains
 files absent from the release, including virtualenvs and local configuration,
