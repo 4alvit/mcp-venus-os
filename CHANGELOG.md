@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.23] - 2026-11-26
+
+### Security
+
+- Move the pinned CodeQL analysis actions to v4.39.5 and the cosign installer used by the release pipeline to v4.1.4, keeping every reusable workflow on its reviewed commit.
+- No application code, runtime dependency or packaging input changed since 0.2.22.
+
+### Changed
+
+- Point the coverage and fuzzing toolkit references in `.release-policy.json` at the current reviewed toolkit commit.
+
+### Upgrade
+
+Use the existing package or container update procedure, preserving local configuration and credentials. Python 3.11 remains the minimum, the MCP tool surface, authentication and device-write safeguards are unchanged, and no data or configuration migration is required. Publishing this release does not deploy it or establish live-device acceptance.
+
 ## [0.2.22]
 
 ### Security
